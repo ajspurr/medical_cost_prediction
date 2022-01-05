@@ -35,3 +35,5 @@ For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 
   <img src="/output/eda/age_vs_charges_nonsmokers_grp_bmi29.png" width="400"/>
   <img src="/output/eda/age_vs_charges_nonsmokers_grp_bmi31.png" width="400"/>
 </p>
+
+I tried subgrouping the nonsmokers by other variables, but none of them uncovered patterns in the data.
