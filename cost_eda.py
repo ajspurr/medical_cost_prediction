@@ -396,39 +396,9 @@ plt.show()
 # Further explore numerical variables and smoking
 # =============================
 
-smokers_data = dataset[dataset['smoker']=='yes']
 
-mean_age = smokers_data['age'].mean()
-median_age = smokers_data['age'].median()
-sns.kdeplot(data=smokers_data[smokers_data['age'] < mean_age], x='charges', shade=True, alpha=1, label='Age < avg')
-sns.kdeplot(data=smokers_data[smokers_data['age'] > mean_age], x='charges', shade=True, alpha=0.5, label='Age > avg')
-plt.legend() 
-plt.show()
+# STOPPED IN THIS SECTION =======================================================================================
 
-
-mean_bmi = smokers_data['bmi'].mean()
-median_bmi = smokers_data['bmi'].median()
-sns.kdeplot(data=smokers_data[smokers_data['bmi'] < mean_bmi], x='charges', shade=True, alpha=1, label='bmi < avg')
-sns.kdeplot(data=smokers_data[smokers_data['bmi'] > mean_bmi], x='charges', shade=True, alpha=0.5, label='bmi > avg')
-plt.legend() 
-plt.show()
-
-
-
-
-
-
-
-
-sns.boxplot(data=smokers_data, x='children', y='charges')
-
-sns.regplot(x='charges', y="age", data=smokers_data)
-
-sns.regplot(x='charges', y="bmi", data=smokers_data)
-
-sns.regplot(x='charges', y="children", data=smokers_data)
-
-# STOPPED IN THIS SECTION
 
 sns.jointplot(x='age', y="charges", data = dataset, hue='smoker')
 plt.show()
