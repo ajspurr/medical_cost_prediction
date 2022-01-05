@@ -308,35 +308,38 @@ for col in numerical_cols:
 # Create figure, gridspec, list of axes/subplots mapped to gridspec location
 fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=2, num_cols=3, figsize=(16, 8))
 
+# Calculate correlation coefficients
 pearsons = dataset.corr(method='pearson').round(2)
-spearmans = dataset.corr(method='spearman').round(2) 
+spearmans = dataset.corr(method='spearman').round(2)
+
+# Format text box
 box_style = {'facecolor':'white', 'boxstyle':'round'}
 
 # Loop through categorical variables, plotting each in the figure
 i = 0
 for col in numerical_cols:
+    # Numerical variable distributions
     axis1 = ax_array_flat[i]
     sns.distplot(dataset[col], ax=axis1)
     axis1.set_title(format_col(col) + ' Histogram')
     
+    # Numerical variable relationship to target
     axis2 = ax_array_flat[i+3]
     
-    #fgrid = sns.lmplot(x=col, y="charges", data=dataset)
-    
-    sns.lmplot(x=col, y="charges", data=dataset, ax=axis2)
-    #ax = fgrid.axes[0,0]
+    fgrid = sns.regplot(x=col, y="charges", data=dataset, ax=axis2)
+    ax = fgrid.axes
     axis2.set_title(format_col(col) + ' vs. Charges')
-    # if col=='children':
-    #     textbox_text = "Spearmans's ρ = %0.2f" %spearmans[col].loc['charges']
-    # else:
-    #     textbox_text = "Pearson's r = %0.2f" %pearsons[col].loc['charges']
-    # axis2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
-    #          verticalalignment='top', horizontalalignment='right')
+    if col=='children':
+        textbox_text = "Spearmans's ρ = %0.2f" %spearmans[col].loc['charges']
+    else:
+        textbox_text = "Pearson's r = %0.2f" %pearsons[col].loc['charges']
+    axis2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
+             verticalalignment='top', horizontalalignment='right')
     
     i+=1
 
 # Finalize figure formatting and export
-fig.suptitle('Continuous Variable Distribution', fontsize=24)
+fig.suptitle('Continuous Variable Exploration', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
 #save_filename = 'combined_dist'
 #save_image(output_dir, save_filename, bbox_inches='tight')
