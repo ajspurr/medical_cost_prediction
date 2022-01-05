@@ -22,7 +22,7 @@ Noticed bimodal distribution of charges in smokers. Attempted to subgroup by all
 
 <p align="center"><img src="/output/eda/age_vs_charges_grp_smoking_status.png" width="500"/></p>
 
-After isolating the nonsmoker data, subgrouping by categorical variables didn't account for the noise above the dense line of data points, but there is still a clear, moderate correlation:
+After isolating the nonsmoker data, subgrouping by categorical variables didn't account for the noise above the dense line of data points, but even without subgrouping I got a Pearson's r of 0.63, which is double the Pearson's without subgrouping by smoking status (0.30).
 
 <p align="center"><img src="/output/eda/age_vs_charges_nonsmokers.png" width="500"/></p>
 
