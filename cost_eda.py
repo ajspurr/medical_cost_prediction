@@ -233,10 +233,10 @@ for col in cat_ord_cols:
     i += 1
 
 # Finalize figure formatting and export
-fig.suptitle('Categorical Variable Relationship with Target', fontsize=24)
+fig.suptitle('Categorical Variable Relationships with Target', fontsize=26)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'cat_variables_vs_target'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+save_filename = 'cat_variables_vs_target'
+save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 
@@ -269,7 +269,7 @@ axis2.set_xlabel('Charges')
 axis2.set_ylabel('')
 
 # Finalize figure formatting and export
-fig.suptitle('Exploration Bimodal Distribution of Charges in Smokers', fontsize=24)
+#fig.suptitle('Exploration Bimodal Distribution of Charges in Smokers', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
 save_filename = 'smoker_dist_by_bmi'
 save_image(output_dir, save_filename, bbox_inches='tight')
