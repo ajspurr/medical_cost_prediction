@@ -79,6 +79,18 @@ cat_ord_cols.append('children')
 cont_cols = numerical_cols.copy()
 cont_cols.remove('children')
 
+# ==========================================================
+# Feature engineering
+# ==========================================================
+
+# Based on EDA below, BMI has an impact on charges. I will create a new categorical feature for BMI.
+# I had originally used the cutoff of average BMI (30.7), which is extremely close to the 
+# cutoff for clinical obesity, which is 30. I will use 30 as it has more clinical significance. 
+
+dataset['bmi_>=_30'] = dataset['bmi'] >= 30
+bmi_dict = {False:'no', True:'yes'}
+dataset['bmi_>=_30'] = dataset['bmi_>=_30'].map(bmi_dict)
+
 # =======================================================================================
 # Visualize data
 # =======================================================================================
@@ -271,9 +283,10 @@ axis2.set_ylabel('')
 # Finalize figure formatting and export
 #fig.suptitle('Exploration Bimodal Distribution of Charges in Smokers', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'smoker_dist_by_bmi'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'smoker_dist_by_bmi'
+#save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
+
 
 # ==========================================================
 # Numerical variables
@@ -390,23 +403,165 @@ plt.show()
 
 
 
-
-
-# =============================
+# ==========================================================
 # Further explore numerical variables and smoking
-# =============================
+# ==========================================================
 
-
-# STOPPED IN THIS SECTION =======================================================================================
-
-
+# Age vs. Charges, grouped by smoking status
 sns.jointplot(x='age', y="charges", data = dataset, hue='smoker')
 plt.show()
 sns.jointplot(x='age', y="charges", data = dataset, kind='kde', hue='smoker')
 plt.show()
+
 sns.lmplot(x='age', y='charges', hue="smoker", data=dataset)
+plt.title("Age vs. Charges, grouped by smoking status")
+#save_filename = 'age_vs_charges_grp_smoking_status'
+#save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
+# There is obvious grouping of charges by smoking status, will separate out both groups
+smokers_data = dataset[dataset['smoker']=='yes'].copy()
+nonsmokers_data = dataset[dataset['smoker']=='no'].copy()
+
+sns.lmplot(x='age', y='charges', data=smokers_data)
+plt.title("Age vs. Charges in smokers")
+#save_filename = 'age_vs_charges_smokers'
+#save_image(output_dir, save_filename, bbox_inches='tight')
+plt.show()
+
+sns.lmplot(x='age', y='charges', data=nonsmokers_data)
+plt.title("Age vs. Charges in nonsmokers")
+#save_filename = 'age_vs_charges_nonsmokers'
+#save_image(output_dir, save_filename, bbox_inches='tight')
+plt.show()
+
+# =============================
+# Explore smokers
+# =============================
+# Age vs. Charges in smokers, grouped by BMI>=30
+sns.lmplot(x='age', y='charges', hue="bmi_>=_30", data=smokers_data)
+plt.title("Age vs. Charges in smokers, grouped by BMI")
+plt.show()
+
+# Smokers group very well by BMI. Do not group well by sex, region, or # children (I left that code out)
+
+# Will explore different BMI cutoffs
+# ===============
+# BMI 30
+# ===============
+obese_df = smokers_data[smokers_data['bmi_>=_30']=='yes'].copy()
+nonobese_df = smokers_data[smokers_data['bmi_>=_30']=='no'].copy()
+
+pearson_obese = obese_df.corr(method='pearson').round(2)
+pearson_age_charge_ob = pearson_obese['age'].loc['charges']
+
+pearson_nonobese = nonobese_df.corr(method='pearson').round(2)
+pearson_age_charge_nonob = pearson_nonobese['age'].loc['charges']
+
+# Pearsons for age and charges in smokers: 0.67 for obese and 0.69 for nonobese
+
+# Replot with pearsons labels
+g = sns.lmplot(x='age', y='charges', hue="bmi_>=_30", data=smokers_data, legend=False)
+ax = g.axes[0,0]
+ax.legend(title='BMI >= 30', loc='upper right')
+leg = ax.get_legend()
+labels = leg.get_texts()
+for legend_label in labels:
+    if legend_label.get_text() == 'no':
+        legend_label.set_text("No (Pearson's %0.2f)" %pearson_age_charge_nonob)
+    else:
+        legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
+plt.title("Age vs. Charges in smokers, grouped by BMI (30)")
+save_filename = 'age_vs_charges_nonsmokers_grp_bmi30'
+save_image(output_dir, save_filename, bbox_inches='tight')
+plt.show()
+
+# ===============
+# BMI 29
+# ===============
+test_smokers_df = smokers_data.copy()
+test_smokers_df['bmi_>=_29'] = test_smokers_df['bmi'] >= 29
+bmi_dict = {False:'no', True:'yes'}
+test_smokers_df['bmi_>=_29'] = test_smokers_df['bmi_>=_29'].map(bmi_dict)
+
+obese_df = test_smokers_df[test_smokers_df['bmi_>=_29']=='yes'].copy()
+nonobese_df = test_smokers_df[test_smokers_df['bmi_>=_29']=='no'].copy()
+
+pearson_obese = obese_df.corr(method='pearson').round(2)
+pearson_age_charge_ob = pearson_obese['age'].loc['charges']
+
+pearson_nonobese = nonobese_df.corr(method='pearson').round(2)
+pearson_age_charge_nonob = pearson_nonobese['age'].loc['charges']
+
+# Pearsons for age and charges in smokers: 0.52 for obese and 0.66 for nonobese (with obese cutoff of BMI 29)
+
+g = sns.lmplot(x='age', y='charges', hue="bmi_>=_29", data=test_smokers_df, legend=False)
+ax = g.axes[0,0]
+ax.legend(title='BMI >= 29', loc='upper right')
+leg = ax.get_legend()
+labels = leg.get_texts()
+for legend_label in labels:
+    if legend_label.get_text() == 'no':
+        legend_label.set_text("No (Pearson's %0.2f)" %pearson_age_charge_nonob)
+    else:
+        legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
+plt.title("Age vs. Charges in smokers, grouped by BMI (29)")
+save_filename = 'age_vs_charges_nonsmokers_grp_bmi29'
+save_image(output_dir, save_filename, bbox_inches='tight')
+plt.show()
+
+
+# ===============
+# BMI 31
+# ===============
+test_smokers_df['bmi_>=_31'] = test_smokers_df['bmi'] >= 31
+test_smokers_df['bmi_>=_31'] = test_smokers_df['bmi_>=_31'].map(bmi_dict)
+
+obese_df = test_smokers_df[test_smokers_df['bmi_>=_31']=='yes'].copy()
+nonobese_df = test_smokers_df[test_smokers_df['bmi_>=_31']=='no'].copy()
+
+pearson_obese = obese_df.corr(method='pearson').round(2)
+pearson_age_charge_ob = pearson_obese['age'].loc['charges']
+
+pearson_nonobese = nonobese_df.corr(method='pearson').round(2)
+pearson_age_charge_nonob = pearson_nonobese['age'].loc['charges']
+
+# Pearsons for age and charges in smokers: 0.72 for obese and 0.46 for nonobese (with obese cutoff of BMI 31)
+
+g = sns.lmplot(x='age', y='charges', hue="bmi_>=_31", data=test_smokers_df, legend=False)
+ax = g.axes[0,0]
+ax.legend(title='BMI >= 31', loc='upper right')
+leg = ax.get_legend()
+labels = leg.get_texts()
+for legend_label in labels:
+    if legend_label.get_text() == 'no':
+        legend_label.set_text("No (Pearson's %0.2f)" %pearson_age_charge_nonob)
+    else:
+        legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
+plt.title("Age vs. Charges in smokers, grouped by BMI(31)")
+save_filename = 'age_vs_charges_nonsmokers_grp_bmi31'
+save_image(output_dir, save_filename, bbox_inches='tight')
+plt.show()
+
+# =============================
+# Explore nonsmokers
+# =============================
+sns.lmplot(x='age', y='charges', hue="children", data=nonsmokers_data)
+plt.show()
+
+# Nonsmokers group does not group well by BMI, sex, region, or # children (I left that code out)
+
+
+
+
+
+
+
+
+
+
+
+# More Exploration
 sns.jointplot(x='bmi', y="charges", data = dataset, hue='smoker')
 plt.show()
 sns.jointplot(x='bmi', y="charges", data = dataset, kind='kde', hue='smoker')
