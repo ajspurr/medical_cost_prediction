@@ -472,7 +472,7 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
 plt.title("Age vs. Charges in smokers, grouped by BMI (30)")
-save_filename = 'age_vs_charges_nonsmokers_grp_bmi30'
+save_filename = 'age_vs_charges_smokers_grp_bmi30'
 save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
@@ -506,7 +506,7 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
 plt.title("Age vs. Charges in smokers, grouped by BMI (29)")
-save_filename = 'age_vs_charges_nonsmokers_grp_bmi29'
+save_filename = 'age_vs_charges_smokers_grp_bmi29'
 save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
@@ -539,37 +539,41 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
 plt.title("Age vs. Charges in smokers, grouped by BMI(31)")
-save_filename = 'age_vs_charges_nonsmokers_grp_bmi31'
+save_filename = 'age_vs_charges_smokers_grp_bmi31'
 save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 # =============================
 # Explore nonsmokers
 # =============================
-sns.lmplot(x='age', y='charges', hue="children", data=nonsmokers_data)
+pearson_nonsmokers = nonsmokers_data.corr(method='pearson')['age'].loc['charges'].round(2)
+g = sns.lmplot(x='age', y='charges', data=nonsmokers_data)
+ax = g.axes[0,0]
+textbox_text = "Pearson's r = %0.2f" %pearson_nonsmokers
+plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
+         verticalalignment='top', horizontalalignment='right')
+
+plt.title("Age vs. Charges in nonsmokers")
+#save_filename = 'age_vs_charges_nonsmokers'
+#save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
-# Nonsmokers group does not group well by BMI, sex, region, or # children (I left that code out)
-
+# Nonsmokers do not group well by BMI, sex, region, or # children (I left that code out)
 
 
 # =============================
 # Explore BMI vs. Charges
 # =============================
-
-# More Exploration
-sns.jointplot(x='bmi', y="charges", data = dataset, hue='smoker')
-plt.show()
-sns.jointplot(x='bmi', y="charges", data = dataset, kind='kde', hue='smoker')
-plt.show()
 sns.lmplot(x='bmi', y='charges', hue="smoker", data=dataset)
 plt.show()
 
+# Other subgroupings don't yield anything helpful
+
 
 
 
 # =============================
-# Explore BMI vs. Charges
+# Explore Children vs. Charges
 # =============================
 # Children vs. Charges with no obvious subgrouping
 sns.jointplot(x='children', y="charges", data = dataset, hue='smoker')
