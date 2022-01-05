@@ -235,8 +235,45 @@ for col in cat_ord_cols:
 # Finalize figure formatting and export
 fig.suptitle('Categorical Variable Relationship with Target', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'cat_variables_vs_target'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'cat_variables_vs_target'
+#save_image(output_dir, save_filename, bbox_inches='tight')
+plt.show()
+
+
+# =============================
+# Further exploration bimodal distribution of smokers
+# =============================
+smokers_data = dataset[dataset['smoker']=='yes']
+
+# Create figure, gridspec, list of axes/subplots mapped to gridspec location
+fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
+
+# Distribution of Charges in Smokers
+axis1 = ax_array_flat[0]
+sns.kdeplot(data=smokers_data, x='charges', shade=True, ax=axis1)
+axis1.set_title('Distribution of Charges in Smokers', fontsize=16, y=1.04)
+axis1.set_xlabel('Charges')
+
+# After exploring multiple variables, found that BMI could explain the bimodal distribution
+
+# Distribution of Charges in Smokers by BMI
+mean_bmi = smokers_data['bmi'].mean()
+axis2 = ax_array_flat[1]
+sns.kdeplot(data=smokers_data[smokers_data['bmi'] < mean_bmi], x='charges', 
+            shade=True, alpha=1, label='BMI < avg (30.7)', ax=axis2)
+sns.kdeplot(data=smokers_data[smokers_data['bmi'] > mean_bmi], x='charges', 
+            shade=True, alpha=0.5, label='BMI > avg', ax=axis2)
+axis2.legend() 
+axis2.set_title('Distribution of Charges in Smokers (by BMI)', fontsize=16, y=1.04)
+axis2.set_xlabel('Charges')
+axis2.set_ylabel('')
+#plt.show()
+
+# Finalize figure formatting and export
+fig.suptitle('Exploration Bimodal Distribution of Charges in Smokers', fontsize=24)
+fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+#save_filename = 'cat_variables_vs_target'
+#save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 # ==========================================================
@@ -245,7 +282,7 @@ plt.show()
 
 # Plot target (charges) on its own
 sns.distplot(dataset['charges'])
-plt.title('Charges Histogram')
+plt.title('Charges Histogram', fontsize=20, y=1.04)
 save_filename = 'hist_charges'
 save_image(output_dir, save_filename)
 plt.show()
@@ -336,68 +373,86 @@ for col in numerical_cols:
     axis2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
              verticalalignment='top', horizontalalignment='right')
     
+    # Only want to label the y-axis on the first subplot of each row
+    if i == 0:
+        axis2.set_ylabel('Charges')
+    else:
+        axis1.set_ylabel('')
+        axis2.set_ylabel('')
+    
     i+=1
 
 # Finalize figure formatting and export
-fig.suptitle('Continuous Variable Exploration', fontsize=24)
+fig.suptitle('Numerical Variable Exploration', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'combined_dist'
-#save_image(output_dir, save_filename, bbox_inches='tight')
-plt.show()
-
-
-
-
-
-
-
-
-
-sns.jointplot(x='age', y="charges", data = dataset, hue='smoker')
-
-sns.lmplot(x='age', y='charges', hue="smoker", data=dataset)
-sns.jointplot(x='age', y="charges", data = dataset, kind='kde', hue='smoker')
-sns.jointplot(x='age', y="charges", data = dataset, kind='resid')
-
-# STOPPED HERE
-
-
-
-# =============================
-# Combine continuous variable graphs into one figure
-# =============================
-# Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=2, num_cols=3, figsize=(16, 8))
-
-# Loop through categorical variables, plotting each in the figure
-i = 0
-for col in numerical_cols:
-    axis = ax_array_flat[i]
-    sns.distplot(dataset[col], ax=axis)
-    axis.set_title(format_col(col) + ' Histogram')
-    axis.set_xlabel(format_col(col))
-    
-    # Will use same loop to plot histogram by stroke under histogram
-    axis2 = ax_array_flat[i+3]
-    sns.kdeplot(data=dataset[dataset.stroke==1], x=col, shade=True, alpha=1, label='stroke', ax=axis2)
-    sns.kdeplot(data=dataset[dataset.stroke==0], x=col, shade=True, alpha=0.5, label='no stroke', ax=axis2)
-    axis2.set_title(format_col(col) + ' Distribution by Outcome')
-    axis2.set_xlabel(format_col(col))
-    axis2.legend()
-    
-    # Only want to label the y-axis on the first subplot of each row
-    if i != 0:
-        # set visibility of y-axis as False
-        axis.set_ylabel('')
-        axis2.set_ylabel('')
-    i += 1
-
-# Finalize figure formatting and export
-fig.suptitle('Continuous Variable Distribution', fontsize=24)
-fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'combined_dist'
+save_filename = 'num_var_combined'
 save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
+
+
+
+
+
+# =============================
+# Further explore numerical variables and smoking
+# =============================
+
+smokers_data = dataset[dataset['smoker']=='yes']
+
+mean_age = smokers_data['age'].mean()
+median_age = smokers_data['age'].median()
+sns.kdeplot(data=smokers_data[smokers_data['age'] < mean_age], x='charges', shade=True, alpha=1, label='Age < avg')
+sns.kdeplot(data=smokers_data[smokers_data['age'] > mean_age], x='charges', shade=True, alpha=0.5, label='Age > avg')
+plt.legend() 
+plt.show()
+
+
+mean_bmi = smokers_data['bmi'].mean()
+median_bmi = smokers_data['bmi'].median()
+sns.kdeplot(data=smokers_data[smokers_data['bmi'] < mean_bmi], x='charges', shade=True, alpha=1, label='bmi < avg')
+sns.kdeplot(data=smokers_data[smokers_data['bmi'] > mean_bmi], x='charges', shade=True, alpha=0.5, label='bmi > avg')
+plt.legend() 
+plt.show()
+
+
+
+
+
+
+
+
+sns.boxplot(data=smokers_data, x='children', y='charges')
+
+sns.regplot(x='charges', y="age", data=smokers_data)
+
+sns.regplot(x='charges', y="bmi", data=smokers_data)
+
+sns.regplot(x='charges', y="children", data=smokers_data)
+
+# STOPPED IN THIS SECTION
+
+sns.jointplot(x='age', y="charges", data = dataset, hue='smoker')
+plt.show()
+sns.jointplot(x='age', y="charges", data = dataset, kind='kde', hue='smoker')
+plt.show()
+sns.lmplot(x='age', y='charges', hue="smoker", data=dataset)
+plt.show()
+
+sns.jointplot(x='bmi', y="charges", data = dataset, hue='smoker')
+plt.show()
+sns.jointplot(x='bmi', y="charges", data = dataset, kind='kde', hue='smoker')
+plt.show()
+sns.lmplot(x='bmi', y='charges', hue="smoker", data=dataset)
+plt.show()
+
+sns.jointplot(x='children', y="charges", data = dataset, hue='smoker')
+plt.show()
+sns.jointplot(x='children', y="charges", data = dataset, kind='kde', hue='smoker')
+plt.show()
+sns.lmplot(x='children', y='charges', hue="smoker", data=dataset)
+plt.show()
+
+
 
 # =======================================================================================
 # Correlation between variables
@@ -406,6 +461,10 @@ plt.show()
 # ==========================================================
 # Correlation between continuous variables
 # ==========================================================
+
+# Use pairplot to get a sense of relationship between numerical variables
+sns.pairplot(dataset)
+sns.pairplot(dataset, hue="smoker")
 
 # Find correlation between variables
 # np.trui sets all the values above a certain diagonal to 0, so we don't have redundant boxes
