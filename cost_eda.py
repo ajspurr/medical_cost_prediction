@@ -166,10 +166,10 @@ for col in cat_ord_cols:
     i += 1
 
 # Finalize figure formatting and export
-fig.suptitle('Categorical Variable Counts', fontsize=24)
+fig.suptitle('Categorical Variable Counts', fontsize=16)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'combined_cat_counts'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'combined_cat_counts'
+#save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 
@@ -267,13 +267,12 @@ axis2.legend()
 axis2.set_title('Distribution of Charges in Smokers (by BMI)', fontsize=16, y=1.04)
 axis2.set_xlabel('Charges')
 axis2.set_ylabel('')
-#plt.show()
 
 # Finalize figure formatting and export
 fig.suptitle('Exploration Bimodal Distribution of Charges in Smokers', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'cat_variables_vs_target'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+save_filename = 'smoker_dist_by_bmi'
+save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 # ==========================================================
