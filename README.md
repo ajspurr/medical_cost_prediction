@@ -51,3 +51,6 @@ Subgrouping by smoking status effectively delineated the two groups of data poin
 ### Further exploration of Children vs. Charges relationship
 No new insights were gained by subgrouping this relationship.
 
+### Relationship Between Numerical Variables
+I created multiple graphs like the one below, each subgrouping by a different categorical variable. No obvious relationships were seen between numerical variables, with or without subgrouping.
+<p align="center"><img src="/output/eda/relationship_num_var_by_sex.png" width="600"/></p>
