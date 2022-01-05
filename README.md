@@ -48,3 +48,6 @@ I tried subgrouping the nonsmokers by other variables, but none of them uncovere
 Subgrouping by smoking status effectively delineated the two groups of data points. And again, you can see that within the smoking group there are two clear clusters on either side of BMI = 30.
 <p align="center"><img src="/output/eda/bmi_vs_charges_grp_smoking.png" width="500"/></p>
 
+### Further exploration of Children vs. Charges relationship
+No new insights were gained by subgrouping this relationship.
+
