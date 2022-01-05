@@ -547,15 +547,15 @@ plt.show()
 # Explore nonsmokers
 # =============================
 pearson_nonsmokers = nonsmokers_data.corr(method='pearson')['age'].loc['charges'].round(2)
-g = sns.lmplot(x='age', y='charges', data=nonsmokers_data)
+g = sns.lmplot(x='age', y='charges', data=nonsmokers_data, line_kws={'color':'cyan'})
 ax = g.axes[0,0]
 textbox_text = "Pearson's r = %0.2f" %pearson_nonsmokers
 plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
          verticalalignment='top', horizontalalignment='right')
 
 plt.title("Age vs. Charges in nonsmokers")
-#save_filename = 'age_vs_charges_nonsmokers'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+save_filename = 'age_vs_charges_nonsmokers'
+save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 # Nonsmokers do not group well by BMI, sex, region, or # children (I left that code out)
@@ -564,12 +564,26 @@ plt.show()
 # =============================
 # Explore BMI vs. Charges
 # =============================
-sns.lmplot(x='bmi', y='charges', hue="smoker", data=dataset)
+pearson_bmi_charges_smokers = smokers_data.corr(method='pearson')['bmi'].loc['charges'].round(2)
+pearson_bmi_charges_nonsmokers = nonsmokers_data.corr(method='pearson')['bmi'].loc['charges'].round(2)
+
+g = sns.lmplot(x='bmi', y='charges', hue="smoker", data=dataset, legend=False)
+
+ax = g.axes[0,0]
+ax.legend(title='Smoker', loc='upper right')
+leg = ax.get_legend()
+labels = leg.get_texts()
+for legend_label in labels:
+    if legend_label.get_text() == 'no':
+        legend_label.set_text("No (Pearson's %0.2f)" %pearson_bmi_charges_nonsmokers)
+    else:
+        legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_bmi_charges_smokers)
+plt.title("BMI vs. Charges grouped by smoking status")
+#save_filename = 'bmi_vs_charges_grp_smoking'
+#save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 # Other subgroupings don't yield anything helpful
-
-
 
 
 # =============================
