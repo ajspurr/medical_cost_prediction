@@ -22,6 +22,10 @@ Noticed bimodal distribution of charges in smokers. Attempted to subgroup by all
 
 <p align="center"><img src="/output/eda/age_vs_charges_grp_smoking_status.png" width="500"/></p>
 
+After isolating the nonsmoker data, subgrouping by categorical variables didn't account for the noise above the dense line of data points, but there is still a clear, moderate correlation:
+
+<p align="center"><img src="/output/eda/age_vs_charges_nonsmokers.png" width="500"/></p>
+
 Looking at graph below plotting only data from smokers, there still seems to be two distinct groups. 
 
 <p align="center"><img src="/output/eda/age_vs_charges_smokers.png" width="500"/></p>
