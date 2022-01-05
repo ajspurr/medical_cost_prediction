@@ -16,7 +16,8 @@ Noticed bimodal distribution of charges in smokers. Attempted to subgroup by all
 <p align="center"><img src="/output/eda/smoker_dist_by_bmi.png" width="700"/></p>
 
 <p align="center"><img src="/output/eda/num_var_combined.png" width="900"/></p>
-<br><br>
+
+### Further exploration of Age vs. Charges relationship
 'Age vs. Charges' plot looks like three distinct groups. I tried subgrouping by all the categorical variables and found that smoking status explained the groups quite well. In the graph below, you can barely see the orange 'nonsmoker' line as it fits the data points so well.
 
 <p align="center"><img src="/output/eda/age_vs_charges_grp_smoking_status.png" width="500"/></p>
