@@ -568,7 +568,6 @@ pearson_bmi_charges_smokers = smokers_data.corr(method='pearson')['bmi'].loc['ch
 pearson_bmi_charges_nonsmokers = nonsmokers_data.corr(method='pearson')['bmi'].loc['charges'].round(2)
 
 g = sns.lmplot(x='bmi', y='charges', hue="smoker", data=dataset, legend=False)
-
 ax = g.axes[0,0]
 ax.legend(title='Smoker', loc='upper right')
 leg = ax.get_legend()
@@ -579,8 +578,8 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_bmi_charges_smokers)
 plt.title("BMI vs. Charges grouped by smoking status")
-#save_filename = 'bmi_vs_charges_grp_smoking'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+save_filename = 'bmi_vs_charges_grp_smoking'
+save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 # Other subgroupings don't yield anything helpful
@@ -590,17 +589,11 @@ plt.show()
 # Explore Children vs. Charges
 # =============================
 # Children vs. Charges with no obvious subgrouping
-sns.jointplot(x='children', y="charges", data = dataset, hue='smoker')
-plt.show()
-sns.jointplot(x='children', y="charges", data = dataset, kind='kde', hue='smoker')
-plt.show()
 sns.lmplot(x='children', y='charges', hue="smoker", data=dataset)
 plt.show()
 
 sns.lmplot(x='children', y='charges', hue="bmi_>=_30", data=dataset)
 plt.show()
-
-
 
 
 # =======================================================================================
@@ -614,6 +607,22 @@ plt.show()
 # Use pairplot to get a sense of relationship between numerical variables
 sns.pairplot(dataset)
 sns.pairplot(dataset, hue="smoker")
+sns.pairplot(dataset, hue="bmi_>=_30")
+sns.pairplot(dataset, hue="region")
+sns.pairplot(dataset, hue="sex")
+
+# Tried PaidGrid, but diagonal graph kde plots don't display properly due to inappropriate y-scale
+# Create an instance of the PairGrid class
+grid = sns.PairGrid(data=dataset, hue='smoker')
+grid = grid.map_upper(plt.scatter)
+#grid = grid.map_diag(sns.kdeplot, alpha=0.5)
+grid = grid.map_diag(plt.hist, alpha=0.5)
+grid = grid.map_lower(sns.kdeplot)
+grid = grid.add_legend()
+plt.show()
+
+
+
 
 # Find correlation between variables
 # np.trui sets all the values above a certain diagonal to 0, so we don't have redundant boxes
