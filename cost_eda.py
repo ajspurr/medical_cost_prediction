@@ -553,13 +553,9 @@ plt.show()
 
 
 
-
-
-
-
-
-
-
+# =============================
+# Explore BMI vs. Charges
+# =============================
 
 # More Exploration
 sns.jointplot(x='bmi', y="charges", data = dataset, hue='smoker')
@@ -569,12 +565,23 @@ plt.show()
 sns.lmplot(x='bmi', y='charges', hue="smoker", data=dataset)
 plt.show()
 
+
+
+
+# =============================
+# Explore BMI vs. Charges
+# =============================
+# Children vs. Charges with no obvious subgrouping
 sns.jointplot(x='children', y="charges", data = dataset, hue='smoker')
 plt.show()
 sns.jointplot(x='children', y="charges", data = dataset, kind='kde', hue='smoker')
 plt.show()
 sns.lmplot(x='children', y='charges', hue="smoker", data=dataset)
 plt.show()
+
+sns.lmplot(x='children', y='charges', hue="bmi_>=_30", data=dataset)
+plt.show()
+
 
 
 
