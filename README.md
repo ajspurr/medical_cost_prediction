@@ -9,5 +9,9 @@ In this analysis, I explore the Kaggle [Medical Cost Dataset](https://www.kaggle
 <p align="center"><img src="/output/eda/combined_cat_counts.png" width="900"/></p>
 
 <p align="center"><img src="/output/eda/cat_variables_vs_target.png" width="900"/></p>
+<br><br>
+Noticed bimodal distribution of charges in smokers. Attempted to subgroup by all other variables, found that BMI explained it well:
+<br>
+<p align="center"><img src="/output/eda/smoker_dist_by_bmi.png" width="900"/></p>
 
 <p align="center"><img src="/output/eda/num_var_combined.png" width="900"/></p>
