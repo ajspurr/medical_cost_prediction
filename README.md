@@ -80,3 +80,5 @@ I'm including ordinal variable 'children' in this analysis. After researching ho
   <img src="/output/eda/association_cat_variables.png" width="400"/>
   <img src="/output/eda/compare_sex_vs_region.png" width="400"/>
 </p>
+
+### Relationship Between Numerical and Categorical Variables
