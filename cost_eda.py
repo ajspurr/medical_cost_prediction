@@ -710,9 +710,9 @@ for col in range(len(cramers_df.columns)-1):
             sns.catplot(data=dataset, x=column_name, hue=row_name, kind="count", legend=False)
             plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title=row_name)
             plt.title(format_col(column_name) + ' vs. ' + format_col(row_name) + " (Cramer's=" + str(cramers_value) + ')')
-            #if col=='sex' and row=='region':
-                #save_filename = 'compare_' + column_name + '_vs_' + row_name
-                #save_image(output_dir, save_filename)
+            # if column_name=='sex' and row_name=='region':
+            #     save_filename = 'compare_' + column_name + '_vs_' + row_name
+            #     save_image(output_dir, save_filename)
             plt.show()
 
 # ==========================================================
@@ -741,17 +741,13 @@ def correlation_ratio(categories, measurements):
         eta = np.sqrt(numerator/denominator)
     return eta
 
-# Grab numerical data from original dataset so that I can impute values(correlation_ratio() cannot handle unknown values)
-num_df = dataset[numerical_cols]
-num_df = pd.DataFrame(SimpleImputer().fit_transform(num_df), columns=numerical_cols, index=dataset.index)
-
 # New dataframe to store results for each combination of numerical and categorical variables
-corr_ratio_df = pd.DataFrame(columns=num_df.columns, index=cat_cols_w_target)
+corr_ratio_df = pd.DataFrame(columns=num_cols_w_target, index=categorical_cols)
 
 # Loop through each paring of numerical and categorical variables, calculating the correlation ratio for each and storing in dataframe
 for col in corr_ratio_df.columns:
     for row in corr_ratio_df.index:
-        corr_ratio_df.loc[[row], [col]] = correlation_ratio(dataset[row], num_df[col])
+        corr_ratio_df.loc[[row], [col]] = correlation_ratio(dataset[row], dataset[col])
 
 # Values default to 'object' dtype, will convert to numeric
 corr_ratio_df = corr_ratio_df.apply(pd.to_numeric)
@@ -759,18 +755,19 @@ corr_ratio_df = corr_ratio_df.apply(pd.to_numeric)
 # Output results as heatmap
 sns.heatmap(corr_ratio_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
 plt.title("Correlation Ratio Between Numerical and Categorical Variables")
-#save_filename = 'correlation_cat_num_variables'
-#save_image(output_dir, save_filename)  
+save_filename = 'corr_ratio_cat_num_variables'
+save_image(output_dir, save_filename)  
 plt.show()
 
 # =============================
 # Further exploration correlation continuous and categorical variables
 # =============================
-# Plot boxplots of  continuous and categorical variables with correlation ratio > 0.3
+# Plot boxplots of  continuous and categorical variables with correlation ratio > 'corr_ratio_cutoff'
+corr_ratio_cutoff = 0.5
 for col in corr_ratio_df.columns:
     for row in corr_ratio_df.index:
         corr_value = corr_ratio_df.loc[[row], [col]].iat[0,0].round(2)
-        if corr_value > 0.3:
+        if corr_value > corr_ratio_cutoff:
             sns.boxplot(data=dataset, x=row, y=col)
             plt.title(format_col(col) + ' vs. ' + format_col(row) + ' (Corr Ratio=' + str(corr_value) + ')')
             #save_filename = 'relationship_' + col + '_' + row
