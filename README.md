@@ -54,3 +54,5 @@ No new insights were gained by subgrouping this relationship.
 ### Relationship Between Numerical Variables
 I created multiple graphs like the one below, each subgrouping by a different categorical variable. No obvious relationships were seen between numerical variables, with or without subgrouping (other than those noted above).
 <p align="center"><img src="/output/eda/relationship_num_var_by_sex.png" width="600"/></p>
+
+(Credit to Annie Guo's [article](https://anyi-guo.medium.com/correlation-pearson-vs-spearman-c15e581c12ce) on Pearson's vs. Spearman's correlation)
