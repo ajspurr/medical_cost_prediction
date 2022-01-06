@@ -72,3 +72,4 @@ Thus, the increase in correlation between children and charges is likely due to 
 
 
 ### Relationship Between Categorical Variables
+Including ordinal variable 'children' in this analysis. After researching how to measure association between ordinal and categorical variables, I found that it is not straightforward. There are multiple ways, including 'Freeman's Theta' which I was unable to find the formula for. So I will treat 'children' as a categorical variable for this part of the analysis. 
