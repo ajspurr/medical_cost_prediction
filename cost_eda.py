@@ -660,29 +660,6 @@ plt.show()
 
 # Spearman with improved correlation for children vs. charges (0.07 to 0.13) and in age vs. charges (0.3 to 0.53)
 
-# =============================
-# Further exploration correlation continuous variables
-# =============================
-# Since age has the highest correlation with other variables, will plot those relationships
-# Scatterplots and lineplots showing relationship between age and other continuous variables
-sns.scatterplot(data=dataset, x='age', y='bmi')
-plt.show()
-
-sns.lineplot(data=dataset, x='age', y='bmi')
-plt.title('Relationship Between Age and BMI')
-#save_filename = 'correlation_age_bmi'
-#save_image(output_dir, save_filename)  
-plt.show()
-
-sns.scatterplot(data=dataset, x='age', y='avg_glucose_level')
-plt.show()
-
-sns.lineplot(data=dataset, x='age', y='avg_glucose_level')
-plt.title('Relationship Between Age and Avg Glucose Level')
-#save_filename = 'correlation_age_avg_glucose_level'
-#save_image(output_dir, save_filename)  
-plt.show()
-
 # ==========================================================
 # Association between categorical variables
 # ==========================================================
@@ -701,7 +678,7 @@ def cramers_v(x, y):
     return np.sqrt(phi2corr/min((kcorr-1),(rcorr-1)))
 
 # New dataframe to store results for each combination of categorical variables
-cramers_df = pd.DataFrame(columns=cat_cols_w_target, index=cat_cols_w_target)
+cramers_df = pd.DataFrame(columns=cat_ord_cols, index=cat_ord_cols)
 
 # Loop through each paring of categorical variables, calculating the Cramer's V for each and storing in dataframe
 for col in cramers_df.columns:
@@ -714,26 +691,28 @@ cramers_df = cramers_df.apply(pd.to_numeric)
 # Output results as heatmap
 sns.heatmap(cramers_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
 plt.title("Association Between Categorical Variables (Cramér's V)")
-#save_filename = 'correlation_cat_variables'
-#save_image(output_dir, save_filename)  
+save_filename = 'association_cat_variables'
+save_image(output_dir, save_filename)  
 plt.show()
 
 # =============================
 # Further exploration association categorical variables
 # =============================
-# Plot catplots of categorical variables with correlation ratio > 0.29
+# Plot catplots of categorical variables with cramers > 'cramers_cutoff'
 # Loop through cramers_df diagonally to skip redundant pairings
+cramers_cutoff = -1
 for col in range(len(cramers_df.columns)-1):
-    for row in range(col+1, 8):
-        cramers_value = cramers_df.iloc[[row], [col]].iat[0,0].round(2)
-        if cramers_value > 0.29:
+    for row in range(col+1, len(cramers_df.columns)):
+        cramers_value = cramers_df.iloc[[row], [col]].iat[0,0].round(3)
+        if cramers_value > cramers_cutoff:
             column_name = cramers_df.columns[col]
             row_name = cramers_df.index[row]
             sns.catplot(data=dataset, x=column_name, hue=row_name, kind="count", legend=False)
             plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title=row_name)
             plt.title(format_col(column_name) + ' vs. ' + format_col(row_name) + " (Cramer's=" + str(cramers_value) + ')')
-            #save_filename = 'compare_' + column_name + '_vs_' + row_name
-            #save_image(output_dir, save_filename)
+            #if col=='sex' and row=='region':
+                #save_filename = 'compare_' + column_name + '_vs_' + row_name
+                #save_image(output_dir, save_filename)
             plt.show()
 
 # ==========================================================
