@@ -55,4 +55,11 @@ No new insights were gained by subgrouping this relationship.
 I created multiple graphs like the one below, each subgrouping by a different categorical variable. No obvious relationships were seen between numerical variables, with or without subgrouping (other than those noted above).
 <p align="center"><img src="/output/eda/relationship_num_var_by_sex.png" width="600"/></p>
 
+Heatmaps of both Pearson's and Spearman's correlation coefficients. Notably, using Spearman increased correlation between children and charges (0.07 to 0.13) and between age and charges (0.3 to 0.53). 
+
 (Credit to Annie Guo's [article](https://anyi-guo.medium.com/correlation-pearson-vs-spearman-c15e581c12ce) on Pearson's vs. Spearman's correlation)
+
+<p align="center">
+  <img src="/output/eda/corr_num_var_pearson.png" width="400"/>
+  <img src="/output/eda/corr_num_var_spearman.png" width="400"/>
+</p>
