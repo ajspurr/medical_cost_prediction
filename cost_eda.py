@@ -639,14 +639,14 @@ spearmans_df = dataset[num_cols_w_target].corr(method='spearman')
 
 sns.heatmap(pearsons_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
 plt.title('Correlation Numerical Variables (Pearson)')
-#save_filename = 'correlation_cont_variables'
-#save_image(output_dir, save_filename)  
+save_filename = 'corr_num_var_pearson'
+save_image(output_dir, save_filename)  
 plt.show()
 
 sns.heatmap(spearmans_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
 plt.title('Correlation Numerical Variables (Spearman)')
-#save_filename = 'correlation_cont_variables'
-#save_image(output_dir, save_filename)  
+save_filename = 'corr_num_var_spearman'
+save_image(output_dir, save_filename)  
 plt.show()
 
 # np.trui sets all the values above a certain diagonal to 0, so we don't have redundant boxes
