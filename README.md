@@ -84,4 +84,4 @@ I'm including ordinal variable 'children' in this analysis. After researching ho
 ### Relationship Between Numerical and Categorical Variables
 I used Correlation Ratio to measure the association betwee numerical and categorical variables (again, credit to Shaked Zychlinski). The only noteworthy correlation is between smoking status and charges, which we already discussed above.
 
-<p align="center"><img src="/output/eda/corr_ratio_cat_num_variables.png" width="900"/></p>
+<p align="center"><img src="/output/eda/corr_ratio_cat_num_variables.png" width="600"/></p>
