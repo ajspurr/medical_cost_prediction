@@ -74,7 +74,11 @@ Thus, the increase in correlation between children and charges is likely due to 
 ### Relationship Between Categorical Variables
 I'm including ordinal variable 'children' in this analysis. After researching how to measure association between ordinal and categorical variables, I found that it is not a straightforward task. There are multiple complicated methods, including calculating 'Freeman's Theta' which I was unable to find the formula for. So I will treat 'children' as a categorical variable for this part of the analysis. There associations were very weak, so I included a plot comparing two variables that had zero association according to Cramér's V. It does, indeed, look like this is no association. In researching the source of this data, it may be synthetic, which would explain this.
 
+(Credit to Shaked Zychlinski for explaining categorical correlation in [his article](https://towardsdatascience.com/the-search-for-categorical-correlation-a1cf7f1888c9))
+
 <p align="center">
   <img src="/output/eda/association_cat_variables.png" width="400"/>
   <img src="/output/eda/compare_sex_vs_region.png" width="400"/>
 </p>
+
+### Relationship Between Numerical and Categorical Variables
