@@ -59,7 +59,7 @@ Heatmaps of both Pearson's and Spearman's correlation coefficients displayed bel
 
 Spearman's correlation is rank-order, therefore the relationship between the variables doesn't need to be linear, but needs to be monotonic (both variables increasing or both decreasing, but not necessarily consistently, or at the same rate as each other). This makes it better than Pearson's for ordinal data. It is also better for data with non-Gaussian distributions and data with outliers. 
 
-Thus, the increase in correlation between children and charges is likely due to the fact that the variable 'children' consists of ordinal data. The increase in correlation between age and charges makes sense if you consider the points above the solid, dense line at the bottom of the scatter plot (in the 'Numerical Variable Exploration' graphs above) to be outliers. The decrease in correlation between BMI and charges may be due to the fact that BMI looks almost perfectly normally distributed, so it's better suited for Pearson's, although I don't know if a statistician would agree.
+Thus, the increase in correlation between children and charges is likely due to the fact that the variable 'children' consists of ordinal data. The increase in correlation between age and charges makes sense if you consider the points above the solid, dense line at the bottom of the scatter plot (shown below) to be outliers. The decrease in correlation between BMI and charges may be due to the fact that BMI looks almost perfectly normally distributed, so it's better suited for Pearson's, although I don't know if a statistician would agree.
 
 (Credit to Annie Guo's [article](https://anyi-guo.medium.com/correlation-pearson-vs-spearman-c15e581c12ce) on Pearson's vs. Spearman's correlation)
 
@@ -67,5 +67,8 @@ Thus, the increase in correlation between children and charges is likely due to 
   <img src="/output/eda/corr_num_var_pearson.png" width="400"/>
   <img src="/output/eda/corr_num_var_spearman.png" width="400"/>
 </p>
+
+<p align="center"><img src="/output/eda/scatter_num_var_vs_charges.png" width="900"/></p>
+
 
 ### Relationship Between Categorical Variables
