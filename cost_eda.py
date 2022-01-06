@@ -75,9 +75,12 @@ numerical_cols.remove('charges')
 cat_ord_cols = categorical_cols.copy()
 cat_ord_cols.append('children')
 
-# Create list of continuous variables for certain data visualizations
+# Create list of continuous variables with target and one without target
 cont_cols = numerical_cols.copy()
 cont_cols.remove('children')
+cont_cols_w_target = cont_cols.copy()
+cont_cols_w_target.append('charges')
+
 
 # ==========================================================
 # Feature engineering
@@ -402,7 +405,6 @@ save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 
-
 # ==========================================================
 # Further explore numerical variables and smoking
 # ==========================================================
@@ -601,17 +603,25 @@ plt.show()
 # =======================================================================================
 
 # ==========================================================
-# Correlation between continuous variables
+# Correlation between numerical variables
 # ==========================================================
 
-# Use pairplot to get a sense of relationship between numerical variables
+# =============================
+# Pairplots and PaidGrids to visualize relationships between numerical variables
+# =============================
+# Use pairplot to get a sense of relationships between numerical variables
 sns.pairplot(dataset)
 sns.pairplot(dataset, hue="smoker")
 sns.pairplot(dataset, hue="bmi_>=_30")
 sns.pairplot(dataset, hue="region")
-sns.pairplot(dataset, hue="sex")
 
-# Tried PaidGrid, but diagonal graph kde plots don't display properly due to inappropriate y-scale
+pp = sns.pairplot(dataset, hue="sex")
+pp.fig.suptitle("Relationship Between Numerical Variables", y=1.03, fontsize=24)
+save_filename = 'relationship_num_var_by_sex'
+save_image(output_dir, save_filename, bbox_inches='tight')
+plt.show()
+
+# Tried PairGrid, but diagonal graph kde plots don't display properly due to inappropriate y-scale
 # Create an instance of the PairGrid class
 grid = sns.PairGrid(data=dataset, hue='smoker')
 grid = grid.map_upper(plt.scatter)
@@ -621,24 +631,34 @@ grid = grid.map_lower(sns.kdeplot)
 grid = grid.add_legend()
 plt.show()
 
+# =============================
+# Correlation heatmaps
+# =============================
+pearsons_df = dataset[num_cols_w_target].corr(method='pearson')
+spearmans_df = dataset[num_cols_w_target].corr(method='spearman')
 
-
-
-# Find correlation between variables
-# np.trui sets all the values above a certain diagonal to 0, so we don't have redundant boxes
-matrix = np.triu(dataset[numerical_cols].corr()) 
-sns.heatmap(dataset[numerical_cols].corr(), annot=True, linewidth=.8, mask=matrix, cmap="rocket", vmin=0, vmax=1)
-plt.show()
-
-# You can also make a correlation matrix that includes the diagonal so that the color spectrum better 
-# represents the more extreme values
-sns.heatmap(dataset[numerical_cols].corr(), annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
-plt.title('Correlation Between Continuous Variables')
+sns.heatmap(pearsons_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
+plt.title('Correlation Numerical Variables (Pearson)')
 #save_filename = 'correlation_cont_variables'
 #save_image(output_dir, save_filename)  
 plt.show()
 
-# Age has the highest correlation with other continuous variables
+sns.heatmap(spearmans_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
+plt.title('Correlation Numerical Variables (Spearman)')
+#save_filename = 'correlation_cont_variables'
+#save_image(output_dir, save_filename)  
+plt.show()
+
+# np.trui sets all the values above a certain diagonal to 0, so we don't have redundant boxes
+matrix = np.triu(pearsons_df) 
+sns.heatmap(pearsons_df, annot=True, linewidth=.8, mask=matrix, cmap="Blues", vmin=0, vmax=1)
+plt.show()
+
+matrix = np.triu(spearmans_df) 
+sns.heatmap(spearmans_df, annot=True, linewidth=.8, mask=matrix, cmap="Blues", vmin=0, vmax=1)
+plt.show()
+
+# Spearman with improved correlation for children vs. charges (0.07 to 0.13) and in age vs. charges (0.3 to 0.53)
 
 # =============================
 # Further exploration correlation continuous variables
