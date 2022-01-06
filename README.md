@@ -55,11 +55,11 @@ No new insights were gained by subgrouping this relationship.
 I created multiple graphs like the one below, each subgrouping by a different categorical variable. No obvious relationships were seen between numerical variables, with or without subgrouping (other than those noted above).
 <p align="center"><img src="/output/eda/relationship_num_var_by_sex.png" width="600"/></p>
 
-Heatmaps of both Pearson's and Spearman's correlation coefficients. Notably, using Spearman increased correlation between children and charges (0.07 to 0.13) and between age and charges (0.3 to 0.53). It decreased correlation between BMI and charges (0.2 to 1.2). 
+Heatmaps of both Pearson's and Spearman's correlation coefficients displayed below. Notably, using Spearman increased correlation between children and charges (0.07 to 0.13) and between age and charges (0.3 to 0.53). It decreased correlation between BMI and charges (0.2 to 1.2). 
 
 Spearman's correlation is rank-order, therefore the relationship between the variables doesn't need to be linear, but needs to be monotonic (both variables increasing or both decreasing, but not necessarily consistently, or at the same rate as each other). This makes it better than Pearson's for ordinal data. It is also better for data with non-Gaussian distributions and data with outliers. 
 
-Thus, the increase in correlation between children and charges is likely due to the fact that the variable 'children' consists of ordinal data. The increase in correlation between age and charges makes sense if you consider the points above the solid, dense line at the bottom of the scatter plot (in the 'Numerical Variable Exploration graphs above) to be outliers. The decrease in correlation between BMI and charges may be due to the fact that BMI looks almost perfectly normally distributed, so it's better suited for Pearson's, although I don't know if a statistician would agree.
+Thus, the increase in correlation between children and charges is likely due to the fact that the variable 'children' consists of ordinal data. The increase in correlation between age and charges makes sense if you consider the points above the solid, dense line at the bottom of the scatter plot (in the 'Numerical Variable Exploration' graphs above) to be outliers. The decrease in correlation between BMI and charges may be due to the fact that BMI looks almost perfectly normally distributed, so it's better suited for Pearson's, although I don't know if a statistician would agree.
 
 (Credit to Annie Guo's [article](https://anyi-guo.medium.com/correlation-pearson-vs-spearman-c15e581c12ce) on Pearson's vs. Spearman's correlation)
 
@@ -67,3 +67,5 @@ Thus, the increase in correlation between children and charges is likely due to 
   <img src="/output/eda/corr_num_var_pearson.png" width="400"/>
   <img src="/output/eda/corr_num_var_spearman.png" width="400"/>
 </p>
+
+### Relationship Between Categorical Variables
