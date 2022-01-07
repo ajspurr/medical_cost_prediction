@@ -12,7 +12,10 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 
+import statsmodels.api as sm
 from statsmodels.tools.tools import add_constant
+from statsmodels.stats.diagnostic import het_white
+from statsmodels.stats.diagnostic import het_breuschpagan
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 from sklearn.linear_model import LinearRegression
@@ -190,6 +193,41 @@ def manual_preprocess(X_train, X_valid):
     
     return X_train_processed, X_valid_processed
 
+# Preprocessing of all indepedent variable data together (no train/test split) for use with statmodels (sm) data analysis
+def manual_preprocess_sm(X):
+    # =============================
+    # Numerical preprocessing
+    # =============================
+    X_num = X[numerical_cols]
+    
+    # Imputation (Not relevant in this dataset, but keeping for future application)
+    #num_imputer = SimpleImputer(strategy='mean')
+    #imputed_X_train_num = pd.DataFrame(num_imputer.fit_transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
+    #imputed_X_valid_num = pd.DataFrame(num_imputer.transform(X_valid_num), columns=X_valid_num.columns, index=X_valid_num.index)
+    
+    # Scaling
+    ss = StandardScaler()
+    scaled_X_num = pd.DataFrame(ss.fit_transform(X_num), columns=X_num.columns, index=X_num.index)
+    
+    # =============================
+    # Categorical preprocessing
+    # =============================
+    X_cat = X[categorical_cols]
+    
+    # Imputation (Not relevant in this dataset, but keeping for future application)
+    #cat_imputer = SimpleImputer(strategy='most_frequent')
+    #imputed_X_train_cat = pd.DataFrame(cat_imputer.fit_transform(X_train_cat), columns=X_train_cat.columns, index=X_train_cat.index)
+    #imputed_X_valid_cat = pd.DataFrame(cat_imputer.transform(X_valid_cat), columns=X_valid_cat.columns, index=X_valid_cat.index)
+    
+    # One-hot encoding
+    OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+    OH_X_cat = pd.DataFrame(OH_encoder.fit_transform(X_cat), index=X_cat.index, columns=OH_encoder.get_feature_names_out())
+    
+    # Add preprocessed categorical columns back to preprocessed numerical columns
+    X_processed = pd.concat([scaled_X_num, OH_X_cat], axis=1)
+    
+    return X_processed
+
 # ====================================================================================================================
 # Model evaluation function
 # ====================================================================================================================
@@ -237,8 +275,16 @@ def plot_model_metrics_combined(model_name, model_display_name, conmat, conmat_d
 def calculate_residuals(y_valid, y_pred):    
     return y_valid - y_pred
 
+def calulate_vif(data, numerical_cols):
+    # https://www.statology.org/multiple-linear-regression-assumptions/
+    # https://stackoverflow.com/questions/42658379/variance-inflation-factor-in-python
+    fxn_dataset = data[numerical_cols].copy()
+    fxn_dataset = add_constant(fxn_dataset)
+    vif = pd.Series([variance_inflation_factor(fxn_dataset.values, i) for i in range(fxn_dataset.shape[1])], index=fxn_dataset.columns)
+    return vif
+
 # ====================================================================================================================
-# Initial modeling with Multiple Linear Regression
+# Split and preprocess data
 # ====================================================================================================================
 # Separate target from predictors
 y = dataset['charges']
@@ -247,13 +293,14 @@ X = dataset.drop(['charges'], axis=1)
 # Divide data into training and validation subsets
 X_train, X_valid, y_train, y_valid = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
 
-# =======================================================================================
-# Initial multiple linear regression model
-# =======================================================================================
 # Preprocess data
 X_train_processed, X_valid_processed = manual_preprocess(X_train, X_valid)
 
-# Fit logistic regression model
+# ====================================================================================================================
+# Initial modeling with sklearn Multiple Linear Regression
+# ====================================================================================================================
+
+# Fit linear regression model
 lin_reg = LinearRegression()
 fit = lin_reg.fit(X_train_processed, y_train)
 
@@ -263,24 +310,20 @@ y_pred = lin_reg.predict(X_valid_processed)
 # Evaluate model
 lr_eval = evaluate_model(y_valid, y_pred, 'lin_reg', 'LR')
 
-# ==========================================================
+# =======================================================================================
 # Test multiple linear regression model assumptions
+# =======================================================================================
 # ==========================================================
-# =============================
 # Test for multicollinearity
-# =============================
+# ==========================================================
 # Calculate VIF
-# https://www.statology.org/multiple-linear-regression-assumptions/
-# https://stackoverflow.com/questions/42658379/variance-inflation-factor-in-python
-new_X = X.copy()
-new_X_num = new_X[numerical_cols]
-new_X_num = add_constant(new_X_num)
+vif = calulate_vif(dataset, numerical_cols)
 
-vif = pd.Series([variance_inflation_factor(new_X_num.values, i) for i in range(new_X_num.shape[1])], index=new_X_num.columns)
+# All very close to 1, no multicollinearity
 
-# =============================
+# ==========================================================
 # Test for heteroscedasticity
-# =============================
+# ==========================================================
 # Plot residuals vs. predicted values
 residuals = calculate_residuals(y_valid, y_pred)
 plt.scatter(y_pred, residuals)
@@ -291,13 +334,14 @@ plt.title('Residuals vs. Predicted Values')
 plt.show()
 
 # Tried to calculate 'standardized residuals' but didn't affect the distribution of data points
-# std = residuals.std()
-# mean = residuals.mean()
-# standardized_resid = (residuals - mean) / std
-# plt.scatter(y_pred, standardized_resid)
-# plt.ylabel('Standardized Residuals')
-# plt.xlabel('Predicted Values')
-# plt.show()
+std = residuals.std()
+mean = residuals.mean()
+standardized_resid = (residuals - mean) / std
+plt.scatter(y_pred, standardized_resid)
+plt.axhline(y=0, color='red', linestyle='--')
+plt.ylabel('Standardized Residuals')
+plt.xlabel('Predicted Values')
+plt.show()
 
 # Plot True Values vs. Predicted Values to visualize the data differently
 fig = plt.scatter(y_valid, y_pred)
@@ -311,6 +355,66 @@ plt.xlabel('True Values')
 plt.show()
 
 
+# =============================
+# Using statsmodels Multiple Linear Regression to test for heteroscedasticity
+# =============================
+# https://datatofish.com/multiple-linear-regression-python/
+
+# This is just to test for heteroscedasticity in entire data set, will not perform train/test split
+sm_processed_X = manual_preprocess_sm(X)
+
+# Add constant (required for statsmodels linear regression model)
+sm_processed_X = sm.add_constant(sm_processed_X)
+
+# Fit linear regression model
+sm_lin_reg = sm.OLS(y, sm_processed_X).fit()
+
+# Make predictions
+sm_y_pred = sm_lin_reg.predict(sm_processed_X) 
+
+# Plot residuals vs. predicted values
+plt.scatter(sm_y_pred, sm_lin_reg.resid)
+plt.axhline(y=0, color='red', linestyle='--')
+plt.ylabel('SM Residuals')
+plt.xlabel('SM Predicted Values')
+plt.title('SM Residuals vs. Predicted Values')
+plt.show()
+
+# Plot standardized residuals vs. predicted values
+standardized_residuals = sm_lin_reg.get_influence().resid_studentized_internal
+plt.scatter(sm_y_pred, standardized_residuals)
+plt.axhline(y=0, color='red', linestyle='--')
+plt.ylabel('SM Residuals (standardized)')
+plt.xlabel('SM Predicted Values')
+plt.title('SM Residuals (standardized) vs. Predicted Values')
+plt.show()
+
+# Plot True Values vs. Predicted Values to visualize the data differently
+fig = plt.scatter(y, sm_y_pred)
+plt.xlim([0, 50000])
+plt.ylim([0, 50000])
+ax = fig.axes
+plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
+plt.title('SM True Values vs. Predicted Values')
+plt.ylabel('SM Predicted Values')
+plt.xlabel('True Values')
+plt.show()
+
+# Model Summary
+sm_results = sm_lin_reg.summary()
+
+# Quantify Heteroscedasticity using White test and Breusch-Pagan test
+# https://medium.com/@remycanario17/tests-for-heteroskedasticity-in-python-208a0fdb04ab
+# https://www.statology.org/breusch-pagan-test/
+white_test = het_white(sm_lin_reg.resid, sm_lin_reg.model.exog)
+bp_test = het_breuschpagan(sm_lin_reg.resid, sm_lin_reg.model.exog)
+
+labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
+white_test_results = dict(zip(labels, bp_test))
+bp_test_results = dict(zip(labels, white_test))
+
+# Both have a p-value <<< 0.05, indicating presence of heteroscedasticity
+
 
 # =============================
 # Other stuff
@@ -319,6 +423,16 @@ lin_reg.coef_
 lin_reg.intercept_
 
 lin_reg.score(X_train_processed, y_train)
+
+
+
+
+
+
+
+
+
+
 
 
 
