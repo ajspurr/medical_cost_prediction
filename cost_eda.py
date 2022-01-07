@@ -216,6 +216,7 @@ for col in cat_ord_cols:
     plt.legend()   
     plt.show()
 
+
 # =============================
 # Combine categorical variable relationships with target into one figure
 # =============================
@@ -255,8 +256,9 @@ for col in cat_ord_cols:
     # Change y-label axis tick rotation to save space
     if col == 'children':
         plt.setp(axis2.get_yticklabels(), rotation=65, verticalalignment='center')
+        print(axis2.get_yticklabels())
             
-    # Only want to label the y-axis on the first subplot of each row
+    # Only want to label the y-axis on the first subplot of bottom row
     if i != 0:
         axis2.set_ylabel('')
 
@@ -265,8 +267,8 @@ for col in cat_ord_cols:
 # Finalize figure formatting and export
 fig.suptitle('Categorical Variable Relationships with Target', fontsize=26)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'cat_variables_vs_target'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+save_filename = 'cat_variables_vs_target'
+save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 # =============================
@@ -274,12 +276,11 @@ plt.show()
 # =============================
 # List of all categorical variables, including the new 'bmi_>=_30'
 violin_cat_vars = cat_ord_cols.copy()
-violin_cat_vars.append('bmi_>=_30')
 
 # List of all categorical variables which are dichotomous (violin plot can only have two hues values)
 violin_cat_vars_2_val = ['sex', 'smoker', 'bmi_>=_30']
 
-for cat_var1 in violin_cat_vars:
+for cat_var1 in cat_ord_cols:
     for cat_var2 in violin_cat_vars_2_val:
         if cat_var1 != cat_var2:
             sns.violinplot(x=cat_var1, y='charges', data=dataset, split=True, hue=cat_var2)
@@ -288,7 +289,7 @@ for cat_var1 in violin_cat_vars:
 # Combine all violin plots info one figure
 fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=3, num_cols=4, figsize=(16, 8))
 i = 0
-for cat_var1 in violin_cat_vars:
+for cat_var1 in cat_ord_cols:
     for cat_var2 in violin_cat_vars_2_val:
         if cat_var1 != cat_var2:
             axis = ax_array_flat[i]
