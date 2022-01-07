@@ -7,9 +7,14 @@ In this analysis, I explore the Kaggle [Medical Cost Dataset](https://www.kaggle
 
 <p align="center"><img src="/output/eda/hist_charges.png" width="400"/></p>
 
+Summary of categorical variables. 'BMI >= 30' was added retroactively after finding its importance in the original EDA.
 <p align="center"><img src="/output/eda/combined_cat_counts.png" width="900"/></p>
 
 <p align="center"><img src="/output/eda/cat_variables_vs_target.png" width="900"/></p>
+
+Violin plots to visualize relationship of all categorical variables to dichotomous categorical variables.
+<p align="center"><img src="/output/eda/violin_cat_var.png" width="900"/></p>
+
 <br><br>
 Noticed bimodal distribution of charges in smokers. Attempted to subgroup by all other variables, found that BMI explained it well:
 <br><br>
