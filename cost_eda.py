@@ -274,14 +274,11 @@ plt.show()
 # =============================
 # Violin plots to better visualize distribution of charges subgrouped by all categorical variables
 # =============================
-# List of all categorical variables, including the new 'bmi_>=_30'
-violin_cat_vars = cat_ord_cols.copy()
-
 # List of all categorical variables which are dichotomous (violin plot can only have two hues values)
-violin_cat_vars_2_val = ['sex', 'smoker', 'bmi_>=_30']
+cat_col_2_val = ['sex', 'smoker', 'bmi_>=_30']
 
 for cat_var1 in cat_ord_cols:
-    for cat_var2 in violin_cat_vars_2_val:
+    for cat_var2 in cat_col_2_val:
         if cat_var1 != cat_var2:
             sns.violinplot(x=cat_var1, y='charges', data=dataset, split=True, hue=cat_var2)
             plt.show()
@@ -290,7 +287,7 @@ for cat_var1 in cat_ord_cols:
 fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=3, num_cols=4, figsize=(16, 8))
 i = 0
 for cat_var1 in cat_ord_cols:
-    for cat_var2 in violin_cat_vars_2_val:
+    for cat_var2 in cat_col_2_val:
         if cat_var1 != cat_var2:
             axis = ax_array_flat[i]
             sns.violinplot(x=cat_var1, y='charges', data=dataset, split=True, hue=cat_var2, ax=axis)
@@ -299,8 +296,8 @@ for cat_var1 in cat_ord_cols:
 
 fig.suptitle('Categorical Variable Violin Plots', fontsize=26)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'cat_variables_vs_target'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+save_filename = 'violin_cat_var'
+save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()            
 
 # =============================
@@ -317,15 +314,12 @@ sns.kdeplot(data=smokers_data, x='charges', shade=True, ax=axis1)
 axis1.set_title('Distribution of Charges in Smokers', fontsize=16, y=1.04)
 axis1.set_xlabel('Charges')
 
-# After exploring multiple variables, found that BMI could explain the bimodal distribution
-
 # Distribution of Charges in Smokers by BMI
-mean_bmi = smokers_data['bmi'].mean()
 axis2 = ax_array_flat[1]
-sns.kdeplot(data=smokers_data[smokers_data['bmi'] < mean_bmi], x='charges', 
-            shade=True, alpha=1, label='BMI < avg (30.7)', ax=axis2)
-sns.kdeplot(data=smokers_data[smokers_data['bmi'] > mean_bmi], x='charges', 
-            shade=True, alpha=0.5, label='BMI > avg', ax=axis2)
+sns.kdeplot(data=smokers_data[smokers_data['bmi_>=_30'] == 'no'], x='charges', 
+            shade=True, alpha=1, label='BMI < 30', ax=axis2)
+sns.kdeplot(data=smokers_data[smokers_data['bmi_>=_30'] == 'yes'], x='charges', 
+            shade=True, alpha=0.5, label='BMI >= 30', ax=axis2)
 axis2.legend() 
 axis2.set_title('Distribution of Charges in Smokers (by BMI)', fontsize=16, y=1.04)
 axis2.set_xlabel('Charges')
