@@ -5,13 +5,23 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import PureWindowsPath, Path
 
-from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
+from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
+from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
-from imblearn.pipeline import Pipeline as Pipeline_imb
+from sklearn.preprocessing import StandardScaler
+
+from statsmodels.tools.tools import add_constant
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+from sklearn.linear_model import LinearRegression
+
+from sklearn.metrics import r2_score
+from sklearn.metrics import max_error
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import median_absolute_error
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
@@ -50,9 +60,6 @@ cont_cols = numerical_cols.copy()
 cont_cols.remove('children')
 cont_cols_w_target = cont_cols.copy()
 cont_cols_w_target.append('charges')
-
-# Will copy original dataframe to new dataframe for preprocessing
-new_df = dataset.copy()
 
 # ====================================================================================================================
 # Feature engineering
@@ -124,7 +131,7 @@ def create_pipeline(model_name, model):
     
     # Preprocessing for categorical data
     categorical_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='most_frequent')), # Not relevant in this dataset, but keeping for future application
+        ('imputer', SimpleImputer(strategy='most_frequent')), 
         ('onehot', OneHotEncoder(handle_unknown='ignore', sparse=False))
     ])
     
@@ -151,15 +158,15 @@ def manual_preprocess(X_train, X_valid):
     X_train_num = X_train[numerical_cols]
     X_valid_num = X_valid[numerical_cols]
     
-    # Imputation (default strategy='mean')
-    num_imputer = SimpleImputer()
-    imputed_X_train_num = pd.DataFrame(num_imputer.fit_transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
-    imputed_X_valid_num = pd.DataFrame(num_imputer.transform(X_valid_num), columns=X_valid_num.columns, index=X_valid_num.index)
+    # Imputation (Not relevant in this dataset, but keeping for future application)
+    #num_imputer = SimpleImputer(strategy='mean')
+    #imputed_X_train_num = pd.DataFrame(num_imputer.fit_transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
+    #imputed_X_valid_num = pd.DataFrame(num_imputer.transform(X_valid_num), columns=X_valid_num.columns, index=X_valid_num.index)
     
     # Scaling
     ss = StandardScaler()
-    imputed_scaled_X_train_num = pd.DataFrame(ss.fit_transform(imputed_X_train_num), columns=X_train_num.columns, index=X_train_num.index)
-    imputed_scaled_X_valid_num = pd.DataFrame(ss.transform(imputed_X_valid_num), columns=X_valid_num.columns, index=X_valid_num.index)
+    scaled_X_train_num = pd.DataFrame(ss.fit_transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
+    scaled_X_valid_num = pd.DataFrame(ss.transform(X_valid_num), columns=X_valid_num.columns, index=X_valid_num.index)
     
     # =============================
     # Categorical preprocessing
@@ -167,19 +174,19 @@ def manual_preprocess(X_train, X_valid):
     X_train_cat = X_train[categorical_cols]
     X_valid_cat = X_valid[categorical_cols]
     
-    # Imputation
-    cat_imputer = SimpleImputer(strategy='most_frequent')
-    imputed_X_train_cat = pd.DataFrame(cat_imputer.fit_transform(X_train_cat), columns=X_train_cat.columns, index=X_train_cat.index)
-    imputed_X_valid_cat = pd.DataFrame(cat_imputer.transform(X_valid_cat), columns=X_valid_cat.columns, index=X_valid_cat.index)
+    # Imputation (Not relevant in this dataset, but keeping for future application)
+    #cat_imputer = SimpleImputer(strategy='most_frequent')
+    #imputed_X_train_cat = pd.DataFrame(cat_imputer.fit_transform(X_train_cat), columns=X_train_cat.columns, index=X_train_cat.index)
+    #imputed_X_valid_cat = pd.DataFrame(cat_imputer.transform(X_valid_cat), columns=X_valid_cat.columns, index=X_valid_cat.index)
     
     # One-hot encoding
     OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
-    OH_cols_train = pd.DataFrame(OH_encoder.fit_transform(imputed_X_train_cat), index=X_train_cat.index, columns=OH_encoder.get_feature_names_out())
-    OH_cols_valid = pd.DataFrame(OH_encoder.transform(imputed_X_valid_cat), index=X_valid_cat.index, columns=OH_encoder.get_feature_names_out())
+    OH_cols_train = pd.DataFrame(OH_encoder.fit_transform(X_train_cat), index=X_train_cat.index, columns=OH_encoder.get_feature_names_out())
+    OH_cols_valid = pd.DataFrame(OH_encoder.transform(X_valid_cat), index=X_valid_cat.index, columns=OH_encoder.get_feature_names_out())
     
     # Add preprocessed categorical columns back to preprocessed numerical columns
-    X_train_processed = pd.concat([imputed_scaled_X_train_num, OH_cols_train], axis=1)
-    X_valid_processed = pd.concat([imputed_scaled_X_valid_num, OH_cols_valid], axis=1)
+    X_train_processed = pd.concat([scaled_X_train_num, OH_cols_train], axis=1)
+    X_valid_processed = pd.concat([scaled_X_valid_num, OH_cols_valid], axis=1)
     
     return X_train_processed, X_valid_processed
 
@@ -188,10 +195,29 @@ def manual_preprocess(X_train, X_valid):
 # ====================================================================================================================
 # Parameter 'model_name' will be used for coding and saving images
 # Parameter 'model_display_name' will be used for plot labels
-def evaluate_model(X_train, X_valid, y_train, y_valid, y_pred, pipeline_or_model, model_name, 
-                   model_display_name, create_graphs=True, combine_graphs=True, export_graphs=False, round_results=3):  
+
+# def evaluate_model(X_train, X_valid, y_train, y_valid, y_pred, pipeline_or_model, model_name, 
+#                    model_display_name, create_graphs=True, combine_graphs=True, export_graphs=False, round_results=3): 
     
-    return
+def evaluate_model(y_valid, y_pred, model_name, model_display_name, create_graphs=True, 
+                   combine_graphs=True, export_graphs=False, round_results=2):      
+    metrics = {}
+    metrics['max_e'] = max_error(y_valid, y_pred).round(round_results)
+    metrics['mean_abs_e'] = mean_absolute_error(y_valid, y_pred).round(round_results)
+    metrics['mse'] = mean_squared_error(y_valid, y_pred).round(round_results)
+    metrics['rmse'] = np.sqrt(metrics['mse']).round(round_results)
+    metrics['med_abs_e'] = median_absolute_error(y_valid, y_pred).round(round_results)
+    metrics['r2'] = r2_score(y_valid, y_pred).round(round_results)
+    
+    print(model_display_name + ' Evaluation')
+    print('Max Error: ' + str(metrics['max_e']))
+    print('Mean Absolute Error: ' + str(metrics['mean_abs_e']))
+    print('Mean Squared Error: ' + str(metrics['mse']))
+    print('Root Mean Squared Error: ' + str(metrics['rmse']))
+    print('Median Absolute Error: ' + str(metrics['med_abs_e']))
+    print('R-squared: ' + str(metrics['r2']))
+    return metrics
+
 
 # Takes evalution metrics from evaluate_model() and plots confusion matrix, ROC, PRC, and precision/recall vs. threshold
 # Parameter 'model_name' will be used for coding and saving images
@@ -208,41 +234,91 @@ def plot_model_metrics_combined(model_name, model_display_name, conmat, conmat_d
 
     return
     
-
+def calculate_residuals(y_valid, y_pred):    
+    return y_valid - y_pred
 
 # ====================================================================================================================
-# Initial modeling of imbalanced data with Logistic Regression
-# Compare with two methods of rectifying imblanced data (weighted logistic regression and SMOTE)
+# Initial modeling with Multiple Linear Regression
 # ====================================================================================================================
 # Separate target from predictors
-y = new_df['stroke']
-X = new_df.drop(['stroke'], axis=1)
+y = dataset['charges']
+X = dataset.drop(['charges'], axis=1)
 
 # Divide data into training and validation subsets
 X_train, X_valid, y_train, y_valid = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
 
-# =============================
-# Model with logistic regression without accounting for target imbalance
-# =============================
+# =======================================================================================
+# Initial multiple linear regression model
+# =======================================================================================
 # Preprocess data
 X_train_processed, X_valid_processed = manual_preprocess(X_train, X_valid)
 
 # Fit logistic regression model
-log_reg = LogisticRegression(random_state=15)
-fit = log_reg.fit(X_train_processed, y_train)
+lin_reg = LinearRegression()
+fit = lin_reg.fit(X_train_processed, y_train)
 
 # Make predictions
-y_pred = log_reg.predict(X_valid_processed)
+y_pred = lin_reg.predict(X_valid_processed)
 
 # Evaluate model
-results, conf_mat = evaluate_model(X_train_processed, X_valid_processed, y_train, y_valid, y_pred, log_reg, 'log_reg', 'Log Reg')
+lr_eval = evaluate_model(y_valid, y_pred, 'lin_reg', 'LR')
+
+# ==========================================================
+# Test multiple linear regression model assumptions
+# ==========================================================
+# =============================
+# Test for multicollinearity
+# =============================
+# Calculate VIF
+# https://www.statology.org/multiple-linear-regression-assumptions/
+# https://stackoverflow.com/questions/42658379/variance-inflation-factor-in-python
+new_X = X.copy()
+new_X_num = new_X[numerical_cols]
+new_X_num = add_constant(new_X_num)
+
+vif = pd.Series([variance_inflation_factor(new_X_num.values, i) for i in range(new_X_num.shape[1])], index=new_X_num.columns)
+
+# =============================
+# Test for heteroscedasticity
+# =============================
+# Plot residuals vs. predicted values
+residuals = calculate_residuals(y_valid, y_pred)
+plt.scatter(y_pred, residuals)
+plt.axhline(y=0, color='red', linestyle='--')
+plt.ylabel('Residuals')
+plt.xlabel('Predicted Values')
+plt.title('Residuals vs. Predicted Values')
+plt.show()
+
+# Tried to calculate 'standardized residuals' but didn't affect the distribution of data points
+# std = residuals.std()
+# mean = residuals.mean()
+# standardized_resid = (residuals - mean) / std
+# plt.scatter(y_pred, standardized_resid)
+# plt.ylabel('Standardized Residuals')
+# plt.xlabel('Predicted Values')
+# plt.show()
+
+# Plot True Values vs. Predicted Values to visualize the data differently
+fig = plt.scatter(y_valid, y_pred)
+plt.xlim([0, 50000])
+plt.ylim([0, 50000])
+ax = fig.axes
+plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
+plt.title('True Values vs. Predicted Values')
+plt.ylabel('Predicted Values')
+plt.xlabel('True Values')
+plt.show()
 
 
 
+# =============================
+# Other stuff
+# =============================
+lin_reg.coef_
+lin_reg.intercept_
 
-
-
-
+lin_reg.score(X_train_processed, y_train)
 
 
 
