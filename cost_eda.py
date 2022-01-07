@@ -166,7 +166,7 @@ for col in cat_ord_cols:
 # Combine into one figure
 # =============================
 # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=4, figsize=(10, 4))
+fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=5, figsize=(12, 4))
 
 # Loop through categorical variables, plotting each in the figure
 i = 0
@@ -183,13 +183,15 @@ for col in cat_ord_cols:
     # Only want to label the y-axis on the first subplot of each row
     if i != 0:
         axis.set_ylabel('')
+    else:
+        axis.set_ylabel('Count')
     i += 1
 
 # Finalize figure formatting and export
-fig.suptitle('Categorical Variable Counts', fontsize=16)
+fig.suptitle('Categorical Variable Counts', fontsize=18)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'combined_cat_counts'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+save_filename = 'combined_cat_counts'
+save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 
@@ -218,7 +220,7 @@ for col in cat_ord_cols:
 # Combine categorical variable relationships with target into one figure
 # =============================
 # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=2, num_cols=4, figsize=(16, 8))
+fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=2, num_cols=5, figsize=(18, 8))
 
 # Loop through categorical variables, plotting each in the figure
 i = 0
@@ -230,8 +232,12 @@ for col in cat_ord_cols:
     axis1.set_ylabel(format_col(col))
     axis1.set_xlabel('Charges')
     
+    # Change y-label axis tick rotation to save space
+    if col == 'region':
+        plt.setp(axis1.get_yticklabels(), rotation=65, verticalalignment='center')
+    
     # Distributions
-    axis2 = ax_array_flat[i+4]
+    axis2 = ax_array_flat[i+len(cat_ord_cols)]
     alpha_increment = 1 / len(dataset[col].unique())
     alpha = 1
     
@@ -245,6 +251,10 @@ for col in cat_ord_cols:
     axis2.set_title('Distribution of Charges by ' + format_col(col), y=1.04)
     axis2.set_xlabel('Charges')
     axis2.legend() 
+    
+    # Change y-label axis tick rotation to save space
+    if col == 'children':
+        plt.setp(axis2.get_yticklabels(), rotation=65, verticalalignment='center')
             
     # Only want to label the y-axis on the first subplot of each row
     if i != 0:
@@ -255,8 +265,8 @@ for col in cat_ord_cols:
 # Finalize figure formatting and export
 fig.suptitle('Categorical Variable Relationships with Target', fontsize=26)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'cat_variables_vs_target'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'cat_variables_vs_target'
+#save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 # =============================
