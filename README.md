@@ -7,7 +7,7 @@ In this analysis, I explore the Kaggle [Medical Cost Dataset](https://www.kaggle
 
 <p align="center"><img src="/output/eda/hist_charges.png" width="400"/></p>
 
-Summary of categorical variables. 'BMI >= 30' was added retroactively after finding its importance in the original EDA.
+Summary of categorical variables. 'BMI >= 30' was added retroactively after finding its importance in the original EDA (in relation to smoking status).
 <p align="center"><img src="/output/eda/combined_cat_counts.png" width="900"/></p>
 
 <p align="center"><img src="/output/eda/cat_variables_vs_target.png" width="900"/></p>
