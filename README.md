@@ -82,7 +82,7 @@ I'm including ordinal variable 'children' in this analysis. After researching ho
 (Credit to Shaked Zychlinski for explaining categorical correlation in [his article](https://towardsdatascience.com/the-search-for-categorical-correlation-a1cf7f1888c9))
 
 <p align="center">
-  <img src="/output/eda/association_cat_variables.png" width="400"/>
+  <img src="/output/eda/association_cat_variables.png" width="500"/>
   <img src="/output/eda/compare_sex_vs_region.png" width="400"/>
 </p>
 
