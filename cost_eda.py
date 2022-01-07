@@ -94,6 +94,10 @@ dataset['bmi_>=_30'] = dataset['bmi'] >= 30
 bmi_dict = {False:'no', True:'yes'}
 dataset['bmi_>=_30'] = dataset['bmi_>=_30'].map(bmi_dict)
 
+# Add the new feature to the columns lists
+categorical_cols.append('bmi_>=_30')
+cat_ord_cols.append('bmi_>=_30')
+
 # =======================================================================================
 # Visualize data
 # =======================================================================================
@@ -254,6 +258,38 @@ save_filename = 'cat_variables_vs_target'
 save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
+# =============================
+# Violin plots to better visualize distribution of charges subgrouped by all categorical variables
+# =============================
+# List of all categorical variables, including the new 'bmi_>=_30'
+violin_cat_vars = cat_ord_cols.copy()
+violin_cat_vars.append('bmi_>=_30')
+
+# List of all categorical variables which are dichotomous (violin plot can only have two hues values)
+violin_cat_vars_2_val = ['sex', 'smoker', 'bmi_>=_30']
+
+for cat_var1 in violin_cat_vars:
+    for cat_var2 in violin_cat_vars_2_val:
+        if cat_var1 != cat_var2:
+            sns.violinplot(x=cat_var1, y='charges', data=dataset, split=True, hue=cat_var2)
+            plt.show()
+            
+# Combine all violin plots info one figure
+fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=3, num_cols=4, figsize=(16, 8))
+i = 0
+for cat_var1 in violin_cat_vars:
+    for cat_var2 in violin_cat_vars_2_val:
+        if cat_var1 != cat_var2:
+            axis = ax_array_flat[i]
+            sns.violinplot(x=cat_var1, y='charges', data=dataset, split=True, hue=cat_var2, ax=axis)
+            print(i)
+            i+=1
+
+fig.suptitle('Categorical Variable Violin Plots', fontsize=26)
+fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+#save_filename = 'cat_variables_vs_target'
+#save_image(output_dir, save_filename, bbox_inches='tight')
+plt.show()            
 
 # =============================
 # Further exploration bimodal distribution of smokers
