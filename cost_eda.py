@@ -1,11 +1,10 @@
-import pandas as pd
 import numpy as np
-import scipy.stats as ss
+import pandas as pd
 from os import chdir
-from pathlib import PureWindowsPath, Path
 import seaborn as sns 
+import scipy.stats as ss
 import matplotlib.pyplot as plt
-from sklearn.impute import SimpleImputer
+from pathlib import PureWindowsPath, Path
 
 # Read in data
 project_dir = PureWindowsPath(r"D:\GitHubProjects\medical_cost_prediction\\")
@@ -328,8 +327,8 @@ axis2.set_ylabel('')
 # Finalize figure formatting and export
 #fig.suptitle('Exploration Bimodal Distribution of Charges in Smokers', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'smoker_dist_by_bmi'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+save_filename = 'smoker_dist_by_bmi'
+save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 
