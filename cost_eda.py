@@ -116,6 +116,7 @@ formatted_cols = {}
 for col in dataset.columns:
     formatted_cols[col] = col.replace('_', ' ').title()
 formatted_cols['bmi'] = 'BMI'
+formatted_cols['bmi_>=_30'] = 'BMI >= 30'
 
 # Function returning the formatted version of column name
 def format_col(col_name):
