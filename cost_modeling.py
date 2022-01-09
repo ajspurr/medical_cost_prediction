@@ -135,7 +135,7 @@ def create_pipeline(model_name, model):
     # Preprocessing for categorical data
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(strategy='most_frequent')), 
-        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse=False))
+        ('onehot', OneHotEncoder(handle_unknown='ignore', drop='first', sparse=False))
     ])
     
     # Bundle preprocessing for numerical and categorical data
@@ -183,7 +183,7 @@ def manual_preprocess(X_train, X_valid):
     #imputed_X_valid_cat = pd.DataFrame(cat_imputer.transform(X_valid_cat), columns=X_valid_cat.columns, index=X_valid_cat.index)
     
     # One-hot encoding
-    OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+    OH_encoder = OneHotEncoder(handle_unknown='ignore', drop='first', sparse=False)
     OH_cols_train = pd.DataFrame(OH_encoder.fit_transform(X_train_cat), index=X_train_cat.index, columns=OH_encoder.get_feature_names_out())
     OH_cols_valid = pd.DataFrame(OH_encoder.transform(X_valid_cat), index=X_valid_cat.index, columns=OH_encoder.get_feature_names_out())
     
@@ -220,7 +220,7 @@ def manual_preprocess_sm(X):
     #imputed_X_valid_cat = pd.DataFrame(cat_imputer.transform(X_valid_cat), columns=X_valid_cat.columns, index=X_valid_cat.index)
     
     # One-hot encoding
-    OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+    OH_encoder = OneHotEncoder(handle_unknown='ignore', drop='first', sparse=False)
     OH_X_cat = pd.DataFrame(OH_encoder.fit_transform(X_cat), index=X_cat.index, columns=OH_encoder.get_feature_names_out())
     
     # Add preprocessed categorical columns back to preprocessed numerical columns
@@ -355,9 +355,9 @@ plt.xlabel('True Values')
 plt.show()
 
 
-# =============================
+# ==========================================================
 # Using statsmodels Multiple Linear Regression to test for heteroscedasticity
-# =============================
+# ==========================================================
 # https://datatofish.com/multiple-linear-regression-python/
 
 # This is just to test for heteroscedasticity in entire data set, will not perform train/test split
@@ -400,6 +400,51 @@ plt.ylabel('SM Predicted Values')
 plt.xlabel('True Values')
 plt.show()
 
+
+# =============================
+# Subgroup plots
+# =============================
+# Organize relevant data
+standardized_residuals = pd.DataFrame(sm_lin_reg.get_influence().resid_studentized_internal)
+standardized_residuals.columns = ['stand_resid']
+relevant_data = pd.concat([dataset[['bmi_>=_30', 'smoker', 'charges']], sm_y_pred, standardized_residuals], axis=1)
+relevant_data = relevant_data.rename(columns = {'charges':'y', 0:'y_pred'})
+
+smoker_data = relevant_data[relevant_data['smoker']=='yes']
+nonsmoker_data = relevant_data[relevant_data['smoker']=='no']
+smoker_obese_data = smoker_data[smoker_data['bmi_>=_30']=='yes']
+smoker_nonobese_data = smoker_data[smoker_data['bmi_>=_30']=='no']
+nonsmoker_obese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='yes']
+nonsmoker_nonobese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='no']
+
+# True Values vs. Predicted Values subgrouped by smoking and bmi
+plt.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
+plt.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
+plt.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
+plt.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
+largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
+plt.plot([0, largest_num], [0, largest_num], color='darkblue', linestyle='--')
+plt.title('SM True Values vs. Predicted Values')
+plt.ylabel('SM Predicted Values')
+plt.xlabel('True Values')
+plt.legend()
+plt.show()
+
+# Plot standardized residuals vs. predicted values subgrouped by smoking and bmi
+plt.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
+plt.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
+plt.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
+plt.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
+plt.axhline(y=0, color='red', linestyle='--')
+plt.ylabel('SM Residuals (standardized)')
+plt.xlabel('SM Predicted Values')
+plt.title('SM Residuals (standardized) vs. Predicted Values')
+plt.legend()
+plt.show()
+
+# =============================
+# Quantify Heteroscedasticity
+# =============================
 # Model Summary
 sm_results = sm_lin_reg.summary()
 
@@ -415,14 +460,243 @@ bp_test_results = dict(zip(labels, white_test))
 
 # Both have a p-value <<< 0.05, indicating presence of heteroscedasticity
 
+# =============================
+# Subgroup plots and quantify heteroscedasticity function
+# =============================
+
+def subgroup_quantify_heteroscedasticity(sm_lr_model, orig_dataset, sm_y_pred, sm_y, plot_title):
+    # Organize relevant data
+    standardized_residuals = pd.DataFrame(sm_lr_model.get_influence().resid_studentized_internal)
+    standardized_residuals.columns = ['stand_resid']
+    #relevant_data = pd.concat([orig_dataset[['bmi_>=_30', 'smoker', 'charges']], sm_y_pred, standardized_residuals], axis=1)
+    y_pred_series = pd.Series(sm_y_pred, name='y_pred')
+    y_series = pd.Series(sm_y, name='y')
+    relevant_data = pd.concat([orig_dataset[['bmi_>=_30', 'smoker']], y_series, y_pred_series, standardized_residuals], axis=1)
+    #relevant_data = relevant_data.rename(columns = {'charges':'y', 0:'y_pred'})
+    
+    smoker_data = relevant_data[relevant_data['smoker']=='yes']
+    nonsmoker_data = relevant_data[relevant_data['smoker']=='no']
+    smoker_obese_data = smoker_data[smoker_data['bmi_>=_30']=='yes']
+    smoker_nonobese_data = smoker_data[smoker_data['bmi_>=_30']=='no']
+    nonsmoker_obese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='yes']
+    nonsmoker_nonobese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='no']
+    
+    # True Values vs. Predicted Values subgrouped by smoking and bmi
+    plt.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
+    plt.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
+    plt.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
+    plt.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
+    largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
+    smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
+    plt.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
+    plt.title('SM True Values vs. Predicted Values\n(' + plot_title + ')')
+    plt.ylabel('SM Predicted Values')
+    plt.xlabel('True Values')
+    plt.legend()
+    plt.show()
+    
+    
+    # Plot standardized residuals vs. predicted values subgrouped by smoking and bmi
+    plt.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
+    plt.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
+    plt.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
+    plt.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
+    plt.axhline(y=0, color='red', linestyle='--')
+    plt.ylabel('SM Residuals (standardized)')
+    plt.xlabel('SM Predicted Values')
+    plt.title('SM Residuals (standardized) vs. Predicted Values\n(' + plot_title + ')')
+    plt.legend()
+    plt.show()
+    
+    # Quantify Heteroscedasticity using White test and Breusch-Pagan test
+    white_test = het_white(sm_lr_model.resid, sm_lr_model.model.exog)
+    bp_test = het_breuschpagan(sm_lr_model.resid, sm_lr_model.model.exog)
+    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
+    white_test_results = dict(zip(labels, bp_test))
+    bp_test_results = dict(zip(labels, white_test))
+    
+    return white_test_results, bp_test_results
+
+# Combine statsmodels linear regression model creation, fitting, and returning results    
+def fit_ols_test_heteroscedasticity(fxn_X, fxn_y, orig_dataset, plot_title):
+    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
+    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
+    
+    fxn_white_test_results, fxn_bp_test_results = subgroup_quantify_heteroscedasticity(fxn_lin_reg, orig_dataset, fxn_y_pred, fxn_y, plot_title)
+    
+    return fxn_lin_reg, fxn_y_pred, fxn_white_test_results, fxn_bp_test_results
+
+# Convert statsmodels summary() output to pandas DataFrame
+def sm_results_to_df(summary):
+    # Statsmodels summary() returns list of tables, relevant data in second table as list of lists
+    summary_data = summary.tables[1].data
+    
+    # Convert list of lists to dataframe
+    return_df = pd.DataFrame(summary_data)
+    
+    # Extract column names, from first row. Convert to list to remove confusion with Series name
+    col_names = return_df.iloc[0][1:].tolist()
+    
+    # Remove first row
+    return_df.drop(0, axis=0, inplace=True)
+    
+    # Extract row names, from first column. Convert to list to remove confusion with Series name
+    row_names = return_df[0].tolist()
+    
+    # Remove first column
+    return_df.drop(0, axis=1, inplace=True)
+    
+    # Set column and row names
+    return_df.columns = col_names
+    return_df.index = row_names
+    
+    return return_df
+    
+title_1 = 'Original'   
+white_test_results_1, bp_test_results_1 = subgroup_quantify_heteroscedasticity(sm_lin_reg, dataset, sm_y_pred, y, title_1)
+summary_1 = sm_lin_reg.summary()
+summary_df_1 = sm_results_to_df(summary_1)
+sm_lin_reg.rsquared
+
+# =============================
+# New model with feature incorporating relationship between BMI and smoking status
+# =============================
+# I initially tried to do this by added a new categorical column 'bmi_smoke_combo'
+# Where 0=nonsmoker/nonobese, 1=smoker/nonobese, 2=nonsmoker/obese, 3=smoker/obese
+# But that didn't work
+# But this way, you multiply BMI by smoking status. So if they don't smoke, BMI doesn't affect predicted charge
+# Which makes sense given the BMI vs. charge scatterplot
+new_X_2 = sm_processed_X.copy()
+new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
+title_2 = 'w [bmi*smoker] Feature'
+
+sm_lin_reg_2, sm_y_pred_2, white_test_results_2, bp_test_results_2 = fit_ols_test_heteroscedasticity(new_X_2, y, dataset, title_2)
+summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
+sm_lin_reg_2.rsquared
+
+# =============================
+# Compare coefficients before and after new feature
+# =============================
+compared_df = pd.DataFrame({'coef_orig':summary_df_1['coef'], 'coef_bmi*smok':summary_df_2['coef']}, index=summary_df_1.index)
+compared_df.loc['bmi*smoker'] = [np.nan, summary_df_2.loc['bmi*smoker'][0]]
+compared_df = compared_df.apply(pd.to_numeric)
+compared_df['diff'] = compared_df['coef_bmi*smok'] - compared_df['coef_orig']
+
+# =============================
+# New model with feature incorporating relationship between between presence of obesity, smoking (and age)
+# =============================
+# This model (smoker*obese) worked very well
+# It worked better than smoker*obese*age, which makes sense if you look at the age vs. charges graphs you'll see that they're almost
+# horizontal lines. So it's not the age itself that is predictive, it's the difference between the three  
+# groups: nonsmokers, obese smokers, and nonobese smokers. With this variable, the model can give it a coefficient that 
+# is the average difference between obese smokers and nonobese smokers
+new_X_3 = sm_processed_X.copy()
+new_X_3['smoker*obese'] = new_X_3['smoker_yes'] * new_X_3['bmi_>=_30_yes']# * new_X_3['age']
+title_3 = 'w [smoker*obese] Feature'
+
+sm_lin_reg_3, sm_y_pred_3, white_test_results_3, bp_test_results_3 = fit_ols_test_heteroscedasticity(new_X_3, y, dataset, title_3)
+summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
+sm_lin_reg_3.rsquared
+
+# Tried incorporating group nonobese smoker
+# This didn't do anything because the model already adds ~15,000 to the charges if you're a smoker
+# Then with the new [smoker*obese] feature, it adds another ~20,000
+
+# pd.set_option("display.max_rows", None)
+# pd.reset_option("display.max_rows")
+
+# =============================
+# Add to coefficient comparison dataframe
+# =============================
+compared_df['coef_smok*obese'] = summary_df_3['coef']
+compared_df.loc['smoker*obese'] = [np.nan, np.nan, np.nan, summary_df_3.loc['smoker*obese'][0]]
+
+# =============================
+# Try adding both new features 
+# =============================
+# COMPARED TO JUST OBESE/SMOKING FEATURE, THIS MADE GRAPH LOOK BETTER, R-SQUARED SLIGHTLY BETTER BY 0.004, WHITE TEST P-VALUES WORSE
+# BY ABOUT 0.05
+new_X_4 = new_X_3.copy()
+new_X_4['bmi*smoker'] = new_X_2['bmi*smoker']
+title_4 = 'w [bmi*smoker] and [smoker*obese] Feature'
+
+sm_lin_reg_4, sm_y_pred_4, white_test_results_4, bp_test_results_4 = fit_ols_test_heteroscedasticity(new_X_4, y, dataset, title_4)
+summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
+sm_lin_reg_4.rsquared
+
+# =============================
+# Add to coefficient comparison dataframe
+# =============================
+compared_df['coef_comb'] = summary_df_4['coef']
+
+compared_df[['coef_orig', 'coef_bmi*smok', 'coef_smok*obese', 'coef_comb']]
+
+
+# =============================
+# Still some curvature to each group of residuals. Will try squaring age - WORKED
+# =============================
+new_X_5 = new_X_4.copy()
+title_5 = 'w/ Both Features + age^2'
+
+# Unfortunately, age has already been scalled around 0 and squaring will make all the negative numbers positive
+# Will have to take the original ages, square, then scale
+
+orig_ages = dataset['age'].to_frame()
+squared_ages = np.power(orig_ages, 2)
+scaled_ages = pd.DataFrame(StandardScaler().fit_transform(squared_ages), columns=['age^2'])
+
+# plt.scatter(new_X_5['age'], y, alpha=0.5, label='orig age')
+# plt.scatter(scaled_ages, y, alpha=0.5, label='squared age')
+
+new_X_5['age'] = scaled_ages
+new_X_5 = new_X_5.rename(columns={'age':'age^2'})
+
+sm_lin_reg_5, sm_y_pred_5, white_test_results_5, bp_test_results_5 = fit_ols_test_heteroscedasticity(new_X_5, y, dataset, title_5)
+summary_df_5 = sm_results_to_df(sm_lin_reg_5.summary())
+sm_lin_reg_5.rsquared
+
+
+
+
+
+
+
+
+
+
+# =============================
+# Try log tranformation of original data THIS DIDN'T WORK
+# =============================
+new_X_3 = sm_processed_X.copy()
+new_y = np.log(y)
+sns.distplot(new_y)
+plt.title('Charges Histogram (log tranformed)', fontsize=20, y=1.04)
+plt.show()
+title_3 = 'Log Transform Target (no new feature)'
+
+sm_lin_reg_3, sm_y_pred_3, white_test_results_3, bp_test_results_3 = fit_ols_test_heteroscedasticity(new_X_3, new_y, dataset, title_3)
+summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
+sm_lin_reg_3.rsquared
+
+# =============================
+# Try new features with log tranformation THIS DIDN'T WORK
+# =============================
+new_X_6 = new_X_5.copy()
+new_y = np.log(y)
+sns.distplot(new_y)
+plt.title('Charges Histogram (log tranformed)', fontsize=20, y=1.04)
+plt.show()
+title_6 = 'Log Transform Target w new features'
+
+sm_lin_reg_6, sm_y_pred_6, white_test_results_6, bp_test_results_6 = fit_ols_test_heteroscedasticity(new_X_6, new_y, dataset, title_6)
+summary_df_6 = sm_results_to_df(sm_lin_reg_6.summary())
+sm_lin_reg_6.rsquared
 
 # =============================
 # Other stuff
 # =============================
 lin_reg.coef_
 lin_reg.intercept_
-
-lin_reg.score(X_train_processed, y_train)
 
 
 

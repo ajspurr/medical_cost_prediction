@@ -589,17 +589,34 @@ plt.show()
 # =============================
 # Explore nonsmokers
 # =============================
-pearson_nonsmokers = nonsmokers_data.corr(method='pearson')['age'].loc['charges'].round(2)
+pearson_nonsmokers = nonsmokers_data.corr(method='pearson')['age'].loc['charges'].round(3)
 g = sns.lmplot(x='age', y='charges', data=nonsmokers_data, line_kws={'color':'cyan'})
 ax = g.axes[0,0]
-textbox_text = "Pearson's r = %0.2f" %pearson_nonsmokers
+textbox_text = "Pearson's r = %0.3f" %pearson_nonsmokers
 plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
          verticalalignment='top', horizontalalignment='right')
-
 plt.title("Age vs. Charges in nonsmokers")
-save_filename = 'age_vs_charges_nonsmokers'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'age_vs_charges_nonsmokers'
+#save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
+
+
+# Test squaring the age as the shape looks almost parabolic
+test_age_df = nonsmokers_data['age'].to_frame()
+test_age_df['charges'] = nonsmokers_data['charges']
+test_age_df['age^2'] = np.power(nonsmokers_data['age'], 2)
+
+pearson_nonsmokers_newage = test_age_df.corr(method='pearson')['age^2'].loc['charges'].round(3)
+g = sns.lmplot(x='age^2', y='charges', data=test_age_df, line_kws={'color':'cyan'})
+ax = g.axes[0,0]
+textbox_text = "Pearson's r = %0.3f" %pearson_nonsmokers_newage
+plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
+         verticalalignment='top', horizontalalignment='right')
+plt.title("Age^2 vs. Charges in nonsmokers")
+#save_filename = 'age_vs_charges_nonsmokers'
+#save_image(output_dir, save_filename, bbox_inches='tight')
+plt.show()
+
 
 # Nonsmokers do not group well by BMI, sex, region, or # children (I left that code out)
 
