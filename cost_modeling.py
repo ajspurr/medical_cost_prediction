@@ -317,15 +317,15 @@ vif = calulate_vif(dataset, numerical_cols)
 # Statsmodels functions
 # =======================================================================================
 # Plot standardized residuals vs. predicted values and true values vs. predicted values
-def plot_sm_lr_model(lr_model, y, y_pred): 
+# Parameter lr_model must be a statsmodels linear regression model
+def sm_lr_model_results(lr_model, y, y_pred): 
     # Format text box with relevant metric of each plot
     box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
     
     # Calculate heteroscedasticity metrics
     white_test = het_white(lr_model.resid, lr_model.model.exog)
     bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
-    # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
-    white_lm_p_value = '{:0.2e}'.format(white_test[1])
+    white_lm_p_value = '{:0.2e}'.format(white_test[1]) # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
     bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
     
     # Plot standardized residuals vs. predicted values
@@ -343,8 +343,10 @@ def plot_sm_lr_model(lr_model, y, y_pred):
 
     # Plot True Values vs. Predicted Values
     fig = plt.scatter(y, y_pred)
-    plt.xlim([0, 50000])
-    plt.ylim([0, 50000])
+    largest_num = max(max(y), max(y_pred))
+    #smallest_num = min(min(y), min(y_pred))
+    plt.xlim([0, largest_num + (0.02*largest_num)])
+    plt.ylim([0, largest_num + (0.02*largest_num)])
     ax = fig.axes
     plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
     plt.title('True Values vs. Predicted Values')
@@ -357,7 +359,8 @@ def plot_sm_lr_model(lr_model, y, y_pred):
     
 # Plot standardized residuals vs. predicted values and true values vs. predicted values (combine in one figure)
 # Parameter filename_unique to be added to the end of the filename if saved
-def plot_sm_lr_model_combined(lr_model, y, y_pred, save_img=False, filename_unique=None): 
+# Parameter lr_model must be a statsmodels linear regression model
+def sm_lr_model_results_comb_plots(lr_model, y, y_pred, save_img=False, filename_unique=None): 
     # Create figure, gridspec, list of axes/subplots mapped to gridspec location
     fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
 
@@ -375,7 +378,6 @@ def plot_sm_lr_model_combined(lr_model, y, y_pred, save_img=False, filename_uniq
     ax1 = ax_array_flat[0]
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
     ax1.scatter(y_pred, standardized_residuals)
-    #ax = fig.axes
     ax1.axhline(y=0, color='darkblue', linestyle='--')
     ax1.set_ylabel('Standardized Residuals')
     ax1.set_xlabel('Predicted Values')
@@ -387,9 +389,10 @@ def plot_sm_lr_model_combined(lr_model, y, y_pred, save_img=False, filename_uniq
     # Plot True Values vs. Predicted Values
     ax2 = ax_array_flat[1]
     ax2.scatter(y, y_pred)
-    ax2.set_xlim([0, 50000])
-    ax2.set_ylim([0, 50000])
-    #ax = fig.axes
+    largest_num = max(max(y), max(y_pred))
+    #smallest_num = min(min(y), min(y_pred))
+    ax2.set_xlim([0, largest_num + (0.02*largest_num)])
+    ax2.set_ylim([0, largest_num + (0.02*largest_num)])
     ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
     ax2.set_title('True Values vs. Predicted Values')
     ax2.set_ylabel('Predicted Values')
@@ -407,15 +410,14 @@ def plot_sm_lr_model_combined(lr_model, y, y_pred, save_img=False, filename_uniq
     plt.show()
 
 # Subgroup plots and quantify heteroscedasticity
-def subgroup_quantify_heteroscedasticity(sm_lr_model, orig_dataset, sm_y_pred, sm_y, plot_title):
+# Parameter lr_model must be a statsmodels linear regression model
+def sm_lr_model_results_comb_plots_subgrouped(lr_model, orig_dataset, sm_y_pred, sm_y, plot_title):
     # Organize relevant data
-    standardized_residuals = pd.DataFrame(sm_lr_model.get_influence().resid_studentized_internal)
+    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
     standardized_residuals.columns = ['stand_resid']
-    #relevant_data = pd.concat([orig_dataset[['bmi_>=_30', 'smoker', 'charges']], sm_y_pred, standardized_residuals], axis=1)
     y_pred_series = pd.Series(sm_y_pred, name='y_pred')
     y_series = pd.Series(sm_y, name='y')
     relevant_data = pd.concat([orig_dataset[['bmi_>=_30', 'smoker']], y_series, y_pred_series, standardized_residuals], axis=1)
-    #relevant_data = relevant_data.rename(columns = {'charges':'y', 0:'y_pred'})
     
     smoker_data = relevant_data[relevant_data['smoker']=='yes']
     nonsmoker_data = relevant_data[relevant_data['smoker']=='no']
@@ -424,8 +426,20 @@ def subgroup_quantify_heteroscedasticity(sm_lr_model, orig_dataset, sm_y_pred, s
     nonsmoker_obese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='yes']
     nonsmoker_nonobese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='no']
     
-    # True Values vs. Predicted Values subgrouped by smoking and bmi
-    plt.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
+    # Quantify Heteroscedasticity using White test and Breusch-Pagan test
+    white_test = het_white(lr_model.resid, lr_model.model.exog)
+    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
+    white_lm_p_value = '{:0.2e}'.format(white_test[1]) # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
+    bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
+    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
+    white_test_results = dict(zip(labels, bp_test))
+    bp_test_results = dict(zip(labels, white_test))
+    
+    # Format text box with relevant metric of each plot
+    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
+    
+    # True Values vs. Predicted Values subgrouped by smoking and obesity
+    fig = plt.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
     plt.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
     plt.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
     plt.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
@@ -435,11 +449,17 @@ def subgroup_quantify_heteroscedasticity(sm_lr_model, orig_dataset, sm_y_pred, s
     plt.title('SM True Values vs. Predicted Values\n(' + plot_title + ')')
     plt.ylabel('SM Predicted Values')
     plt.xlabel('True Values')
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
+    
+    ax = fig.axes
+    textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
+    plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
+             verticalalignment='top', horizontalalignment='right') 
+
     plt.show()
     
-    # Plot standardized residuals vs. predicted values subgrouped by smoking and bmi
-    plt.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
+    # Plot standardized residuals vs. predicted values subgrouped by smoking and obesity
+    fig = plt.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
     plt.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
     plt.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
     plt.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
@@ -447,17 +467,21 @@ def subgroup_quantify_heteroscedasticity(sm_lr_model, orig_dataset, sm_y_pred, s
     plt.ylabel('SM Residuals (standardized)')
     plt.xlabel('SM Predicted Values')
     plt.title('SM Residuals (standardized) vs. Predicted Values\n(' + plot_title + ')')
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
+    
+    ax = fig.axes
+    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
+    plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
+             verticalalignment='top', horizontalalignment='right')  
+    
     plt.show()
-    
-    # Quantify Heteroscedasticity using White test and Breusch-Pagan test
-    white_test = het_white(sm_lr_model.resid, sm_lr_model.model.exog)
-    bp_test = het_breuschpagan(sm_lr_model.resid, sm_lr_model.model.exog)
-    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
-    white_test_results = dict(zip(labels, bp_test))
-    bp_test_results = dict(zip(labels, white_test))
-    
+
     return white_test_results, bp_test_results
+
+
+title_1 = 'Original'   
+white_test_results_1, bp_test_results_1 = sm_lr_model_results_comb_plots_subgrouped(sm_lin_reg, dataset, sm_y_pred, y, title_1)
+
 
 # Combine statsmodels linear regression model creation, fitting, and returning results    
 def fit_ols_test_heteroscedasticity(fxn_X, fxn_y, orig_dataset, plot_title):
@@ -510,8 +534,8 @@ sm_lin_reg = sm.OLS(y, sm_processed_X).fit()
 sm_y_pred = sm_lin_reg.predict(sm_processed_X) 
 
 # Plot model performance
-plot_sm_lr_model(sm_lin_reg, y, sm_y_pred)
-plot_sm_lr_model_combined(sm_lin_reg, y, sm_y_pred, save_img=False, filename_unique='original')
+sm_lr_model_results(sm_lin_reg, y, sm_y_pred)
+sm_lr_model_results_comb_plots(sm_lin_reg, y, sm_y_pred, save_img=True, filename_unique='original')
 
 # =============================
 # Subgroup plots
@@ -582,7 +606,7 @@ bp_test_results = dict(zip(labels, bp_test))
 
     
 title_1 = 'Original'   
-white_test_results_1, bp_test_results_1 = subgroup_quantify_heteroscedasticity(sm_lin_reg, dataset, sm_y_pred, y, title_1)
+white_test_results_1, bp_test_results_1 = sm_lr_model_results_comb_plots(sm_lin_reg, dataset, sm_y_pred, y, title_1)
 summary_1 = sm_lin_reg.summary()
 summary_df_1 = sm_results_to_df(summary_1)
 sm_lin_reg.rsquared
