@@ -102,6 +102,8 @@ I used Correlation Ratio to measure the association betwee numerical and categor
 
 To test for these assumptions, I used package 'statsmodels' (as opposed to 'sklearn') to build a multiple linear regression model, as it offeres a more robust set of statistical tests. I'd like to visualize the progression of the accuracy of the model as I correct any deviation from the above assumptions. So, I'll start by fitting all the data (no test/train split) to a multiple linear regression model. 
 
+<p align="center"><img src="/output/eda/sm_lr_results_original.png" width="600"/></p>
+
 
 #### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
