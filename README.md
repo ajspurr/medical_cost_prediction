@@ -100,7 +100,11 @@ I used Correlation Ratio to measure the association betwee numerical and categor
 4. Homoscedasticity
 5. Multivariate normality - **residuals** of the model are normally distributed
 
-To test for these assumptions, I used package 'statsmodels' (as opposed to 'sklearn') to build a multiple linear regression model, as it offeres a more robust set of statistical tests. I'd like to visualize the progression of the accuracy of the model as I correct any deviation from the above assumptions. So, I'll start by fitting all the data (no test/train split) to a multiple linear regression model. 
+To test for these assumptions, I used package 'statsmodels' (as opposed to 'sklearn') to build a multiple linear regression model, as it offers a more robust set of statistical tests. I'd like to visualize the progression of the accuracy of the model as I correct any deviation from the above assumptions. So, I'll start by fitting all the data (no test/train split) to a multiple linear regression model: 
+
+<p align="center"><img src="/output/models/sm_lr_results_original.png" width="700"/></p>
+
+There are clear groupings of predicted values, which (surprise, surprise) relate to BMI and smoking status. In the plot on the left, 'BP' represents the p-value for the Breusch-Pagan Lagrange Multiplier Test for Heteroscedasticity and 'White' represents the p-value of White’s Lagrange Multiplier Test for Heteroscedasticity. These will be discussed in the 'Homoscedasticity' section below. Values less than 0.05 indicate presence of heteroscedasticity.
 
 
 #### Homoscedasticity
