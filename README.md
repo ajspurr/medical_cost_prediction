@@ -90,3 +90,18 @@ I'm including ordinal variable 'children' in this analysis. After researching ho
 I used Correlation Ratio to measure the association betwee numerical and categorical variables (again, credit to Shaked Zychlinski). The only noteworthy correlation is between smoking status and charges, which we already discussed above. The correlation between the new variable 'BMI >= 30' and the BMI variable makes sense, and increases my confidence that Correlatio Ratio works!
 
 <p align="center"><img src="/output/eda/corr_ratio_cat_num_variables.png" width="600"/></p>
+
+## Model Building
+### Linear Regression
+#### Assumptions of Multiple Linear Regression
+1. Linear relationship between each predictor variable and target variable
+2. No multicollinearity between predictor variables
+3. Observations are independent, i.e. no autocorrelation (not relevant as this is not time series data)
+4. Homoscedasticity
+5. Multivariate normality - **residuals** of the model are normally distributed
+
+To test for these assumptions, I used package 'statsmodels' (as opposed to 'sklearn') to build a multiple linear regression model, as it offeres a more robust set of statistical tests. I'd like to visualize the progression of the accuracy of the model as I correct any deviation from the above assumptions. So, I'll start by fitting all the data (no test/train split) to a multiple linear regression model. 
+
+
+#### Homoscedasticity
+Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
