@@ -90,3 +90,12 @@ I'm including ordinal variable 'children' in this analysis. After researching ho
 I used Correlation Ratio to measure the association betwee numerical and categorical variables (again, credit to Shaked Zychlinski). The only noteworthy correlation is between smoking status and charges, which we already discussed above. The correlation between the new variable 'BMI >= 30' and the BMI variable makes sense, and increases my confidence that Correlatio Ratio works!
 
 <p align="center"><img src="/output/eda/corr_ratio_cat_num_variables.png" width="600"/></p>
+
+## Model Building
+### Linear Regression
+#### Assumptions of Multiple Linear Regression
+1. Linear relationship between each predictor variable and target variable
+2. No multicollinearity between predictor variables
+3. Observations are independent, i.e. no autocorrelation (not relevant as this is not time series data)
+4. Homoscedasticity
+5. Multivariate normality - residuals of the model are normally distributed
