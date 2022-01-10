@@ -98,4 +98,4 @@ I used Correlation Ratio to measure the association betwee numerical and categor
 2. No multicollinearity between predictor variables
 3. Observations are independent, i.e. no autocorrelation (not relevant as this is not time series data)
 4. Homoscedasticity
-5. Multivariate normality - residuals of the model are normally distributed
+5. Multivariate normality - **residuals** of the model are normally distributed
