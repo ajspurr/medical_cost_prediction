@@ -107,7 +107,7 @@ def initialize_fig_gs_ax(num_rows, num_cols, figsize=(16, 8)):
 # Standardize image saving parameters
 def save_image(dir, filename, dpi=300, bbox_inches='tight'):
     plt.savefig(dir/filename, dpi=dpi, bbox_inches=bbox_inches)
-    print("Saved image to '" + dir/filename +"'")
+    print("Saved image to '" + str(dir/filename) +"'")
     
 # ====================================================================================================================
 # Data preprocessing function via pipeline
@@ -308,46 +308,196 @@ vif = calulate_vif(dataset, numerical_cols)
 
 # All very close to 1, no multicollinearity
 
-# ==========================================================
-# Test for heteroscedasticity
-# ==========================================================
-# Plot residuals vs. predicted values
-residuals = calculate_residuals(y_valid, y_pred)
-plt.scatter(y_pred, residuals)
-plt.axhline(y=0, color='red', linestyle='--')
-plt.ylabel('Residuals')
-plt.xlabel('Predicted Values')
-plt.title('Residuals vs. Predicted Values')
-plt.show()
-
-# Tried to calculate 'standardized residuals' but didn't affect the distribution of data points
-std = residuals.std()
-mean = residuals.mean()
-standardized_resid = (residuals - mean) / std
-plt.scatter(y_pred, standardized_resid)
-plt.axhline(y=0, color='red', linestyle='--')
-plt.ylabel('Standardized Residuals')
-plt.xlabel('Predicted Values')
-plt.show()
-
-# Plot True Values vs. Predicted Values to visualize the data differently
-fig = plt.scatter(y_valid, y_pred)
-plt.xlim([0, 50000])
-plt.ylim([0, 50000])
-ax = fig.axes
-plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
-plt.title('True Values vs. Predicted Values')
-plt.ylabel('Predicted Values')
-plt.xlabel('True Values')
-plt.show()
-
-
-# ==========================================================
+# ====================================================================================================================
 # Using statsmodels Multiple Linear Regression to test for heteroscedasticity
-# ==========================================================
+# ====================================================================================================================
 # https://datatofish.com/multiple-linear-regression-python/
 
-# This is just to test for heteroscedasticity in entire data set, will not perform train/test split
+# =======================================================================================
+# Statsmodels functions
+# =======================================================================================
+# Plot standardized residuals vs. predicted values and true values vs. predicted values
+def plot_sm_lr_model(lr_model, y, y_pred): 
+    # Format text box with relevant metric of each plot
+    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
+    
+    # Calculate heteroscedasticity metrics
+    white_test = het_white(lr_model.resid, lr_model.model.exog)
+    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
+    # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
+    white_lm_p_value = '{:0.2e}'.format(white_test[1])
+    bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
+    
+    # Plot standardized residuals vs. predicted values
+    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
+    fig = plt.scatter(y_pred, standardized_residuals)
+    ax = fig.axes
+    plt.axhline(y=0, color='darkblue', linestyle='--')
+    plt.ylabel('Standardized Residuals')
+    plt.xlabel('Predicted Values')
+    plt.title('Standardized Residuals vs. Predicted Values')
+    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
+    plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
+             verticalalignment='top', horizontalalignment='right')  
+    plt.show()
+
+    # Plot True Values vs. Predicted Values
+    fig = plt.scatter(y, y_pred)
+    plt.xlim([0, 50000])
+    plt.ylim([0, 50000])
+    ax = fig.axes
+    plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
+    plt.title('True Values vs. Predicted Values')
+    plt.ylabel('Predicted Values')
+    plt.xlabel('True Values')
+    textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
+    plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
+             verticalalignment='top', horizontalalignment='right')    
+    plt.show()
+    
+# Plot standardized residuals vs. predicted values and true values vs. predicted values (combine in one figure)
+# Parameter filename_unique to be added to the end of the filename if saved
+def plot_sm_lr_model_combined(lr_model, y, y_pred, save_img=False, filename_unique=None): 
+    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+    fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
+
+    # Format text box with relevant metric of each plot
+    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
+    
+    # Calculate heteroscedasticity metrics
+    white_test = het_white(lr_model.resid, lr_model.model.exog)
+    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
+    # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
+    white_lm_p_value = '{:0.2e}'.format(white_test[1])
+    bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
+    
+    # Plot standardized residuals vs. predicted values
+    ax1 = ax_array_flat[0]
+    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
+    ax1.scatter(y_pred, standardized_residuals)
+    #ax = fig.axes
+    ax1.axhline(y=0, color='darkblue', linestyle='--')
+    ax1.set_ylabel('Standardized Residuals')
+    ax1.set_xlabel('Predicted Values')
+    ax1.set_title('Standardized Residuals vs. Predicted Values')
+    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
+    ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, 
+             verticalalignment='top', horizontalalignment='right')  
+
+    # Plot True Values vs. Predicted Values
+    ax2 = ax_array_flat[1]
+    ax2.scatter(y, y_pred)
+    ax2.set_xlim([0, 50000])
+    ax2.set_ylim([0, 50000])
+    #ax = fig.axes
+    ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
+    ax2.set_title('True Values vs. Predicted Values')
+    ax2.set_ylabel('Predicted Values')
+    ax2.set_xlabel('True Values')
+    textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
+    ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, 
+             verticalalignment='top', horizontalalignment='right')    
+
+    # Finalize figure formatting and export
+    fig.suptitle('Linear Regression Model Performance', fontsize=24)
+    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+    if save_img:
+        save_filename = 'sm_lr_results_' + filename_unique
+        save_image(output_dir, save_filename, bbox_inches='tight')
+    plt.show()
+
+# Subgroup plots and quantify heteroscedasticity
+def subgroup_quantify_heteroscedasticity(sm_lr_model, orig_dataset, sm_y_pred, sm_y, plot_title):
+    # Organize relevant data
+    standardized_residuals = pd.DataFrame(sm_lr_model.get_influence().resid_studentized_internal)
+    standardized_residuals.columns = ['stand_resid']
+    #relevant_data = pd.concat([orig_dataset[['bmi_>=_30', 'smoker', 'charges']], sm_y_pred, standardized_residuals], axis=1)
+    y_pred_series = pd.Series(sm_y_pred, name='y_pred')
+    y_series = pd.Series(sm_y, name='y')
+    relevant_data = pd.concat([orig_dataset[['bmi_>=_30', 'smoker']], y_series, y_pred_series, standardized_residuals], axis=1)
+    #relevant_data = relevant_data.rename(columns = {'charges':'y', 0:'y_pred'})
+    
+    smoker_data = relevant_data[relevant_data['smoker']=='yes']
+    nonsmoker_data = relevant_data[relevant_data['smoker']=='no']
+    smoker_obese_data = smoker_data[smoker_data['bmi_>=_30']=='yes']
+    smoker_nonobese_data = smoker_data[smoker_data['bmi_>=_30']=='no']
+    nonsmoker_obese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='yes']
+    nonsmoker_nonobese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='no']
+    
+    # True Values vs. Predicted Values subgrouped by smoking and bmi
+    plt.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
+    plt.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
+    plt.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
+    plt.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
+    largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
+    smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
+    plt.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
+    plt.title('SM True Values vs. Predicted Values\n(' + plot_title + ')')
+    plt.ylabel('SM Predicted Values')
+    plt.xlabel('True Values')
+    plt.legend()
+    plt.show()
+    
+    # Plot standardized residuals vs. predicted values subgrouped by smoking and bmi
+    plt.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
+    plt.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
+    plt.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
+    plt.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
+    plt.axhline(y=0, color='red', linestyle='--')
+    plt.ylabel('SM Residuals (standardized)')
+    plt.xlabel('SM Predicted Values')
+    plt.title('SM Residuals (standardized) vs. Predicted Values\n(' + plot_title + ')')
+    plt.legend()
+    plt.show()
+    
+    # Quantify Heteroscedasticity using White test and Breusch-Pagan test
+    white_test = het_white(sm_lr_model.resid, sm_lr_model.model.exog)
+    bp_test = het_breuschpagan(sm_lr_model.resid, sm_lr_model.model.exog)
+    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
+    white_test_results = dict(zip(labels, bp_test))
+    bp_test_results = dict(zip(labels, white_test))
+    
+    return white_test_results, bp_test_results
+
+# Combine statsmodels linear regression model creation, fitting, and returning results    
+def fit_ols_test_heteroscedasticity(fxn_X, fxn_y, orig_dataset, plot_title):
+    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
+    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
+    
+    fxn_white_test_results, fxn_bp_test_results = subgroup_quantify_heteroscedasticity(fxn_lin_reg, orig_dataset, fxn_y_pred, fxn_y, plot_title)
+    
+    return fxn_lin_reg, fxn_y_pred, fxn_white_test_results, fxn_bp_test_results
+
+# Convert statsmodels summary() output to pandas DataFrame
+def sm_results_to_df(summary):
+    # Statsmodels summary() returns list of tables, relevant data in second table as list of lists
+    summary_data = summary.tables[1].data
+    
+    # Convert list of lists to dataframe
+    return_df = pd.DataFrame(summary_data)
+    
+    # Extract column names, from first row. Convert to list to remove confusion with Series name
+    col_names = return_df.iloc[0][1:].tolist()
+    
+    # Remove first row
+    return_df.drop(0, axis=0, inplace=True)
+    
+    # Extract row names, from first column. Convert to list to remove confusion with Series name
+    row_names = return_df[0].tolist()
+    
+    # Remove first column
+    return_df.drop(0, axis=1, inplace=True)
+    
+    # Set column and row names
+    return_df.columns = col_names
+    return_df.index = row_names
+    
+    return return_df
+
+# =======================================================================================
+# Statsmodels analysis
+# =======================================================================================
+# This is to test for linear model assumptions in entire data set, will not perform train/test split
 sm_processed_X = manual_preprocess_sm(X)
 
 # Add constant (required for statsmodels linear regression model)
@@ -359,36 +509,9 @@ sm_lin_reg = sm.OLS(y, sm_processed_X).fit()
 # Make predictions
 sm_y_pred = sm_lin_reg.predict(sm_processed_X) 
 
-# Plot residuals vs. predicted values
-plt.scatter(sm_y_pred, sm_lin_reg.resid)
-plt.axhline(y=0, color='red', linestyle='--')
-plt.ylabel('Residuals')
-plt.xlabel('Predicted Values')
-plt.title('Residuals vs. Predicted Values')
-plt.show()
-
-# Plot standardized residuals vs. predicted values
-standardized_residuals = sm_lin_reg.get_influence().resid_studentized_internal
-plt.scatter(sm_y_pred, standardized_residuals)
-plt.axhline(y=0, color='darkblue', linestyle='--')
-plt.ylabel('Standardized Residuals')
-plt.xlabel('Predicted Values')
-plt.title('Standardized Residuals vs. Predicted Values')
-plt.show()
-
-# Plot True Values vs. Predicted Values to visualize the data differently
-fig = plt.scatter(y, sm_y_pred)
-plt.xlim([0, 50000])
-plt.ylim([0, 50000])
-ax = fig.axes
-plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
-plt.title('True Values vs. Predicted Values')
-plt.ylabel('Predicted Values')
-plt.xlabel('True Values')
-plt.show()
-
-
+# Plot model performance
 plot_sm_lr_model(sm_lin_reg, y, sm_y_pred)
+plot_sm_lr_model_combined(sm_lin_reg, y, sm_y_pred, save_img=False, filename_unique='original')
 
 # =============================
 # Subgroup plots
@@ -453,190 +576,10 @@ bp_test_results = dict(zip(labels, bp_test))
 
 # Both have a p-value <<< 0.05, indicating presence of heteroscedasticity
 
-# Plot standardized residuals vs. predicted values and true values vs. predicted values
-def plot_sm_lr_model(lr_model, y, y_pred): 
-    # Format text box with relevant metric of each plot
-    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
-    
-    # Calculate heteroscedasticity metrics
-    white_test = het_white(lr_model.resid, lr_model.model.exog)
-    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
-    # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
-    white_lm_p_value = '{:0.2e}'.format(white_test[1])
-    bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
-    
-    # Plot standardized residuals vs. predicted values
-    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
-    fig = plt.scatter(y_pred, standardized_residuals)
-    ax = fig.axes
-    plt.axhline(y=0, color='darkblue', linestyle='--')
-    plt.ylabel('Standardized Residuals')
-    plt.xlabel('Predicted Values')
-    plt.title('Standardized Residuals vs. Predicted Values')
-    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
-    plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
-             verticalalignment='top', horizontalalignment='right')  
-    plt.show()
-
-    # Plot True Values vs. Predicted Values
-    fig = plt.scatter(y, y_pred)
-    plt.xlim([0, 50000])
-    plt.ylim([0, 50000])
-    ax = fig.axes
-    plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
-    plt.title('True Values vs. Predicted Values')
-    plt.ylabel('Predicted Values')
-    plt.xlabel('True Values')
-    textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
-    plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
-             verticalalignment='top', horizontalalignment='right')    
-    plt.show()
-    
-plot_sm_lr_model(sm_lin_reg, y, sm_y_pred)
-
-# Plot standardized residuals vs. predicted values and true values vs. predicted values (combine in one figure)
-# Parameter filename_unique to be added to the end of the filename if saved
-def plot_sm_lr_model_combined(lr_model, y, y_pred, save_img=False, filename_unique=None): 
-    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-    fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
-
-    # Format text box with relevant metric of each plot
-    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
-    
-    # Calculate heteroscedasticity metrics
-    white_test = het_white(lr_model.resid, lr_model.model.exog)
-    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
-    # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
-    white_lm_p_value = '{:0.2e}'.format(white_test[1])
-    bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
-    
-    # Plot standardized residuals vs. predicted values
-    ax1 = ax_array_flat[0]
-    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
-    ax1.scatter(y_pred, standardized_residuals)
-    #ax = fig.axes
-    ax1.axhline(y=0, color='darkblue', linestyle='--')
-    ax1.set_ylabel('Standardized Residuals')
-    ax1.set_xlabel('Predicted Values')
-    ax1.set_title('Standardized Residuals vs. Predicted Values')
-    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
-    ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, 
-             verticalalignment='top', horizontalalignment='right')  
 
 
-    # Plot True Values vs. Predicted Values
-    ax2 = ax_array_flat[1]
-    ax2.scatter(y, y_pred)
-    ax2.set_xlim([0, 50000])
-    ax2.set_ylim([0, 50000])
-    #ax = fig.axes
-    ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
-    ax2.set_title('True Values vs. Predicted Values')
-    ax2.set_ylabel('Predicted Values')
-    ax2.set_xlabel('True Values')
-    textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
-    ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, 
-             verticalalignment='top', horizontalalignment='right')    
-
-    
-    # Finalize figure formatting and export
-    fig.suptitle('Linear Regression Model Performance', fontsize=24)
-    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-    save_filename = 'sm_lr_results_' + filename_unique
-    save_image(output_dir, save_filename, bbox_inches='tight')
-    plt.show()
-
-plot_sm_lr_model_combined(sm_lin_reg, y, sm_y_pred, True, 'original')
 
 
-# Subgroup plots and quantify heteroscedasticity function
-def subgroup_quantify_heteroscedasticity(sm_lr_model, orig_dataset, sm_y_pred, sm_y, plot_title):
-    # Organize relevant data
-    standardized_residuals = pd.DataFrame(sm_lr_model.get_influence().resid_studentized_internal)
-    standardized_residuals.columns = ['stand_resid']
-    #relevant_data = pd.concat([orig_dataset[['bmi_>=_30', 'smoker', 'charges']], sm_y_pred, standardized_residuals], axis=1)
-    y_pred_series = pd.Series(sm_y_pred, name='y_pred')
-    y_series = pd.Series(sm_y, name='y')
-    relevant_data = pd.concat([orig_dataset[['bmi_>=_30', 'smoker']], y_series, y_pred_series, standardized_residuals], axis=1)
-    #relevant_data = relevant_data.rename(columns = {'charges':'y', 0:'y_pred'})
-    
-    smoker_data = relevant_data[relevant_data['smoker']=='yes']
-    nonsmoker_data = relevant_data[relevant_data['smoker']=='no']
-    smoker_obese_data = smoker_data[smoker_data['bmi_>=_30']=='yes']
-    smoker_nonobese_data = smoker_data[smoker_data['bmi_>=_30']=='no']
-    nonsmoker_obese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='yes']
-    nonsmoker_nonobese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='no']
-    
-    # True Values vs. Predicted Values subgrouped by smoking and bmi
-    plt.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
-    plt.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
-    plt.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
-    plt.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
-    largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
-    smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
-    plt.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
-    plt.title('SM True Values vs. Predicted Values\n(' + plot_title + ')')
-    plt.ylabel('SM Predicted Values')
-    plt.xlabel('True Values')
-    plt.legend()
-    plt.show()
-    
-    
-    # Plot standardized residuals vs. predicted values subgrouped by smoking and bmi
-    plt.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
-    plt.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
-    plt.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
-    plt.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
-    plt.axhline(y=0, color='red', linestyle='--')
-    plt.ylabel('SM Residuals (standardized)')
-    plt.xlabel('SM Predicted Values')
-    plt.title('SM Residuals (standardized) vs. Predicted Values\n(' + plot_title + ')')
-    plt.legend()
-    plt.show()
-    
-    # Quantify Heteroscedasticity using White test and Breusch-Pagan test
-    white_test = het_white(sm_lr_model.resid, sm_lr_model.model.exog)
-    bp_test = het_breuschpagan(sm_lr_model.resid, sm_lr_model.model.exog)
-    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
-    white_test_results = dict(zip(labels, bp_test))
-    bp_test_results = dict(zip(labels, white_test))
-    
-    return white_test_results, bp_test_results
-
-# Combine statsmodels linear regression model creation, fitting, and returning results    
-def fit_ols_test_heteroscedasticity(fxn_X, fxn_y, orig_dataset, plot_title):
-    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
-    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
-    
-    fxn_white_test_results, fxn_bp_test_results = subgroup_quantify_heteroscedasticity(fxn_lin_reg, orig_dataset, fxn_y_pred, fxn_y, plot_title)
-    
-    return fxn_lin_reg, fxn_y_pred, fxn_white_test_results, fxn_bp_test_results
-
-# Convert statsmodels summary() output to pandas DataFrame
-def sm_results_to_df(summary):
-    # Statsmodels summary() returns list of tables, relevant data in second table as list of lists
-    summary_data = summary.tables[1].data
-    
-    # Convert list of lists to dataframe
-    return_df = pd.DataFrame(summary_data)
-    
-    # Extract column names, from first row. Convert to list to remove confusion with Series name
-    col_names = return_df.iloc[0][1:].tolist()
-    
-    # Remove first row
-    return_df.drop(0, axis=0, inplace=True)
-    
-    # Extract row names, from first column. Convert to list to remove confusion with Series name
-    row_names = return_df[0].tolist()
-    
-    # Remove first column
-    return_df.drop(0, axis=1, inplace=True)
-    
-    # Set column and row names
-    return_df.columns = col_names
-    return_df.index = row_names
-    
-    return return_df
     
 title_1 = 'Original'   
 white_test_results_1, bp_test_results_1 = subgroup_quantify_heteroscedasticity(sm_lin_reg, dataset, sm_y_pred, y, title_1)
