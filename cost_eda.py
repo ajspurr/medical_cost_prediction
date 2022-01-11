@@ -108,6 +108,7 @@ cat_ord_cols.append('bmi_>=_30')
 # Standardize image saving parameters
 def save_image(filename, dir=eda_output_dir, dpi=300, bbox_inches='tight'):
     plt.savefig(dir/filename, dpi=dpi, bbox_inches=bbox_inches)
+    print("Saved image to '" + str(dir/filename) +"'")
 
 # Create dictionary of formatted column names  to be used for
 # figure labels (title() capitalizes every word in a string)
@@ -502,8 +503,8 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_smokers_age_charge)
 plt.title("Age vs. Charges, grouped by smoking status")
-save_filename = 'age_vs_charges_grp_smoking_status'
-save_image(save_filename)
+#save_filename = 'age_vs_charges_grp_smoking_status'
+#save_image(save_filename)
 plt.show()
 
 
@@ -536,10 +537,10 @@ plt.show()
 obese_df = smokers_data[smokers_data['bmi_>=_30']=='yes'].copy()
 nonobese_df = smokers_data[smokers_data['bmi_>=_30']=='no'].copy()
 
-pearson_obese = obese_df.corr(method='pearson').round(2)
+pearson_obese = obese_df.corr(method='pearson').round(3)
 pearson_age_charge_ob = pearson_obese['age'].loc['charges']
 
-pearson_nonobese = nonobese_df.corr(method='pearson').round(2)
+pearson_nonobese = nonobese_df.corr(method='pearson').round(3)
 pearson_age_charge_nonob = pearson_nonobese['age'].loc['charges']
 
 # Pearsons for age and charges in smokers: 0.67 for obese and 0.69 for nonobese
@@ -552,12 +553,12 @@ leg = ax.get_legend()
 labels = leg.get_texts()
 for legend_label in labels:
     if legend_label.get_text() == 'no':
-        legend_label.set_text("No (Pearson's %0.2f)" %pearson_age_charge_nonob)
+        legend_label.set_text("No (Pearson's %0.3f)" %pearson_age_charge_nonob)
     else:
-        legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
+        legend_label.set_text("Yes (Pearson's %0.3f)" %pearson_age_charge_ob)
 plt.title("Age vs. Charges in smokers, grouped by BMI (30)")
 #save_filename = 'age_vs_charges_smokers_grp_bmi30'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+#save_image(save_filename)
 plt.show()
 
 # ===============
@@ -639,8 +640,10 @@ plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes,
          verticalalignment='top', horizontalalignment='right')
 plt.title("Age vs. Charges in nonsmokers")
 #save_filename = 'age_vs_charges_nonsmokers'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+#save_image(save_filename)
 plt.show()
+
+# Nonsmokers do not group well by BMI, sex, region, or # children (I left that code out)
 
 # =============================
 # Test squaring the age as the shape looks almost parabolic
@@ -664,7 +667,7 @@ new_pearson_nonobese_smoker_age_charge = new_pearson_nonobese_smoker['age'].loc[
 new_pearson_nonsmokers = new_age_nonsmokers_data.corr(method='pearson').round(3)
 new_pearson_nonsmokers_age_charge = new_pearson_nonsmokers['age'].loc['charges']
 
-# Plot two lmplots again
+# Plot nonsmoker lmplot again
 sns.lmplot(x='age^2', y='charges', data=new_age_nonsmokers_data, line_kws={'color':'cyan'})
 ax = plt.gca()
 textbox_text = "Pearson's r = %0.3f" %new_pearson_nonsmokers_age_charge
@@ -675,8 +678,22 @@ plt.title("Age^2 vs. Charges in nonsmokers")
 #save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
+# Plot smoker lmplot again
+g = sns.lmplot(x='age^2', y='charges', hue="bmi_>=_30", data=new_age_smokers_data, legend=False)
+ax = g.axes[0,0]
+ax.legend(title='BMI >= 30', loc='upper right')
+leg = ax.get_legend()
+labels = leg.get_texts()
+for legend_label in labels:
+    if legend_label.get_text() == 'no':
+        legend_label.set_text("No (Pearson's %0.2f)" %new_pearson_nonobese_smoker_age_charge)
+    else:
+        legend_label.set_text("Yes (Pearson's %0.2f)" %new_pearson_obese_smoker_age_charge)
+plt.title("Age vs. Charges in smokers, grouped by BMI (30)")
+#save_filename = 'age_vs_charges_smokers_grp_bmi30'
+#save_image(save_filename)
+plt.show()
 
-# Nonsmokers do not group well by BMI, sex, region, or # children (I left that code out)
 
 
 # =============================================

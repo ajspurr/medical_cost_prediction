@@ -35,7 +35,7 @@ from sklearn.model_selection import cross_val_score, cross_validate
 project_dir = PureWindowsPath(r"D:\GitHubProjects\medical_cost_prediction\\")
 chdir(project_dir)
 dataset = pd.read_csv('./input/insurance.csv')
-output_dir = Path(project_dir, Path('./output/models'))
+models_output_dir = Path(project_dir, Path('./output/models'))
 
 # ====================================================================================================================
 # Categorize and process features
@@ -105,8 +105,8 @@ def initialize_fig_gs_ax(num_rows, num_cols, figsize=(16, 8)):
     return fig, gs, ax_array_flat
 
 # Standardize image saving parameters
-def save_image(dir, filename, dpi=300, bbox_inches='tight'):
-    plt.savefig(dir/filename, dpi=dpi, bbox_inches=bbox_inches)
+def save_image(filename, dir=models_output_dir, dpi=300, bbox_inches='tight'):
+    plt.savefig(models_output_dir/filename, dpi=dpi, bbox_inches=bbox_inches)
     print("Saved image to '" + str(dir/filename) +"'")
     
 # ====================================================================================================================
