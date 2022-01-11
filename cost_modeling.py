@@ -341,7 +341,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, save_img=False
     if not combine_plots: plt.show()
     
     if combine_plots:
-        fig.suptitle('Linear Regression Model Performance', fontsize=24)
+        fig.suptitle('LR Model Performance', fontsize=24)
         fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
         if save_img:
             save_filename = 'sm_lr_results_' + filename_unique
@@ -425,7 +425,7 @@ def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title
     ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right') 
     
     # Format and save figure
-    fig.suptitle('Linear Regression Model Performance (' + plot_title + ')', fontsize=24)
+    fig.suptitle('LR Model Performance (' + plot_title + ')', fontsize=24)
     fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
     if save_img:
         save_filename = 'sm_lr_results_' + filename_unique
@@ -436,13 +436,17 @@ def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title
     return het_metrics
 
 # Combine statsmodels linear regression model creation, fitting, and returning results    
-def fit_ols_test_heteroscedasticity(fxn_X, fxn_y, orig_dataset, plot_title):
+def fit_lr_model_results_subgrouped(fxn_X, fxn_y, orig_dataset, plot_title, save_img=False, filename_unique=None):
+    # Fit model
     fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
+    
+    # Predict target
     fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
     
-    fxn_white_test_results, fxn_bp_test_results = subgroup_quantify_heteroscedasticity(fxn_lin_reg, orig_dataset, fxn_y_pred, fxn_y, plot_title)
+    #fxn_white_test_results, fxn_bp_test_results = subgroup_quantify_heteroscedasticity(fxn_lin_reg, orig_dataset, fxn_y_pred, fxn_y, plot_title)
+    het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, orig_dataset, fxn_y, fxn_y_pred, plot_title, save_img=save_img, filename_unique=filename_unique)
     
-    return fxn_lin_reg, fxn_y_pred, fxn_white_test_results, fxn_bp_test_results
+    return fxn_lin_reg, fxn_y_pred, het_results
 
 # Convert statsmodels summary() output to pandas DataFrame
 def sm_results_to_df(summary):
@@ -479,6 +483,49 @@ def sm_results_to_df(summary):
 y = dataset['charges']
 X = dataset.drop(['charges'], axis=1)
 
+# This is to test for linear model assumptions in entire data set, will not perform train/test split
+sm_processed_X = manual_preprocess_sm(X)
+
+# Add constant (required for statsmodels linear regression model)
+sm_processed_X = sm.add_constant(sm_processed_X)
+
+# Fit linear regression model
+sm_lin_reg = sm.OLS(y, sm_processed_X).fit()
+
+# Make predictions
+sm_y_pred = sm_lin_reg.predict(sm_processed_X)
+
+# Plot model performance
+het_metrics = sm_lr_model_results(sm_lin_reg, y, sm_y_pred, combine_plots=True, save_img=True, filename_unique='original')
+
+# Plot model performance, subgrouped by smoking and obesity
+title_1 = 'Original'   
+het_metrics_1 = sm_lr_model_results_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, title_1, save_img=True, filename_unique='orig_subgrouped')
+
+# =======================================================================================
+# Test for linear relationships between predictors and target variables
+# =======================================================================================
+
+# This analysis was done in the EDA section. Will explain findings here.
+
+# =============================
+# BMI vs. Charges
+# =============================
+
+# Smokers had a strong linear relationship between BMI and charges, nonsmokers had basically no linear relationhip
+# Will engineer new feature [smoker*bmi] which essentially removes the bmi data of the nonsmokers and retains the bmi
+# data of the smokers. 
+
+new_X_2 = sm_processed_X.copy()
+new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
+title_2 = 'w [bmi*smoker] feature'
+sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X_2, y, dataset, title_2, save_img=False, filename_unique='smoke_bmi_feature')
+summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
+
+# Tried removing original 'bmi' feature, slightly worsened model performance
+#new_X_2_1 = new_X_2.drop(['bmi'], axis=1)
+#sm_lin_reg_2_1, sm_y_pred_2_1, het_results_2_1 = fit_lr_model_results_subgrouped(new_X_2_1, y, dataset, 'drop bmi', save_img=True, filename_unique='drop_bmi')
+
 # =======================================================================================
 # Test for multicollinearity
 # =======================================================================================
@@ -493,25 +540,7 @@ plt.scatter(smoker_dataset['bmi'], smoker_dataset['age'])
 # =======================================================================================
 # Statsmodels analysis
 # =======================================================================================
-# This is to test for linear model assumptions in entire data set, will not perform train/test split
-sm_processed_X = manual_preprocess_sm(X)
 
-# Add constant (required for statsmodels linear regression model)
-sm_processed_X = sm.add_constant(sm_processed_X)
-
-# Fit linear regression model
-sm_lin_reg = sm.OLS(y, sm_processed_X).fit()
-
-# Make predictions
-sm_y_pred = sm_lin_reg.predict(sm_processed_X)
-sm_y_pred.name = 'y_pred'
-
-# Plot model performance
-het_metrics = sm_lr_model_results(sm_lin_reg, y, sm_y_pred, combine_plots=True, save_img=True, filename_unique='original')
-
-# Plot model performance, subgrouped by smoking and obesity
-title_1 = 'Original'   
-het_metrics_1 = sm_lr_model_results_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, title_1, save_img=False, filename_unique='orig_subgrouped')
 
 # =============================
 # Quantify Heteroscedasticity
@@ -560,7 +589,7 @@ sm_lin_reg.rsquared
 # Which makes sense given the BMI vs. charge scatterplot
 new_X_2 = sm_processed_X.copy()
 new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
-title_2 = 'w [bmi*smoker] Feature'
+title_2 = 'w [bmi*smoker] feature'
 
 sm_lin_reg_2, sm_y_pred_2, white_test_results_2, bp_test_results_2 = fit_ols_test_heteroscedasticity(new_X_2, y, dataset, title_2)
 summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
