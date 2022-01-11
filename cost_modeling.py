@@ -527,6 +527,35 @@ summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
 #new_X_2_1 = new_X_2.drop(['bmi'], axis=1)
 #sm_lin_reg_2_1, sm_y_pred_2_1, het_results_2_1 = fit_lr_model_results_subgrouped(new_X_2_1, y, dataset, 'drop bmi', save_img=True, filename_unique='drop_bmi')
 
+
+# =============================
+# Age vs. Charges: new feature incorporating relationship between between presence of obesity, smoking, and age
+# =============================
+# I tried multiple features to incorporate this relationship, the one that worked fantastically was [smoker*obese]
+# I originally tried smoker*obese*age, assuming that you needed the 'age' to actually make the prediction. However,
+# if you look at the age vs. charges plot you'll see that the 3 lines have very shallow slopes. So 'age' itself isn't very
+# predicitive but the difference between the three groups (nonsmokers, obese smokers, and nonobese smokers) is very predictive. 
+# With this variable, which isolates obese smokers, the model can give it a coefficient that basically adds a constant value 
+# to that group which is equal to the average difference in charges between the 'obese smokers' and 'nonobese smokers' lines 
+# in the age vs. charges plot. 
+# I also tried to add a variable incorporating the nonobese smokers, as it has its own line as well. This didn't change anything
+# because the model already adds ~15,000 to the charges if you're a smoker (remember, there is a 'smoker' variable that has its
+# own constant) then with this new [smoker*obese] feature, it adds another ~20,000 for obese smokers.
+
+new_X_3 = new_X_2.copy()
+new_X_3['smoker*obese'] = new_X_3['smoker_yes'] * new_X_3['bmi_>=_30_yes']
+title_3 = 'w [smoker*obese] Feature'
+
+sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X_3, y, dataset, title_3, save_img=False, filename_unique='smoke_ob_feature')
+summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
+sm_lin_reg_3.rsquared
+
+
+
+
+
+
+
 # =============================
 # Age vs. Charges
 # =============================
@@ -535,18 +564,18 @@ summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
 # transform it to a more linear relationship. It appeared to do so, but the R-squared did not change much.
 # But it does seem to make the linear regression results better
 
-new_X_3 = new_X_2.copy()
-title_3 = 'w [age^2] feature'
+new_X_4 = new_X_3.copy()
+title_4 = 'w [age^2] feature'
 
 # Unfortunately, age has already been scalled around 0 and squaring will make all the negative numbers positive
 # Will have to take the original ages, square, then scale
 orig_ages = dataset['age'].to_frame()
 squared_ages = np.power(orig_ages, 2)
 scaled_sq_ages = pd.DataFrame(StandardScaler().fit_transform(squared_ages), columns=['age^2'])
-new_X_3['age^2'] = scaled_sq_ages
+new_X_4['age^2'] = scaled_sq_ages
 
-sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X_3, y, dataset, title_3, save_img=False, filename_unique='age_sq_feature')
-summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
+sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, dataset, title_4, save_img=False, filename_unique='age_sq_feature')
+summary_df_4 = sm_results_to_df(sm_lin_reg_3.summary())
 # sm_lin_reg_5.rsquared
 
 
@@ -613,28 +642,7 @@ bp_test_results = dict(zip(labels, bp_test))
 
 
 
-# =============================
-# New model with feature incorporating relationship between between presence of obesity, smoking (and age)
-# =============================
-# This model (smoker*obese) worked very well
-# It worked better than smoker*obese*age, which makes sense if you look at the age vs. charges graphs you'll see that they're almost
-# horizontal lines. So it's not the age itself that is predictive, it's the difference between the three  
-# groups: nonsmokers, obese smokers, and nonobese smokers. With this variable, the model can give it a coefficient that 
-# is the average difference between obese smokers and nonobese smokers
-new_X_3 = sm_processed_X.copy()
-new_X_3['smoker*obese'] = new_X_3['smoker_yes'] * new_X_3['bmi_>=_30_yes']# * new_X_3['age']
-title_3 = 'w [smoker*obese] Feature'
 
-sm_lin_reg_3, sm_y_pred_3, white_test_results_3, bp_test_results_3 = fit_ols_test_heteroscedasticity(new_X_3, y, dataset, title_3)
-summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
-sm_lin_reg_3.rsquared
-
-# Tried incorporating group nonobese smoker
-# This didn't do anything because the model already adds ~15,000 to the charges if you're a smoker
-# Then with the new [smoker*obese] feature, it adds another ~20,000
-
-# pd.set_option("display.max_rows", None)
-# pd.reset_option("display.max_rows")
 
 # =============================
 # Add to coefficient comparison dataframe
