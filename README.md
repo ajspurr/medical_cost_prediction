@@ -116,5 +116,9 @@ The linear relationship between BMI and charges is weak. But if you subgroup by 
   <img src="/output/eda/bmi_vs_charges_grp_smoking.png" width="400"/>
 </p>
 
+As can be seen below, adding the new feature greatly reduced heteroscedasticity and improved R-squared.
+
+<p align="center"><img src="/output/models/sm_lr_results_smoke_bmi_feature.png" width="900"/></p>
+
 #### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
