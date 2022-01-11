@@ -412,8 +412,11 @@ def sm_lr_model_results_comb_plots(lr_model, y, y_pred, save_img=False, filename
 
 
 
-# Try to use same fcuntion for combined vs. separate plots
-def sm_lr_model_results_test_comb(lr_model, y, y_pred, combine=False, save_img=False, filename_unique=None): 
+# Plot standardized residuals vs. predicted values and true values vs. predicted values
+# Parameter filename_unique to be added to the end of the filename if saved
+# Parameter lr_model must be a statsmodels linear regression model
+# Can only save if combining plots
+def sm_lr_model_results_test_comb(lr_model, y, y_pred, combine_plots=False, save_img=False, filename_unique=None): 
     # Format text box for relevant metric of each plot
     box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
     
