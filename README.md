@@ -27,13 +27,12 @@ Origin story of feature 'BMI >= 30'. I had noticed a bimodal distribution of cha
 
 <p align="center"><img src="/output/eda/age_vs_charges_grp_smoking_status.png" width="500"/></p>
 
-After isolating the nonsmoker data, subgrouping by any categorical variable didn't account for the noise above the dense line of data points, but even without subgrouping I got a Pearson's r of 0.63, which is double the Pearson's without subgrouping by smoking status (0.30).
+After isolating the nonsmoker data (plot on left), subgrouping by any categorical variable didn't account for the noise above the dense line of data points, but even without subgrouping I got a Pearson's r of 0.63, which is double the Pearson's without subgrouping by smoking status (0.30). Looking at only data from smokers (plot on right), I tried subgrouping by all categorical variables and found that BMI separated the groups very well. The Pearson's r is included for each fit line.
 
-<p align="center"><img src="/output/eda/age_vs_charges_nonsmokers.png" width="500"/></p>
-
-Looking at only data from smokers, I tried subgrouping by all categorical variables and found that BMI separated the groups very well. The Pearson's r is included for each fit line.
-
-<p align="center"><img src="/output/eda/age_vs_charges_smokers_grp_bmi30.png" width="500"/></p>
+<p align="center">
+  <img src="/output/eda/age_vs_charges_nonsmokers.png" width="350"/>
+  <img src="/output/eda/age_vs_charges_smokers_grp_bmi30.png" width="350"/>
+</p>
 
 For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30.
 
