@@ -10,7 +10,7 @@ from pathlib import PureWindowsPath, Path
 project_dir = PureWindowsPath(r"D:\GitHubProjects\medical_cost_prediction\\")
 chdir(project_dir)
 dataset = pd.read_csv('./input/insurance.csv')
-output_dir = Path(project_dir, Path('./output/eda'))
+eda_output_dir = Path(project_dir, Path('./output/eda'))
 
 # ====================================================================================================================
 # EXPLORATORY DATA ANALYSIS 
@@ -106,7 +106,7 @@ cat_ord_cols.append('bmi_>=_30')
 # ==========================================================
 
 # Standardize image saving parameters
-def save_image(dir, filename, dpi=300, bbox_inches='tight'):
+def save_image(filename, dir=eda_output_dir, dpi=300, bbox_inches='tight'):
     plt.savefig(dir/filename, dpi=dpi, bbox_inches=bbox_inches)
 
 # Create dictionary of formatted column names  to be used for
@@ -411,7 +411,7 @@ pearsons = dataset.corr(method='pearson').round(2)
 spearmans = dataset.corr(method='spearman').round(2)
 
 # Format text box
-box_style = {'facecolor':'white', 'boxstyle':'round'}
+box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
 
 # Loop through categorical variables, plotting each in the figure
 i = 0
@@ -446,8 +446,8 @@ for col in numerical_cols:
 # Finalize figure formatting and export
 fig.suptitle('Numerical Variable Exploration', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'num_var_combined'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+save_filename = 'num_var_combined_2'
+save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 
@@ -461,15 +461,48 @@ plt.show()
 sns.jointplot(x='age', y="charges", data = dataset, kind='kde', hue='smoker')
 plt.show()
 
-sns.lmplot(x='age', y='charges', hue="smoker", data=dataset)
-plt.title("Age vs. Charges, grouped by smoking status")
-#save_filename = 'age_vs_charges_grp_smoking_status'
-#save_image(output_dir, save_filename, bbox_inches='tight')
-plt.show()
-
 # There is obvious grouping of charges by smoking status, will separate out both groups
 smokers_data = dataset[dataset['smoker']=='yes'].copy()
 nonsmokers_data = dataset[dataset['smoker']=='no'].copy()
+
+# Calculate pearsons in smokers and nonsmokers
+pearson_smokers = smokers_data.corr(method='pearson').round(2)
+pearson_smokers_age_charge = pearson_smokers['age'].loc['charges']
+pearson_nonsmokers = nonsmokers_data.corr(method='pearson').round(2)
+pearson_nonsmokers_age_charge = pearson_nonsmokers['age'].loc['charges']
+
+sns.lmplot(x='age', y='charges', hue="smoker", data=dataset, legend=False)
+ax = plt.gca()
+ax.legend(title='Smoker', loc='upper right')
+leg = ax.get_legend()
+labels = leg.get_texts()
+for legend_label in labels:
+    if legend_label.get_text() == 'no':
+        legend_label.set_text("No (Pearson's %0.2f)" %pearson_nonsmokers_age_charge)
+    else:
+        legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_smokers_age_charge)
+plt.title("Age vs. Charges, grouped by smoking status")
+#save_filename = 'age_vs_charges_grp_smoking_status'
+#save_image(save_filename)
+plt.show()
+
+
+
+g = sns.lmplot(x='age', y='charges', hue="bmi_>=_30", data=smokers_data, legend=False)
+ax = g.axes[0,0]
+ax.legend(title='BMI >= 30', loc='upper right')
+leg = ax.get_legend()
+labels = leg.get_texts()
+for legend_label in labels:
+    if legend_label.get_text() == 'no':
+        legend_label.set_text("No (Pearson's %0.2f)" %pearson_age_charge_nonob)
+    else:
+        legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
+
+
+
+
+
 
 sns.lmplot(x='age', y='charges', data=smokers_data)
 plt.title("Age vs. Charges in smokers")
