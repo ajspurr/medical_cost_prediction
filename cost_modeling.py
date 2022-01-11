@@ -526,6 +526,24 @@ summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
 #new_X_2_1 = new_X_2.drop(['bmi'], axis=1)
 #sm_lin_reg_2_1, sm_y_pred_2_1, het_results_2_1 = fit_lr_model_results_subgrouped(new_X_2_1, y, dataset, 'drop bmi', save_img=True, filename_unique='drop_bmi')
 
+# =============================
+# Age vs. Charges
+# =============================
+
+# Since the shape of the age vs. charges plots looks a bit parabolic, I tried squaring the age to make it more linear. 
+# It appeared to do so, but the R-squared did not change much.
+# But it does seem to make the linear regression results better
+
+new_X_3 = new_X_2.copy()
+
+
+
+# ###########################################
+# STOPPED HERE, remember that age has already been zeroed, so need to fix that before squaring it
+# ###########################################
+
+
+
 # =======================================================================================
 # Test for multicollinearity
 # =======================================================================================
