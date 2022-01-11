@@ -2,7 +2,7 @@
 
 In this analysis, I explore the Kaggle [Medical Cost Dataset](https://www.kaggle.com/mirichoi0218/insurance). I'll go through the major steps in Machine Learning to build and evaluate regression models to predict total cost of medical care based on demographic data.
 
-## EDA
+# EDA
 <p align="center"><img src="/output/eda/feature_summary.png" width="600"/></p>
 
 <p align="center"><img src="/output/eda/hist_charges.png" width="400"/></p>
@@ -22,7 +22,7 @@ Origin story of feature 'BMI >= 30'. I had noticed a bimodal distribution of cha
 
 <p align="center"><img src="/output/eda/num_var_combined.png" width="900"/></p>
 
-### Relationship Between Numerical Variables
+## Relationship Between Numerical Variables
 I created multiple graphs like the one below, each subgrouping by a different categorical variable. No obvious relationships were seen between numerical variables, with or without subgrouping (other than those noted above).
 <p align="center"><img src="/output/eda/relationship_num_var_by_sex.png" width="600"/></p>
 
@@ -42,7 +42,7 @@ Thus, the increase in correlation between children and charges is likely due to 
 <p align="center"><img src="/output/eda/scatter_num_var_vs_charges.png" width="900"/></p>
 
 
-### Relationship Between Categorical Variables
+## Relationship Between Categorical Variables
 I'm including ordinal variable 'children' in this analysis. After researching how to measure association between ordinal and categorical variables, I found that it is not a straightforward task. There are multiple complicated methods, including calculating 'Freeman's Theta' which I was unable to find the formula for. So I will treat 'children' as a categorical variable for this part of the analysis. The associations were very weak, so I included a plot comparing two variables that had zero association according to Cramér's V. It does, indeed, look like there is no association. In researching the source of this medical cost data, it may be synthetic, which would explain the almost perfect distribution of observations between different categories.
 
 (Credit to Shaked Zychlinski for explaining categorical correlation in [his article](https://towardsdatascience.com/the-search-for-categorical-correlation-a1cf7f1888c9))
@@ -52,14 +52,14 @@ I'm including ordinal variable 'children' in this analysis. After researching ho
   <img src="/output/eda/compare_sex_vs_region.png" width="400"/>
 </p>
 
-### Relationship Between Numerical and Categorical Variables
+## Relationship Between Numerical and Categorical Variables
 I used Correlation Ratio to measure the association betwee numerical and categorical variables (again, credit to Shaked Zychlinski). The only noteworthy correlation is between smoking status and charges, which we already discussed above. The correlation between the new variable 'BMI >= 30' and the BMI variable makes sense, and increases my confidence that Correlatio Ratio works!
 
 <p align="center"><img src="/output/eda/corr_ratio_cat_num_variables.png" width="600"/></p>
 
-## Model Building
-### Linear Regression
-#### Assumptions of Multiple Linear Regression
+# Model Building
+## Linear Regression
+### Assumptions of Multiple Linear Regression
 1. Linear relationship between each predictor variable and target variable
 2. No multicollinearity between predictor variables
 3. Observations are independent, i.e. no autocorrelation (not relevant as this is not time series data)
@@ -74,8 +74,8 @@ There are clear groupings of predicted values, which (surprise, surprise) relate
 
 <p align="center"><img src="/output/models/sm_lr_results_orig_subgrouped.png" width="900"/></p>
 
-#### Linear Relationship Between Predictors and Target Variable
-##### BMI vs. Charges
+### Linear Relationship Between Predictors and Target Variable
+#### BMI vs. Charges
 The linear relationship between BMI and charges is weak. But if you subgroup by smoking status, you can see that smokers' BMI have a strong linear relationship with charges (Pearson's of 0.8) while nonsmokers' BMI have basically no linear relationship with charges. As such, I will enginner a new feature: 'smoker * bmi'. This will remove the bmi of the nonsmokers, thus removing the data that does not have a linear relationship to the target. 
 <p align="center">
   <img src="/output/eda/lmplot_bmi_vs_charges.png" width="400"/>
@@ -86,7 +86,7 @@ As can be seen below, adding the new feature greatly reduced heteroscedasticity 
 
 <p align="center"><img src="/output/models/sm_lr_results_smoke_bmi_feature.png" width="900"/></p>
 
-##### Age vs. Charges
+#### Age vs. Charges
 'Age vs. Charges' plot looks like three distinct groups. I tried subgrouping by all the categorical variables and found that smoking status explained the groups quite well (plot on left). After isolating the nonsmoker data (middle plot), subgrouping by any categorical variable didn't account for the noise above the dense line of data points, but even without subgrouping I got a Pearson's r of 0.63, which is double the Pearson's without subgrouping by smoking status (0.30). Looking at only data from smokers (plot on right), I tried subgrouping by all categorical variables and found that BMI separated the groups very well. The Pearson's r is included for each fit line.
 
 <p align="center">
@@ -107,5 +107,5 @@ I tried subgrouping the nonsmokers by other variables, but none of them uncovere
 #### Children vs. Charges
 No new insights were gained by subgrouping this relationship.
 
-#### Homoscedasticity
+### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
