@@ -15,6 +15,7 @@ from sklearn.preprocessing import StandardScaler
 import statsmodels.api as sm
 from statsmodels.tools.tools import add_constant
 from statsmodels.stats.diagnostic import het_white
+from statsmodels.tools.eval_measures import meanabs
 from statsmodels.stats.diagnostic import het_breuschpagan
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
@@ -63,19 +64,6 @@ cont_cols = numerical_cols.copy()
 cont_cols.remove('children')
 cont_cols_w_target = cont_cols.copy()
 cont_cols_w_target.append('charges')
-
-# ====================================================================================================================
-# Feature engineering (more below)
-# ====================================================================================================================
-
-# Based on EDA, created dichotomous column 'bmi_>=_30'
-dataset['bmi_>=_30'] = dataset['bmi'] >= 30
-bmi_dict = {False:'no', True:'yes'}
-dataset['bmi_>=_30'] = dataset['bmi_>=_30'].map(bmi_dict)
-
-# Add the new feature to the columns lists
-categorical_cols.append('bmi_>=_30')
-cat_ord_cols.append('bmi_>=_30')
 
 # ====================================================================================================================
 # Visualization helper functions
@@ -219,13 +207,9 @@ def manual_preprocess_sm(X):
 # Model evaluation functions
 # ====================================================================================================================
 # Parameter 'model_name' will be used for coding and saving images
-# Parameter 'model_display_name' will be used for plot labels
-
-# def evaluate_model(X_train, X_valid, y_train, y_valid, y_pred, pipeline_or_model, model_name, 
-#                    model_display_name, create_graphs=True, combine_graphs=True, export_graphs=False, round_results=3): 
-    
-def evaluate_model(y_valid, y_pred, model_name, model_display_name, create_graphs=True, 
-                   combine_graphs=True, export_graphs=False, round_results=2):      
+# Parameter 'model_display_name' will be used for plot labels 
+# Written for sklearn linear regression models, but only require y, y_pred, and X, so could be used for any model
+def evaluate_model_sk(y_valid, y_pred, X, model_display_name, round_results=3):      
     metrics = {}
     metrics['max_e'] = max_error(y_valid, y_pred).round(round_results)
     metrics['mean_abs_e'] = mean_absolute_error(y_valid, y_pred).round(round_results)
@@ -233,6 +217,7 @@ def evaluate_model(y_valid, y_pred, model_name, model_display_name, create_graph
     metrics['rmse'] = np.sqrt(metrics['mse']).round(round_results)
     metrics['med_abs_e'] = median_absolute_error(y_valid, y_pred).round(round_results)
     metrics['r2'] = r2_score(y_valid, y_pred).round(round_results)
+    metrics['r2_adj'] = 1 - ((1-metrics['r2'])*(len(y_valid)-1)/(len(y_valid)-X.shape[1]-1)).round(round_results)
     
     print(model_display_name + ' Evaluation')
     print('Max Error: ' + str(metrics['max_e']))
@@ -241,8 +226,40 @@ def evaluate_model(y_valid, y_pred, model_name, model_display_name, create_graph
     print('Root Mean Squared Error: ' + str(metrics['rmse']))
     print('Median Absolute Error: ' + str(metrics['med_abs_e']))
     print('R-squared: ' + str(metrics['r2']))
+    print('R-squared (adj): ' + str(metrics['r2_adj']))
     return metrics
 
+# Written for statsmodels model
+def evaluate_model_sm(y, y_pred, sm_lr_model, model_display_name, round_results=3):      
+    metrics = {}
+    metrics['max_e'] = np.round(max(sm_lr_model.resid), round_results)
+    metrics['mean_abs_e'] = meanabs(y, y_pred).round(round_results)
+    metrics['mse'] = sm_lr_model.mse_resid.round(round_results) # this is the closet metric to mse. It was within 3% of both my calculation and sklearn's. 'mse_model' and 'mse_total' were 99% and 75% different
+    metrics['rmse'] = np.sqrt(metrics['mse']).round(round_results)
+    metrics['med_abs_e'] = np.median(abs(sm_lr_model.resid)).round(round_results)
+    metrics['r2'] = sm_lr_model.rsquared.round(round_results)
+    metrics['r2_adj'] = sm_lr_model.rsquared_adj.round(round_results)
+    
+    # Quantify Heteroscedasticity using Breusch-Pagan test and White test 
+    bp_test = het_breuschpagan(sm_lr_model.resid, sm_lr_model.model.exog)
+    white_test = het_white(sm_lr_model.resid, sm_lr_model.model.exog)
+    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
+    bp_test_results = dict(zip(labels, bp_test))
+    white_test_results = dict(zip(labels, white_test))
+    metrics['bp_lm_p'] = '{:0.3e}'.format(bp_test_results['LM-Test p-value'])
+    metrics['white_lm_p'] = '{:0.3e}'.format(white_test_results['LM-Test p-value'])
+    
+    print(model_display_name + ' Evaluation')
+    print('Max Error: ' + str(metrics['max_e']))
+    print('Mean Absolute Error: ' + str(metrics['mean_abs_e']))
+    print('Mean Squared Error: ' + str(metrics['mse']))
+    print('Root Mean Squared Error: ' + str(metrics['rmse']))
+    print('Median Absolute Error: ' + str(metrics['med_abs_e']))
+    print('R-squared: ' + str(metrics['r2']))
+    print('R-squared (adj): ' + str(metrics['r2_adj']))
+    print('Breusch-Pagan LM p-val: ' + metrics['bp_lm_p'])
+    print('White LM p-val: ' + metrics['white_lm_p'])
+    return metrics
 
 # Takes evalution metrics from evaluate_model() and plots confusion matrix, ROC, PRC, and precision/recall vs. threshold
 # Parameter 'model_name' will be used for coding and saving images
@@ -278,7 +295,7 @@ def calulate_vif(data, numerical_cols):
 # Parameter lr_model must be a statsmodels linear regression model
 # Can only save image if combining plots
 # Returns heteroscedasticity metrics 'het_metrics'
-def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, save_img=False, filename_unique=None): 
+def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='', save_img=False, filename_unique=None): 
     # Format text box for relevant metric of each plot
     box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
     
@@ -341,7 +358,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, save_img=False
     if not combine_plots: plt.show()
     
     if combine_plots:
-        fig.suptitle('LR Model Performance', fontsize=24)
+        fig.suptitle('LR Model Performance (' + plot_title + ')', fontsize=24)
         fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
         if save_img:
             save_filename = 'sm_lr_results_' + filename_unique
@@ -474,6 +491,8 @@ def sm_results_to_df(summary):
     
     return return_df
 
+
+
 # ====================================================================================================================
 # Implement statsmodels package to test multiple linear regression model assumptions
 # ====================================================================================================================
@@ -490,13 +509,41 @@ sm_processed_X = manual_preprocess_sm(X)
 sm_processed_X = sm.add_constant(sm_processed_X)
 
 # Fit linear regression model
-sm_lin_reg = sm.OLS(y, sm_processed_X).fit()
+sm_lin_reg_0 = sm.OLS(y, sm_processed_X).fit()
 
 # Make predictions
-sm_y_pred = sm_lin_reg.predict(sm_processed_X)
+sm_y_pred_0 = sm_lin_reg_0.predict(sm_processed_X)
+
+# Plot model and calculate performs metrics
+title_0 = 'True Original'
+het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=False, filename_unique='true_original')
+summary_df_0 = sm_results_to_df(sm_lin_reg_0.summary())
+coeff_df_0 = summary_df_0['coef']
+sm_lr_results = evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0, 'LR (sm)')
+#sm_lr_sk_results = evaluate_model_sk(y, sm_y_pred_0, sm_processed_X, 'LR')# Using the sklearn and sm metrics on the SAME sm model yield almost identical results
+
+
+result_tracker_df = pd.DataFrame()
+# STOPPED HERE
+
+# ====================================================================================================================
+# Feature engineering (more below)
+# ====================================================================================================================
+
+# Based on EDA, created dichotomous column 'bmi_>=_30'
+dataset['bmi_>=_30'] = dataset['bmi'] >= 30
+bmi_dict = {False:'no', True:'yes'}
+dataset['bmi_>=_30'] = dataset['bmi_>=_30'].map(bmi_dict)
+
+# Add the new feature to the columns lists
+categorical_cols.append('bmi_>=_30')
+cat_ord_cols.append('bmi_>=_30')
+
+
 
 # Plot model performance
-het_metrics = sm_lr_model_results(sm_lin_reg, y, sm_y_pred, combine_plots=True, save_img=True, filename_unique='original')
+title_1 = 'Original'   
+het_metrics = sm_lr_model_results(sm_lin_reg, y, sm_y_pred, combine_plots=True, plot_title=title_1, save_img=False, filename_unique='original')
 
 # Plot model performance, subgrouped by smoking and obesity
 title_1 = 'Original'   
@@ -509,13 +556,11 @@ summary_df_1 = sm_results_to_df(sm_lin_reg.summary())
 
 # This analysis was done in the EDA section. Will explain findings here.
 
-# =============================
+# ==========================================================
 # BMI vs. Charges
-# =============================
-
+# ==========================================================
 # Smokers had a strong linear relationship between BMI and charges, nonsmokers had basically no linear relationhip
-# Will engineer new feature [smoker*bmi] which essentially removes the bmi data of the nonsmokers and retains the bmi
-# data of the smokers. 
+# Will engineer new feature [smoker*bmi] 
 
 new_X_2 = sm_processed_X.copy()
 new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
@@ -524,24 +569,10 @@ sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X
 summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
 
 # Tried removing original 'bmi' feature, slightly worsened model performance
-#new_X_2_1 = new_X_2.drop(['bmi'], axis=1)
-#sm_lin_reg_2_1, sm_y_pred_2_1, het_results_2_1 = fit_lr_model_results_subgrouped(new_X_2_1, y, dataset, 'drop bmi', save_img=True, filename_unique='drop_bmi')
 
-
-# =============================
+# ==========================================================
 # Age vs. Charges: new feature incorporating relationship between between presence of obesity, smoking, and age
-# =============================
-# I tried multiple features to incorporate this relationship, the one that worked fantastically was [smoker*obese]
-# I originally tried smoker*obese*age, assuming that you needed the 'age' to actually make the prediction. However,
-# if you look at the age vs. charges plot you'll see that the 3 lines have very shallow slopes. So 'age' itself isn't very
-# predicitive but the difference between the three groups (nonsmokers, obese smokers, and nonobese smokers) is very predictive. 
-# With this variable, which isolates obese smokers, the model can give it a coefficient that basically adds a constant value 
-# to that group which is equal to the average difference in charges between the 'obese smokers' and 'nonobese smokers' lines 
-# in the age vs. charges plot. 
-# I also tried to add a variable incorporating the nonobese smokers, as it has its own line as well. This didn't change anything
-# because the model already adds ~15,000 to the charges if you're a smoker (remember, there is a 'smoker' variable that has its
-# own constant) then with this new [smoker*obese] feature, it adds another ~20,000 for obese smokers.
-
+# ==========================================================
 new_X_3 = new_X_2.copy()
 new_X_3['smoker*obese'] = new_X_3['smoker_yes'] * new_X_3['bmi_>=_30_yes']
 title_3 = 'w [smoker*obese] Feature'
@@ -550,21 +581,9 @@ sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X
 summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
 sm_lin_reg_3.rsquared
 
-
-
-
-
-
-
-# =============================
+# ==========================================================
 # Age vs. Charges: accounting for curvilinear relationship between age and charges
-# =============================
-# There is a clear curvilinear relationship between predicted charges and residuals, which indicates an element of heteroscedasticity
-# (even though the metrics don't support this). You can see this relationship a bit in the age vs. charges plots as well. 
-# So I added a new feature [age^2]. Visually, the reg line in the age vs. charges plot seems to fit better, 
-# however, this new feature doesn't seem to affect the R-squared. This may be due to the outliers and/or the shallowness of the
-# slopes of the reg lines. 
-
+# ==========================================================
 new_X_4 = new_X_3.copy()
 title_4 = 'w [age^2] feature'
 
@@ -577,23 +596,55 @@ new_X_4['age^2'] = scaled_sq_ages
 
 sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, dataset, title_4, save_img=False, filename_unique='age_sq_feature')
 summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
-# sm_lin_reg_5.rsquared
-
+sm_lin_reg_4.rsquared
 
 # Removing original 'age' feature didn't change model as it already had a relatively small coefficient (-68) once
-# age^2 was added.
+# age^2 was added. I also tried not scaling the age^2 feature. This didn't change model at all. Literally same 
+# coefficients other than it's own being significantly smaller (3000 -> 3)
 
-# Not scaling age^2 feature didn't change model at all. Literally same coefficients other than 
-# it's own being significantly smaller (3000 -> 3)
-
-# =============================
+# ==========================================================
 # Compare coefficients before and after new features
-# =============================
-compared_df = pd.DataFrame({'coef_orig':summary_df_1['coef'], 'coef_bmi*smok':summary_df_2['coef']}, index=summary_df_1.index)
-compared_df.loc['bmi*smoker'] = [np.nan, summary_df_2.loc['bmi*smoker'][0]]
-compared_df = compared_df.apply(pd.to_numeric)
-compared_df['diff'] = compared_df['coef_bmi*smok'] - compared_df['coef_orig']
+# ==========================================================
 
+compared_df = pd.DataFrame({'age^2':summary_df_4['coef']}, index=summary_df_4.index)
+compared_df['smoker*obese'] = summary_df_3['coef']
+compared_df['bmi*smoker'] = summary_df_2['coef']
+compared_df['bmi_>=_30'] = summary_df_1['coef']
+
+# For curiosity's sake, will also add coefficients from before ['bmi_>=_30'] feature addition
+old_X_orig = sm_processed_X.copy()
+old_X_orig = old_X_orig.drop(['bmi_>=_30_yes'], axis=1)
+sm_lin_reg_0 = sm.OLS(y, old_X_orig).fit()
+sm_y_pred_0 = sm_lin_reg_0.predict(old_X_orig)
+
+title_0 = 'True Original'
+het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=False, filename_unique='orig_original')
+summary_df_0 = sm_results_to_df(sm_lin_reg_0.summary())
+
+compared_df['original'] = summary_df_0['coef']
+
+compared_df = compared_df.reindex(columns=['original', 'bmi_>=_30', 'bmi*smoker', 'smoker*obese', 'age^2'])
+
+
+
+
+
+
+
+
+
+# =============================
+# Add to coefficient comparison dataframe
+# =============================
+compared_df['coef_smok*obese'] = summary_df_3['coef']
+compared_df.loc['smoker*obese'] = [np.nan, np.nan, np.nan, summary_df_3.loc['smoker*obese'][0]]
+
+
+# =============================
+# Add to coefficient comparison dataframe
+# =============================
+compared_df['coef_comb'] = summary_df_4['coef']
+compared_df[['coef_orig', 'coef_bmi*smok', 'coef_smok*obese', 'coef_comb']]
 
 
 # =======================================================================================
@@ -607,16 +658,10 @@ vif = calulate_vif(dataset, numerical_cols)
 smoker_dataset = dataset[dataset['smoker']=='yes']
 plt.scatter(smoker_dataset['bmi'], smoker_dataset['age'])
 
-# =======================================================================================
-# Statsmodels analysis
-# =======================================================================================
-
-
 # =============================
 # Quantify Heteroscedasticity
 # =============================
 
-# LEFT OFF HERE ***************************************************************
 
 
 # Model Summary
@@ -638,84 +683,8 @@ bp_test_results = dict(zip(labels, bp_test))
 
 # Both have a p-value <<< 0.05, indicating presence of heteroscedasticity
 
-
-
-
-
-
-
-
-# =============================
-# Add to coefficient comparison dataframe
-# =============================
-compared_df['coef_smok*obese'] = summary_df_3['coef']
-compared_df.loc['smoker*obese'] = [np.nan, np.nan, np.nan, summary_df_3.loc['smoker*obese'][0]]
-
-# =============================
-# Try adding both new features 
-# =============================
-# COMPARED TO JUST OBESE/SMOKING FEATURE, THIS MADE GRAPH LOOK BETTER, R-SQUARED SLIGHTLY BETTER BY 0.004, WHITE TEST P-VALUES WORSE
-# BY ABOUT 0.05
-new_X_4 = new_X_3.copy()
-new_X_4['bmi*smoker'] = new_X_2['bmi*smoker']
-title_4 = 'w [bmi*smoker] and [smoker*obese] Feature'
-
-sm_lin_reg_4, sm_y_pred_4, white_test_results_4, bp_test_results_4 = fit_ols_test_heteroscedasticity(new_X_4, y, dataset, title_4)
-summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
-sm_lin_reg_4.rsquared
-
-# =============================
-# Add to coefficient comparison dataframe
-# =============================
-compared_df['coef_comb'] = summary_df_4['coef']
-
-compared_df[['coef_orig', 'coef_bmi*smok', 'coef_smok*obese', 'coef_comb']]
-
-
-# =============================
-# Still some curvature to each group of residuals. Will try squaring age - WORKED
-# =============================
-
-
-
-
-
-
-
-
-
-
-
-# =============================
-# Try log tranformation of original data THIS DIDN'T WORK
-# =============================
-new_X_3 = sm_processed_X.copy()
-new_y = np.log(y)
-sns.distplot(new_y)
-plt.title('Charges Histogram (log tranformed)', fontsize=20, y=1.04)
-plt.show()
-title_3 = 'Log Transform Target (no new feature)'
-
-sm_lin_reg_3, sm_y_pred_3, white_test_results_3, bp_test_results_3 = fit_ols_test_heteroscedasticity(new_X_3, new_y, dataset, title_3)
-summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
-sm_lin_reg_3.rsquared
-
-# =============================
-# Try new features with log tranformation THIS DIDN'T WORK
-# =============================
-new_X_6 = new_X_5.copy()
-new_y = np.log(y)
-sns.distplot(new_y)
-plt.title('Charges Histogram (log tranformed)', fontsize=20, y=1.04)
-plt.show()
-title_6 = 'Log Transform Target w new features'
-
-sm_lin_reg_6, sm_y_pred_6, white_test_results_6, bp_test_results_6 = fit_ols_test_heteroscedasticity(new_X_6, new_y, dataset, title_6)
-summary_df_6 = sm_results_to_df(sm_lin_reg_6.summary())
-sm_lin_reg_6.rsquared
-
-
-
+# Before performingfeature engineering, tried log transforming target. Did not work either before
+# or after feature engineering.
 
 
 
