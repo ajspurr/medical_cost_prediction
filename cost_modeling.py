@@ -317,110 +317,14 @@ vif = calulate_vif(dataset, numerical_cols)
 # Statsmodels functions
 # =======================================================================================
 # Plot standardized residuals vs. predicted values and true values vs. predicted values
-# Parameter lr_model must be a statsmodels linear regression model
-def sm_lr_model_results(lr_model, y, y_pred): 
-    # Format text box with relevant metric of each plot
-    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
-    
-    # Calculate heteroscedasticity metrics
-    white_test = het_white(lr_model.resid, lr_model.model.exog)
-    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
-    white_lm_p_value = '{:0.2e}'.format(white_test[1]) # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
-    bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
-    
-    # Plot standardized residuals vs. predicted values
-    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
-    fig = plt.scatter(y_pred, standardized_residuals)
-    ax = fig.axes
-    plt.axhline(y=0, color='darkblue', linestyle='--')
-    plt.ylabel('Standardized Residuals')
-    plt.xlabel('Predicted Values')
-    plt.title('Standardized Residuals vs. Predicted Values')
-    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
-    plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
-             verticalalignment='top', horizontalalignment='right')  
-    plt.show()
-
-    # Plot True Values vs. Predicted Values
-    fig = plt.scatter(y, y_pred)
-    largest_num = max(max(y), max(y_pred))
-    #smallest_num = min(min(y), min(y_pred))
-    plt.xlim([0, largest_num + (0.02*largest_num)])
-    plt.ylim([0, largest_num + (0.02*largest_num)])
-    ax = fig.axes
-    plt.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
-    plt.title('True Values vs. Predicted Values')
-    plt.ylabel('Predicted Values')
-    plt.xlabel('True Values')
-    textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
-    plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
-             verticalalignment='top', horizontalalignment='right')    
-    plt.show()
-    
-# Plot standardized residuals vs. predicted values and true values vs. predicted values (combine in one figure)
-# Parameter filename_unique to be added to the end of the filename if saved
-# Parameter lr_model must be a statsmodels linear regression model
-def sm_lr_model_results_comb_plots(lr_model, y, y_pred, save_img=False, filename_unique=None): 
-    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-    fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
-
-    # Format text box with relevant metric of each plot
-    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
-    
-    # Calculate heteroscedasticity metrics
-    white_test = het_white(lr_model.resid, lr_model.model.exog)
-    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
-    # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
-    white_lm_p_value = '{:0.2e}'.format(white_test[1])
-    bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
-    
-    # Plot standardized residuals vs. predicted values
-    ax1 = ax_array_flat[0]
-    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
-    ax1.scatter(y_pred, standardized_residuals)
-    ax1.axhline(y=0, color='darkblue', linestyle='--')
-    ax1.set_ylabel('Standardized Residuals')
-    ax1.set_xlabel('Predicted Values')
-    ax1.set_title('Standardized Residuals vs. Predicted Values')
-    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
-    ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, 
-             verticalalignment='top', horizontalalignment='right')  
-
-    # Plot True Values vs. Predicted Values
-    ax2 = ax_array_flat[1]
-    ax2.scatter(y, y_pred)
-    largest_num = max(max(y), max(y_pred))
-    #smallest_num = min(min(y), min(y_pred))
-    ax2.set_xlim([0, largest_num + (0.02*largest_num)])
-    ax2.set_ylim([0, largest_num + (0.02*largest_num)])
-    ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
-    ax2.set_title('True Values vs. Predicted Values')
-    ax2.set_ylabel('Predicted Values')
-    ax2.set_xlabel('True Values')
-    textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
-    ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, 
-             verticalalignment='top', horizontalalignment='right')    
-
-    # Finalize figure formatting and export
-    fig.suptitle('Linear Regression Model Performance', fontsize=24)
-    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-    if save_img:
-        save_filename = 'sm_lr_results_' + filename_unique
-        save_image(output_dir, save_filename, bbox_inches='tight')
-    plt.show()
-
-
-
-
-# Plot standardized residuals vs. predicted values and true values vs. predicted values
 # Parameter filename_unique to be added to the end of the filename if saved
 # Parameter lr_model must be a statsmodels linear regression model
 # Can only save if combining plots
-def sm_lr_model_results_test_comb(lr_model, y, y_pred, combine_plots=False, save_img=False, filename_unique=None): 
+def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, save_img=False, filename_unique=None): 
     # Format text box for relevant metric of each plot
     box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
     
-    if combine:
+    if combine_plots:
         # Create figure, gridspec, list of axes/subplots mapped to gridspec location
         fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
     
@@ -430,12 +334,15 @@ def sm_lr_model_results_test_comb(lr_model, y, y_pred, combine_plots=False, save
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
     
     # Calculate heteroscedasticity metrics
-    white_test = het_white(lr_model.resid, lr_model.model.exog)
     bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
-    white_lm_p_value = '{:0.2e}'.format(white_test[1]) # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
-    bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
+    white_test = het_white(lr_model.resid, lr_model.model.exog)
+    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
+    bp_test_results = dict(zip(labels, bp_test)) 
+    white_test_results = dict(zip(labels, white_test))
+    bp_lm_p_value = '{:0.2e}'.format(bp_test_results['LM-Test p-value'])
+    white_lm_p_value = '{:0.2e}'.format(white_test_results['LM-Test p-value'])
     
-    if not combine:
+    if not combine_plots:
         #plot1 = plt.scatter(y_pred, standardized_residuals)   
         #ax = plot1.axes
         plt.scatter(y_pred, standardized_residuals)
@@ -450,12 +357,12 @@ def sm_lr_model_results_test_comb(lr_model, y, y_pred, combine_plots=False, save
     ax1.set_title('Standardized Residuals vs. Predicted Values')
     textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
     ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')   
-    if not combine: plt.show()
+    if not combine_plots: plt.show()
 
     # =============================
     # Plot True Values vs. Predicted Values
     # =============================
-    if not combine:
+    if not combine_plots:
         plt.scatter(y, y_pred)
         ax2 = plt.gca()
     else:
@@ -471,26 +378,31 @@ def sm_lr_model_results_test_comb(lr_model, y, y_pred, combine_plots=False, save
     ax2.set_xlabel('True Values')
     textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
     ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right',)    
-    if not combine: plt.show()
+    if not combine_plots: plt.show()
     
-    if combine:
+    if combine_plots:
         fig.suptitle('Linear Regression Model Performance', fontsize=24)
         fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
         if save_img:
             save_filename = 'sm_lr_results_' + filename_unique
             save_image(output_dir, save_filename, bbox_inches='tight')
         plt.show()
+    
+    het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
+    
+    return het_metrics
 
 # Subgroup plots and quantify heteroscedasticity
 # Parameter lr_model must be a statsmodels linear regression model
-def sm_lr_model_results_comb_plots_subgrouped(lr_model, orig_dataset, sm_y_pred, sm_y, plot_title):
+# Parameter plot_title will be added below the actual title in parentheses
+# Parameter filename_unique to be added to the end of the filename if saved
+def sm_lr_model_results_comb_plots_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title, combine_plots=False, save_img=False, filename_unique=None):
     # Organize relevant data
-    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
-    standardized_residuals.columns = ['stand_resid']
-    y_pred_series = pd.Series(sm_y_pred, name='y_pred')
-    y_series = pd.Series(sm_y, name='y')
+    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
+    y_pred_series = pd.Series(y_pred, name='y_pred')
+    y_series = pd.Series(y, name='y')
     relevant_data = pd.concat([orig_dataset[['bmi_>=_30', 'smoker']], y_series, y_pred_series, standardized_residuals], axis=1)
-    
+
     smoker_data = relevant_data[relevant_data['smoker']=='yes']
     nonsmoker_data = relevant_data[relevant_data['smoker']=='no']
     smoker_obese_data = smoker_data[smoker_data['bmi_>=_30']=='yes']
@@ -499,13 +411,13 @@ def sm_lr_model_results_comb_plots_subgrouped(lr_model, orig_dataset, sm_y_pred,
     nonsmoker_nonobese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='no']
     
     # Quantify Heteroscedasticity using White test and Breusch-Pagan test
-    white_test = het_white(lr_model.resid, lr_model.model.exog)
     bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
-    white_lm_p_value = '{:0.2e}'.format(white_test[1]) # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
-    bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
+    white_test = het_white(lr_model.resid, lr_model.model.exog)
     labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
-    white_test_results = dict(zip(labels, bp_test))
-    bp_test_results = dict(zip(labels, white_test))
+    bp_test_results = dict(zip(labels, bp_test))
+    white_test_results = dict(zip(labels, white_test))
+    bp_lm_p_value = '{:0.2e}'.format(bp_test_results['LM-Test p-value'])
+    white_lm_p_value = '{:0.2e}'.format(white_test_results['LM-Test p-value'])
     
     # Format text box with relevant metric of each plot
     box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
@@ -518,8 +430,8 @@ def sm_lr_model_results_comb_plots_subgrouped(lr_model, orig_dataset, sm_y_pred,
     largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
     smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
     plt.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
-    plt.title('SM True Values vs. Predicted Values\n(' + plot_title + ')')
-    plt.ylabel('SM Predicted Values')
+    plt.title('True Values vs. Predicted Values\n(' + plot_title + ')')
+    plt.ylabel('Predicted Values')
     plt.xlabel('True Values')
     plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
     
@@ -536,9 +448,9 @@ def sm_lr_model_results_comb_plots_subgrouped(lr_model, orig_dataset, sm_y_pred,
     plt.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
     plt.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
     plt.axhline(y=0, color='red', linestyle='--')
-    plt.ylabel('SM Residuals (standardized)')
-    plt.xlabel('SM Predicted Values')
-    plt.title('SM Residuals (standardized) vs. Predicted Values\n(' + plot_title + ')')
+    plt.ylabel('Standardized Residuals')
+    plt.xlabel('Predicted Values')
+    plt.title('Standardized Residuals vs. Predicted Values\n(' + plot_title + ')')
     plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
     
     ax = fig.axes
@@ -551,8 +463,10 @@ def sm_lr_model_results_comb_plots_subgrouped(lr_model, orig_dataset, sm_y_pred,
     return white_test_results, bp_test_results
 
 
-title_1 = 'Original'   
-white_test_results_1, bp_test_results_1 = sm_lr_model_results_comb_plots_subgrouped(sm_lin_reg, dataset, sm_y_pred, y, title_1)
+
+white_test_results_1, bp_test_results_1 = sm_lr_model_results_comb_plots_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, title_1)
+
+type(y)
 
 
 # Combine statsmodels linear regression model creation, fitting, and returning results    
@@ -603,13 +517,15 @@ sm_processed_X = sm.add_constant(sm_processed_X)
 sm_lin_reg = sm.OLS(y, sm_processed_X).fit()
 
 # Make predictions
-sm_y_pred = sm_lin_reg.predict(sm_processed_X) 
+sm_y_pred = sm_lin_reg.predict(sm_processed_X)
+sm_y_pred.name = 'y_pred'
 
 # Plot model performance
-sm_lr_model_results(sm_lin_reg, y, sm_y_pred)
-sm_lr_model_results_comb_plots(sm_lin_reg, y, sm_y_pred, save_img=False, filename_unique='original')
+het_metrics = sm_lr_model_results(sm_lin_reg, y, sm_y_pred, combine_plots=True, save_img=False, filename_unique='original')
 
-sm_lr_model_results_test_comb(sm_lin_reg, y, sm_y_pred, combine=True, save_img=False, filename_unique='original')
+
+title_1 = 'Original'   
+white_test_results_1, bp_test_results_1 = sm_lr_model_results_comb_plots_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, title_1)
 
 # =============================
 # Subgroup plots
