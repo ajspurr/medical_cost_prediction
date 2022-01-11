@@ -110,7 +110,7 @@ There are clear groupings of predicted values, which (surprise, surprise) relate
 
 #### Linear Relationship Between Predictors and Target Variable
 ##### BMI vs. Charges
-
+The inear relationship between BMI and charges is weak. But if you subgroup by smoking status, you can see that smokers' BMI have a strong linear relationship with charges (Pearson's of 0.8) while nonsmokers' BMI have basically no linear relationship with charges. As such, I will enginner a new feature: 'smoker * bmi'. This will remove the bmi of the nonsmokers, thus removing the data that does not have a linear relationship to the target. 
 <p align="center">
   <img src="/output/eda/lmplot_bmi_vs_charges.png" width="400"/>
   <img src="/output/eda/bmi_vs_charges_grp_smoking.png" width="400"/>
