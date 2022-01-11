@@ -109,6 +109,10 @@ Since the shape of the age vs. charges plots looks a bit parabolic, I tried squa
   <img src="/output/eda/age_sq_vs_charges_smokers_grp_bmi30.png" width="340"/>
 </p>
 
+It did slightly improve the R-squared of the model. The heteroscedasticity metrics didn't change much. 
+
+<p align="center"><img src="/output/models/sm_lr_results_age_sq_feature.png" width="900"/></p>
+
 #### Children vs. Charges
 No new insights were gained by subgrouping this relationship.
 
