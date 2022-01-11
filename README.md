@@ -48,11 +48,6 @@ For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 
 
 I tried subgrouping the nonsmokers by other variables, but none of them uncovered patterns in the data.
 
-
-### Further exploration of BMI vs. Charges relationship
-Subgrouping by smoking status effectively delineated the two groups of data points. And again, you can see that within the smoking group there are two clear clusters on either side of BMI = 30.
-<p align="center"><img src="/output/eda/bmi_vs_charges_grp_smoking.png" width="500"/></p>
-
 ### Further exploration of Children vs. Charges relationship
 No new insights were gained by subgrouping this relationship.
 
