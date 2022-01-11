@@ -409,6 +409,75 @@ def sm_lr_model_results_comb_plots(lr_model, y, y_pred, save_img=False, filename
         save_image(output_dir, save_filename, bbox_inches='tight')
     plt.show()
 
+
+
+
+# Try to use same fcuntion for combined vs. separate plots
+def sm_lr_model_results_test_comb(lr_model, y, y_pred, combine=False, save_img=False, filename_unique=None): 
+    # Format text box for relevant metric of each plot
+    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
+    
+    if combine:
+        # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+        fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
+    
+    # =============================
+    # Plot standardized residuals vs. predicted values
+    # =============================
+    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
+    
+    # Calculate heteroscedasticity metrics
+    white_test = het_white(lr_model.resid, lr_model.model.exog)
+    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
+    white_lm_p_value = '{:0.2e}'.format(white_test[1]) # Results returned as tuple: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
+    bp_lm_p_value = '{:0.2e}'.format(bp_test[1])
+    
+    if not combine:
+        #plot1 = plt.scatter(y_pred, standardized_residuals)   
+        #ax = plot1.axes
+        plt.scatter(y_pred, standardized_residuals)
+        ax1 = plt.gca()
+    else:
+        ax1 = ax_array_flat[0]
+        ax1.scatter(y_pred, standardized_residuals) 
+        
+    ax1.axhline(y=0, color='darkblue', linestyle='--')
+    ax1.set_ylabel('Standardized Residuals')
+    ax1.set_xlabel('Predicted Values')
+    ax1.set_title('Standardized Residuals vs. Predicted Values')
+    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
+    ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')   
+    if not combine: plt.show()
+
+    # =============================
+    # Plot True Values vs. Predicted Values
+    # =============================
+    if not combine:
+        plt.scatter(y, y_pred)
+        ax2 = plt.gca()
+    else:
+        ax2 = ax_array_flat[1]
+        ax2.scatter(y, y_pred)
+        
+    largest_num = max(max(y), max(y_pred))
+    ax2.set_xlim([0, largest_num + (0.02*largest_num)])
+    ax2.set_ylim([0, largest_num + (0.02*largest_num)])
+    ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
+    ax2.set_title('True Values vs. Predicted Values')
+    ax2.set_ylabel('Predicted Values')
+    ax2.set_xlabel('True Values')
+    textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
+    ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right',)    
+    if not combine: plt.show()
+    
+    if combine:
+        fig.suptitle('Linear Regression Model Performance', fontsize=24)
+        fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+        if save_img:
+            save_filename = 'sm_lr_results_' + filename_unique
+            save_image(output_dir, save_filename, bbox_inches='tight')
+        plt.show()
+
 # Subgroup plots and quantify heteroscedasticity
 # Parameter lr_model must be a statsmodels linear regression model
 def sm_lr_model_results_comb_plots_subgrouped(lr_model, orig_dataset, sm_y_pred, sm_y, plot_title):
@@ -535,7 +604,9 @@ sm_y_pred = sm_lin_reg.predict(sm_processed_X)
 
 # Plot model performance
 sm_lr_model_results(sm_lin_reg, y, sm_y_pred)
-sm_lr_model_results_comb_plots(sm_lin_reg, y, sm_y_pred, save_img=True, filename_unique='original')
+sm_lr_model_results_comb_plots(sm_lin_reg, y, sm_y_pred, save_img=False, filename_unique='original')
+
+sm_lr_model_results_test_comb(sm_lin_reg, y, sm_y_pred, combine=True, save_img=False, filename_unique='original')
 
 # =============================
 # Subgroup plots

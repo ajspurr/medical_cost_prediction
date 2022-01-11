@@ -515,8 +515,8 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
 plt.title("Age vs. Charges in smokers, grouped by BMI (30)")
-save_filename = 'age_vs_charges_smokers_grp_bmi30'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'age_vs_charges_smokers_grp_bmi30'
+#save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 # ===============
@@ -591,7 +591,8 @@ plt.show()
 # =============================
 pearson_nonsmokers = nonsmokers_data.corr(method='pearson')['age'].loc['charges'].round(3)
 g = sns.lmplot(x='age', y='charges', data=nonsmokers_data, line_kws={'color':'cyan'})
-ax = g.axes[0,0]
+#ax = g.axes[0,0]
+ax = plt.gca()
 textbox_text = "Pearson's r = %0.3f" %pearson_nonsmokers
 plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
          verticalalignment='top', horizontalalignment='right')
