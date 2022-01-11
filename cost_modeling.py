@@ -546,7 +546,7 @@ new_X_3 = new_X_2.copy()
 new_X_3['smoker*obese'] = new_X_3['smoker_yes'] * new_X_3['bmi_>=_30_yes']
 title_3 = 'w [smoker*obese] Feature'
 
-sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X_3, y, dataset, title_3, save_img=False, filename_unique='smoke_ob_feature')
+sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X_3, y, dataset, title_3, save_img=True, filename_unique='smoke_ob_feature')
 summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
 sm_lin_reg_3.rsquared
 
@@ -557,25 +557,26 @@ sm_lin_reg_3.rsquared
 
 
 # =============================
-# Age vs. Charges
+# Age vs. Charges: accounting for curvilinear relationship between age and charges
 # =============================
-
-# Since the shape of the age vs. charges plots looks a bit parabolic, I tried squaring the age to 
-# transform it to a more linear relationship. It appeared to do so, but the R-squared did not change much.
-# But it does seem to make the linear regression results better
+# There is a clear curvilinear relationship between predicted charges and residuals, which indicates an element of heteroscedasticity
+# (even though the metrics don't support this). You can see this relationship a bit in the age vs. charges plots as well. 
+# So I added a new feature [age^2]. Visually, the reg line in the age vs. charges plot seems to fit better, 
+# however, this new feature doesn't seem to affect the R-squared. This may be due to the outliers and/or the shallowness of the
+# slopes of the reg lines. 
 
 new_X_4 = new_X_3.copy()
 title_4 = 'w [age^2] feature'
 
-# Unfortunately, age has already been scalled around 0 and squaring will make all the negative numbers positive
-# Will have to take the original ages, square, then scale
+# Age has already been scalled around 0 and squaring the values will make all the negative numbers positive
+# So I will to take the original ages, square them, then scale.
 orig_ages = dataset['age'].to_frame()
 squared_ages = np.power(orig_ages, 2)
 scaled_sq_ages = pd.DataFrame(StandardScaler().fit_transform(squared_ages), columns=['age^2'])
 new_X_4['age^2'] = scaled_sq_ages
 
 sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, dataset, title_4, save_img=False, filename_unique='age_sq_feature')
-summary_df_4 = sm_results_to_df(sm_lin_reg_3.summary())
+summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
 # sm_lin_reg_5.rsquared
 
 
