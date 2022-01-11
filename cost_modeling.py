@@ -370,8 +370,10 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, save_img=False
         ax2.scatter(y, y_pred)
         
     largest_num = max(max(y), max(y_pred))
-    ax2.set_xlim([0, largest_num + (0.02*largest_num)])
-    ax2.set_ylim([0, largest_num + (0.02*largest_num)])
+    smallest_num = min(min(y), min(y_pred))
+    plot_limits = [smallest_num - (0.02*largest_num), largest_num + (0.02*largest_num)]
+    ax2.set_xlim(plot_limits)
+    ax2.set_ylim(plot_limits)
     ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
     ax2.set_title('True Values vs. Predicted Values')
     ax2.set_ylabel('Predicted Values')
@@ -389,14 +391,13 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, save_img=False
         plt.show()
     
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
-    
     return het_metrics
 
-# Subgroup plots and quantify heteroscedasticity
+# Subgroup plots by smoking and obesity
 # Parameter lr_model must be a statsmodels linear regression model
 # Parameter plot_title will be added below the actual title in parentheses
 # Parameter filename_unique to be added to the end of the filename if saved
-def sm_lr_model_results_comb_plots_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title, combine_plots=False, save_img=False, filename_unique=None):
+def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title, save_img=False, filename_unique=None):
     # Organize relevant data
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
     y_pred_series = pd.Series(y_pred, name='y_pred')
@@ -422,49 +423,54 @@ def sm_lr_model_results_comb_plots_subgrouped(lr_model, orig_dataset, y, y_pred,
     # Format text box with relevant metric of each plot
     box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
     
-    # True Values vs. Predicted Values subgrouped by smoking and obesity
-    fig = plt.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
-    plt.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
-    plt.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
-    plt.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
+    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+    fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
+        
+    # =============================
+    # Plot standardized residuals vs. predicted values
+    # =============================
+    ax1 = ax_array_flat[0]
+    ax1.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
+    ax1.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
+    ax1.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
+    ax1.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
+    ax1.axhline(y=0, color='red', linestyle='--')
+    ax1.set_ylabel('Standardized Residuals')
+    ax1.set_xlabel('Predicted Values')
+    ax1.set_title('Standardized Residuals vs. Predicted Values')
+    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
+    ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')  
+    
+    # =============================
+    # True Values vs. Predicted Values 
+    # =============================
+    ax2 = ax_array_flat[1]
+    ax2.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
+    ax2.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
+    ax2.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
+    ax2.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
     largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
     smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
-    plt.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
-    plt.title('True Values vs. Predicted Values\n(' + plot_title + ')')
-    plt.ylabel('Predicted Values')
-    plt.xlabel('True Values')
-    plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
-    
-    ax = fig.axes
+    ax2.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
+    ax2.set_title('True Values vs. Predicted Values')
+    ax2.set_ylabel('Predicted Values')
+    ax2.set_xlabel('True Values')
+    ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
     textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
-    plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
-             verticalalignment='top', horizontalalignment='right') 
-
-    plt.show()
+    ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right') 
     
-    # Plot standardized residuals vs. predicted values subgrouped by smoking and obesity
-    fig = plt.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
-    plt.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
-    plt.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
-    plt.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
-    plt.axhline(y=0, color='red', linestyle='--')
-    plt.ylabel('Standardized Residuals')
-    plt.xlabel('Predicted Values')
-    plt.title('Standardized Residuals vs. Predicted Values\n(' + plot_title + ')')
-    plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
-    
-    ax = fig.axes
-    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
-    plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
-             verticalalignment='top', horizontalalignment='right')  
-    
+    # Format and save figure
+    fig.suptitle('Linear Regression Model Performance (' + plot_title + ')', fontsize=24)
+    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+    if save_img:
+        save_filename = 'sm_lr_results_' + filename_unique
+        save_image(output_dir, save_filename, bbox_inches='tight')
     plt.show()
 
     return white_test_results, bp_test_results
 
 
-
-white_test_results_1, bp_test_results_1 = sm_lr_model_results_comb_plots_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, title_1)
+white_test_results_1, bp_test_results_1 = sm_lr_model_results_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, 'Original', save_img=False, filename_unique='orig_subgrouped')
 
 type(y)
 
@@ -521,7 +527,7 @@ sm_y_pred = sm_lin_reg.predict(sm_processed_X)
 sm_y_pred.name = 'y_pred'
 
 # Plot model performance
-het_metrics = sm_lr_model_results(sm_lin_reg, y, sm_y_pred, combine_plots=True, save_img=False, filename_unique='original')
+het_metrics = sm_lr_model_results(sm_lin_reg, y, sm_y_pred, combine_plots=True, save_img=True, filename_unique='original')
 
 
 title_1 = 'Original'   
