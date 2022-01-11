@@ -108,5 +108,13 @@ There are clear groupings of predicted values, which (surprise, surprise) relate
 
 <p align="center"><img src="/output/models/sm_lr_results_orig_subgrouped.png" width="900"/></p>
 
+#### Linear Relationship Between Predictors and Target Variable
+##### BMI vs. Charges
+
+<p align="center">
+  <img src="/output/eda/regplot_bmi_vs_charges.png" width="400"/>
+  <img src="/output/eda/bmi_vs_charges_grp_smoking.png" width="400"/>
+</p>
+
 #### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
