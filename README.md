@@ -23,7 +23,7 @@ Origin story of feature 'BMI >= 30'. I had noticed a bimodal distribution of cha
 <p align="center"><img src="/output/eda/num_var_combined.png" width="900"/></p>
 
 ### Further exploration of Age vs. Charges relationship
-'Age vs. Charges' plot looks like three distinct groups. I tried subgrouping by all the categorical variables and found that smoking status explained the groups quite well. In the graph below, you can barely see the orange 'nonsmoker' line as it fits the data points so well.
+'Age vs. Charges' plot looks like three distinct groups. I tried subgrouping by all the categorical variables and found that smoking status explained the groups quite well.
 
 <p align="center"><img src="/output/eda/age_vs_charges_grp_smoking_status.png" width="500"/></p>
 
