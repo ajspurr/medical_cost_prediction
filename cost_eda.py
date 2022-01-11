@@ -81,9 +81,9 @@ cont_cols_w_target = cont_cols.copy()
 cont_cols_w_target.append('charges')
 
 
-# ==========================================================
+# =======================================================================================
 # Feature engineering
-# ==========================================================
+# =======================================================================================
 
 # Based on EDA below, BMI has an impact on charges. I will create a new categorical feature for BMI.
 # I had originally used the cutoff of average BMI (30.7), which is extremely close to the 
@@ -97,13 +97,13 @@ dataset['bmi_>=_30'] = dataset['bmi_>=_30'].map(bmi_dict)
 categorical_cols.append('bmi_>=_30')
 cat_ord_cols.append('bmi_>=_30')
 
-# =======================================================================================
+# ====================================================================================================================
 # Visualize data
-# =======================================================================================
+# ====================================================================================================================
 
-# ==========================================================
+# =======================================================================================
 # Functions and global variable creation
-# ==========================================================
+# =======================================================================================
 
 # Standardize image saving parameters
 def save_image(filename, dir=eda_output_dir, dpi=300, bbox_inches='tight'):
@@ -146,9 +146,9 @@ def initialize_fig_gs_ax(num_rows, num_cols, figsize=(16, 8)):
     return fig, gs, ax_array_flat
 
 
-# ==========================================================
+# =======================================================================================
 # Categorical variables
-# ==========================================================
+# =======================================================================================
 
 # Categorical data bar charts, total count of each category
 for col in cat_ord_cols:
@@ -189,8 +189,8 @@ for col in cat_ord_cols:
 # Finalize figure formatting and export
 fig.suptitle('Categorical Variable Counts', fontsize=18)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'combined_cat_counts'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'combined_cat_counts'
+#save_image(save_filename)
 plt.show()
 
 
@@ -266,8 +266,8 @@ for col in cat_ord_cols:
 # Finalize figure formatting and export
 fig.suptitle('Categorical Variable Relationships with Target', fontsize=26)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'cat_variables_vs_target'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'cat_variables_vs_target'
+#save_image(save_filename)
 plt.show()
 
 # =============================
@@ -295,8 +295,8 @@ for cat_var1 in cat_ord_cols:
 
 fig.suptitle('Categorical Variable Violin Plots', fontsize=26)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'violin_cat_var'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'violin_cat_var'
+#save_image(save_filename)
 plt.show()            
 
 # =============================
@@ -327,23 +327,27 @@ axis2.set_ylabel('')
 # Finalize figure formatting and export
 #fig.suptitle('Exploration Bimodal Distribution of Charges in Smokers', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'smoker_dist_by_bmi'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'smoker_dist_by_bmi'
+#save_image(save_filename)
 plt.show()
 
 
-# ==========================================================
+# =======================================================================================
 # Numerical variables
-# ==========================================================
+# =======================================================================================
 
+# =============================
 # Plot target (charges) on its own
+# =============================
 sns.distplot(dataset['charges'])
 plt.title('Charges Histogram', fontsize=20, y=1.04)
-save_filename = 'hist_charges'
-save_image(output_dir, save_filename)
+#save_filename = 'hist_charges'
+#save_image(save_filename)
 plt.show()
 
+# =============================
 # Numerical data histograms
+# =============================
 for col in numerical_cols:
     #sns.distplot used to plot the histogram and fit line, but it's been deprecated to displot or histplot which don't 
     sns.distplot(dataset[col])
@@ -352,7 +356,10 @@ for col in numerical_cols:
     #save_image(output_dir, save_filename)
     plt.show()
 
-# Numerical data relationships with target (lmplots)
+# =============================
+# Numerical data relationships with target 
+# =============================
+# lmplots
 pearsons = dataset.corr(method='pearson').round(2)
 spearmans = dataset.corr(method='spearman').round(2) 
 box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
@@ -366,10 +373,10 @@ for col in numerical_cols:
         textbox_text = "Pearson's r = %0.2f" %pearsons[col].loc['charges']
     plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
              verticalalignment='top', horizontalalignment='right')
-    save_filename = f'lmplot_{col}_vs_charges'
-    save_image(output_dir, save_filename, bbox_inches='tight')
+    #save_filename = f'lmplot_{col}_vs_charges'
+    #save_image(save_filename)
 
-# Numerical data relationships with target (regplots, because you can't add lmplots to gridspec)
+# regplots, because you can't add lmplots to gridspec
 pearsons = dataset.corr(method='pearson').round(2)
 spearmans = dataset.corr(method='spearman').round(2) 
 box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
@@ -385,10 +392,10 @@ for col in numerical_cols:
              verticalalignment='top', horizontalalignment='right')
     
     #save_filename = f'regplot_{col}_vs_charges'
-    #save_image(output_dir, save_filename, bbox_inches='tight')
+    #save_image(save_filename)
     plt.show()
 
-# Numerical data relationships with target (joint plots)
+# jointplots
 for col in numerical_cols:
     p = sns.jointplot(x=col, y="charges", data = dataset, kind='reg')
     p.fig.suptitle(format_col(col) + ' vs. Charges', y=1.03)
@@ -396,7 +403,7 @@ for col in numerical_cols:
     #plt.title(format_col(col) + ' vs. Charges')
     #plt.legend()
     #save_filename = 'hist_by_stroke-' + col
-    #save_image(output_dir, save_filename)    
+    #save_image(save_filename)    
     plt.show()
 
 # =============================
@@ -446,14 +453,18 @@ for col in numerical_cols:
 # Finalize figure formatting and export
 fig.suptitle('Numerical Variable Exploration', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'num_var_combined_2'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'num_var_combined_2'
+#save_image(save_filename)
 plt.show()
 
 
 # ==========================================================
 # Further explore numerical variables and smoking
 # ==========================================================
+
+# =============================================
+# Age vs. Charges
+# =============================================
 
 # Age vs. Charges, grouped by smoking status
 sns.jointplot(x='age', y="charges", data = dataset, hue='smoker')
@@ -494,7 +505,6 @@ plt.title("Age vs. Charges, grouped by smoking status")
 save_filename = 'age_vs_charges_grp_smoking_status'
 save_image(save_filename)
 plt.show()
-
 
 
 sns.lmplot(x='age', y='charges', data=smokers_data)
@@ -580,8 +590,8 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
 plt.title("Age vs. Charges in smokers, grouped by BMI (29)")
-save_filename = 'age_vs_charges_smokers_grp_bmi29'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'age_vs_charges_smokers_grp_bmi29'
+#save_image(save_filename)
 plt.show()
 
 
@@ -613,8 +623,8 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
 plt.title("Age vs. Charges in smokers, grouped by BMI(31)")
-save_filename = 'age_vs_charges_smokers_grp_bmi31'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'age_vs_charges_smokers_grp_bmi31'
+#save_image(save_filename)
 plt.show()
 
 # =============================
@@ -632,16 +642,32 @@ plt.title("Age vs. Charges in nonsmokers")
 #save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
-
+# =============================
 # Test squaring the age as the shape looks almost parabolic
-test_age_df = nonsmokers_data['age'].to_frame()
-test_age_df['charges'] = nonsmokers_data['charges']
-test_age_df['age^2'] = np.power(nonsmokers_data['age'], 2)
+# =============================
+new_age_data = dataset.copy()
+new_age_data['age^2'] = np.power(new_age_data['age'], 2)
 
-pearson_nonsmokers_newage = test_age_df.corr(method='pearson')['age^2'].loc['charges'].round(3)
-g = sns.lmplot(x='age^2', y='charges', data=test_age_df, line_kws={'color':'cyan'})
-ax = g.axes[0,0]
-textbox_text = "Pearson's r = %0.3f" %pearson_nonsmokers_newage
+# Divide new dataset into relevant groups
+new_age_smokers_data = new_age_data[dataset['smoker']=='yes']
+new_age_nonsmokers_data = new_age_data[dataset['smoker']=='no']
+new_obese_smoker_data = new_age_smokers_data[new_age_smokers_data['bmi_>=_30']=='yes']
+new_nonobese_smoker_data = new_age_smokers_data[new_age_smokers_data['bmi_>=_30']=='no']
+
+# Within smokers group, calculate pearsons in obese and nonobese individuals
+new_pearson_obese_smoker = new_obese_smoker_data.corr(method='pearson').round(3)
+new_pearson_obese_smoker_age_charge = new_pearson_obese_smoker['age'].loc['charges']
+new_pearson_nonobese_smoker = new_nonobese_smoker_data.corr(method='pearson').round(3)
+new_pearson_nonobese_smoker_age_charge = new_pearson_nonobese_smoker['age'].loc['charges']
+
+# Calculate nonsmokers pearsons
+new_pearson_nonsmokers = new_age_nonsmokers_data.corr(method='pearson').round(3)
+new_pearson_nonsmokers_age_charge = new_pearson_nonsmokers['age'].loc['charges']
+
+# Plot two lmplots again
+sns.lmplot(x='age^2', y='charges', data=new_age_nonsmokers_data, line_kws={'color':'cyan'})
+ax = plt.gca()
+textbox_text = "Pearson's r = %0.3f" %new_pearson_nonsmokers_age_charge
 plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
          verticalalignment='top', horizontalalignment='right')
 plt.title("Age^2 vs. Charges in nonsmokers")
@@ -653,9 +679,9 @@ plt.show()
 # Nonsmokers do not group well by BMI, sex, region, or # children (I left that code out)
 
 
-# =============================
+# =============================================
 # Explore BMI vs. Charges
-# =============================
+# =============================================
 pearson_bmi_charges_smokers = smokers_data.corr(method='pearson')['bmi'].loc['charges'].round(2)
 pearson_bmi_charges_nonsmokers = nonsmokers_data.corr(method='pearson')['bmi'].loc['charges'].round(2)
 
@@ -670,16 +696,15 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_bmi_charges_smokers)
 plt.title("BMI vs. Charges grouped by smoking status")
-save_filename = 'bmi_vs_charges_grp_smoking'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'bmi_vs_charges_grp_smoking'
+#save_image(save_filename)
 plt.show()
 
 # Other subgroupings don't yield anything helpful
 
-
-# =============================
+# =============================================
 # Explore Children vs. Charges
-# =============================
+# =============================================
 # Children vs. Charges with no obvious subgrouping
 sns.lmplot(x='children', y='charges', hue="smoker", data=dataset)
 plt.show()
@@ -691,11 +716,9 @@ plt.show()
 # =======================================================================================
 # Correlation between variables
 # =======================================================================================
-
 # ==========================================================
 # Correlation between numerical variables
 # ==========================================================
-
 # =============================
 # Pairplots and PaidGrids to visualize relationships between numerical variables
 # =============================
@@ -707,8 +730,8 @@ sns.pairplot(dataset, hue="region")
 
 pp = sns.pairplot(dataset, hue="sex")
 pp.fig.suptitle("Relationship Between Numerical Variables", y=1.03, fontsize=24)
-save_filename = 'relationship_num_var_by_sex'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'relationship_num_var_by_sex'
+#save_image(save_filename, bbox_inches='tight')
 plt.show()
 
 # Tried PairGrid, but diagonal graph kde plots don't display properly due to inappropriate y-scale
@@ -729,14 +752,14 @@ spearmans_df = dataset[num_cols_w_target].corr(method='spearman')
 
 sns.heatmap(pearsons_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
 plt.title('Correlation Numerical Variables (Pearson)')
-save_filename = 'corr_num_var_pearson'
-save_image(output_dir, save_filename)  
+#save_filename = 'corr_num_var_pearson'
+#save_image(save_filename)  
 plt.show()
 
 sns.heatmap(spearmans_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
 plt.title('Correlation Numerical Variables (Spearman)')
-save_filename = 'corr_num_var_spearman'
-save_image(output_dir, save_filename)  
+#save_filename = 'corr_num_var_spearman'
+#save_image(save_filename)  
 plt.show()
 
 # np.trui sets all the values above a certain diagonal to 0, so we don't have redundant boxes
@@ -781,8 +804,8 @@ cramers_df = cramers_df.apply(pd.to_numeric)
 # Output results as heatmap
 sns.heatmap(cramers_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
 plt.title("Association Between Categorical Variables (Cramér's V)")
-save_filename = 'association_cat_variables'
-save_image(output_dir, save_filename)  
+#save_filename = 'association_cat_variables'
+#save_image(save_filename)  
 plt.show()
 
 # =============================
@@ -845,8 +868,8 @@ corr_ratio_df = corr_ratio_df.apply(pd.to_numeric)
 # Output results as heatmap
 sns.heatmap(corr_ratio_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1)
 plt.title("Correlation Ratio Between Numerical and Categorical Variables")
-save_filename = 'corr_ratio_cat_num_variables'
-save_image(output_dir, save_filename)  
+#save_filename = 'corr_ratio_cat_num_variables'
+#save_image(save_filename)  
 plt.show()
 
 # =============================
@@ -863,116 +886,6 @@ for col in corr_ratio_df.columns:
             #save_filename = 'relationship_' + col + '_' + row
             #save_image(output_dir, save_filename)  
             plt.show()
-
-
-# =============================
-# Combine correlation graphs into one figure
-# =============================
-
-# Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=3, figsize=(16, 6))
-
-# Correlation between continuous variables
-axis=ax_array_flat[0]
-sns.heatmap(dataset[numerical_cols].corr(), annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1, cbar=False, ax=axis)
-axis.set_title('Correlation Between Continuous Variables')
-
-# Association between categorical variables
-axis=ax_array_flat[1]
-sns.heatmap(cramers_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1, cbar=False, ax=axis)
-axis.set_title("Association Between Categorical Variables (Cramér's V)")
-
-# Correlation between continuous and categorical variables
-axis=ax_array_flat[2]
-sns.heatmap(corr_ratio_df, annot=True, linewidth=.8, cmap="Blues", vmin=0, vmax=1, ax=axis)
-axis.set_title("Correlation Ratio Between Numerical and Categorical Variables")
-
-# Finalize figure formatting and export
-fig.suptitle('Feature Correlation', fontsize=24, y=1.08) # y=1.08 increases space below figure title
-#fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'combined_corr'
-save_image(output_dir, save_filename, bbox_inches='tight')
-plt.show()
-
-
-# Include three plots of variables with correlation > 0.5
-# Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=3, figsize=(16, 6))
-
-# Ever_married vs. age
-axis=ax_array_flat[0]
-sns.boxplot(data=dataset, x='ever_married', y='age', ax=axis)
-axis.set_ylabel('Age')
-axis.set_xlabel('Ever Married')
-#axis.xaxis.get_label().set_fontsize(12)
-axis.set_title("Ever Married vs. Age (Corr ratio=0.68)")
-
-# Work_type vs. age
-axis=ax_array_flat[1]
-sns.boxplot(data=dataset, x='work_type', y='age', ax=axis)
-axis.set_ylabel('Age')
-axis.set_xlabel('Work Type')
-#axis.xaxis.get_label().set_fontsize(12)
-axis.set_title("Work Type vs. Age (Corr ratio=0.68)")
-
-# Work_type vs. ever_married
-axis=ax_array_flat[2]
-sns.countplot(data=dataset, x='ever_married', hue='work_type', ax=axis)#, legend=False)
-#plt.legend(bbox_to_anchor=(1.05, 1), borderaxespad=0, title='Work Type')#, loc='upper left')
-axis.legend(title='Work Type')
-axis.set_ylabel('Count')
-axis.set_xlabel('Ever Married')
-axis.set_title("Ever Married vs. Work Type (Cramer's=0.57)")
-
-# Finalize figure formatting and export
-fig.suptitle('Feature Correlation Details', fontsize=24)
-fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'combined_corr_details'
-save_image(output_dir, save_filename, bbox_inches='tight')
-plt.show()
-
-
-# ==========================================================
-# Cumulative Risk of stroke by age
-# ==========================================================
-stroke_rates = []
-
-dataset['age'].min()
-# Found that min age is 0.08. For the sake of the loop counter needing be an int, will say min_age = 1 
-# as it calculates the risk of stroke at any age below the current age (so it won't ignore the age=0.08)
-min_age = 1
-
-dataset['age'].max()
-# Found that max age in the dataset is 82.0, will call it 82 (an int)
-max_age = 82
-
-# Looping through each age to calculate risk of having stroke by the time someone reaches that age
-for i in range(min_age, max_age):
-    # Current age calculating risk for
-    age = i
-    
-    # In this dataset, number of strokes in anyone current age or younger
-    num_strokes = dataset[dataset['age'] <= i]['stroke'].sum()
-    
-    # Total number of people in this dataset current age or younger
-    num_people = len(dataset[dataset['age'] <= i])
-    
-    # Add the stroke rate to the list
-    stroke_rates.append(num_strokes / num_people)
-
-# Create line plot, the x-axis is technically the index of the value, but this is actually the age given the way the loop works
-sns.lineplot(data=stroke_rates)
-plt.xlabel('Age')
-plt.ylabel('Cumulative Stroke Risk')
-plt.title('Cumulative Stroke Risk vs. Age')
-#save_filename = 'cumulative_stroke_risk_vs_age'
-#save_image(output_dir, save_filename)  
-plt.show()
-
-
-
-
-
 
 
 
