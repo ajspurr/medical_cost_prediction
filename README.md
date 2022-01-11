@@ -106,7 +106,7 @@ To test for these assumptions, I used package 'statsmodels' (as opposed to 'skle
 
 There are clear groupings of predicted values, which (surprise, surprise) relate to BMI and smoking status. Subgrouped plot below. In the plot on the left, 'BP' represents the p-value for the Breusch-Pagan Lagrange Multiplier Test for Heteroscedasticity and 'White' represents the p-value of White’s Lagrange Multiplier Test for Heteroscedasticity. These will be discussed in the 'Homoscedasticity' section below. Values less than 0.05 indicate presence of heteroscedasticity.
 
-<p align="center"><img src="/output/models/sm_lr_results_orig_subgrouped.png" width="750"/></p>
+<p align="center"><img src="/output/models/sm_lr_results_orig_subgrouped.png" width="900"/></p>
 
 #### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
