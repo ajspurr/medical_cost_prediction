@@ -216,7 +216,7 @@ def manual_preprocess_sm(X):
     return X_processed
 
 # ====================================================================================================================
-# Model evaluation function
+# Model evaluation functions
 # ====================================================================================================================
 # Parameter 'model_name' will be used for coding and saving images
 # Parameter 'model_display_name' will be used for plot labels
@@ -270,56 +270,14 @@ def calulate_vif(data, numerical_cols):
     vif = pd.Series([variance_inflation_factor(fxn_dataset.values, i) for i in range(fxn_dataset.shape[1])], index=fxn_dataset.columns)
     return vif
 
-# ====================================================================================================================
-# Split and preprocess data
-# ====================================================================================================================
-# Separate target from predictors
-y = dataset['charges']
-X = dataset.drop(['charges'], axis=1)
-
-# Divide data into training and validation subsets
-X_train, X_valid, y_train, y_valid = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
-
-# Preprocess data
-X_train_processed, X_valid_processed = manual_preprocess(X_train, X_valid)
-
-# ====================================================================================================================
-# Initial modeling with sklearn Multiple Linear Regression
-# ====================================================================================================================
-
-# Fit linear regression model
-lin_reg = LinearRegression()
-fit = lin_reg.fit(X_train_processed, y_train)
-
-# Make predictions
-y_pred = lin_reg.predict(X_valid_processed)
-
-# Evaluate model
-lr_eval = evaluate_model(y_valid, y_pred, 'lin_reg', 'LR')
-
-# =======================================================================================
-# Test multiple linear regression model assumptions
-# =======================================================================================
-# ==========================================================
-# Test for multicollinearity
-# ==========================================================
-# Calculate VIF
-vif = calulate_vif(dataset, numerical_cols)
-
-# All very close to 1, no multicollinearity
-
-# ====================================================================================================================
-# Using statsmodels Multiple Linear Regression to test for heteroscedasticity
-# ====================================================================================================================
-# https://datatofish.com/multiple-linear-regression-python/
-
 # =======================================================================================
 # Statsmodels functions
 # =======================================================================================
 # Plot standardized residuals vs. predicted values and true values vs. predicted values
 # Parameter filename_unique to be added to the end of the filename if saved
 # Parameter lr_model must be a statsmodels linear regression model
-# Can only save if combining plots
+# Can only save image if combining plots
+# Returns heteroscedasticity metrics 'het_metrics'
 def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, save_img=False, filename_unique=None): 
     # Format text box for relevant metric of each plot
     box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
@@ -397,6 +355,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, save_img=False
 # Parameter lr_model must be a statsmodels linear regression model
 # Parameter plot_title will be added below the actual title in parentheses
 # Parameter filename_unique to be added to the end of the filename if saved
+# Returns heteroscedasticity metrics 'het_metrics'
 def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title, save_img=False, filename_unique=None):
     # Organize relevant data
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
@@ -476,9 +435,6 @@ def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
     return het_metrics
 
-
-het_metrics_1 = sm_lr_model_results_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, 'Original', save_img=False, filename_unique='orig_subgrouped')
-
 # Combine statsmodels linear regression model creation, fitting, and returning results    
 def fit_ols_test_heteroscedasticity(fxn_X, fxn_y, orig_dataset, plot_title):
     fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
@@ -514,6 +470,26 @@ def sm_results_to_df(summary):
     
     return return_df
 
+# ====================================================================================================================
+# Implement statsmodels package to test multiple linear regression model assumptions
+# ====================================================================================================================
+# https://datatofish.com/multiple-linear-regression-python/
+
+# Separate target from predictors
+y = dataset['charges']
+X = dataset.drop(['charges'], axis=1)
+
+# =======================================================================================
+# Test for multicollinearity
+# =======================================================================================
+# Calculate VIF
+vif = calulate_vif(dataset, numerical_cols)
+
+# All very close to 1, no multicollinearity. (Greater than 5-10 indicates multicollinearity)
+
+smoker_dataset = dataset[dataset['smoker']=='yes']
+plt.scatter(smoker_dataset['bmi'], smoker_dataset['age'])
+
 # =======================================================================================
 # Statsmodels analysis
 # =======================================================================================
@@ -533,54 +509,17 @@ sm_y_pred.name = 'y_pred'
 # Plot model performance
 het_metrics = sm_lr_model_results(sm_lin_reg, y, sm_y_pred, combine_plots=True, save_img=True, filename_unique='original')
 
-
+# Plot model performance, subgrouped by smoking and obesity
 title_1 = 'Original'   
-white_test_results_1, bp_test_results_1 = sm_lr_model_results_comb_plots_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, title_1)
-
-# =============================
-# Subgroup plots
-# =============================
-# Organize relevant data
-standardized_residuals = pd.DataFrame(sm_lin_reg.get_influence().resid_studentized_internal)
-standardized_residuals.columns = ['stand_resid']
-relevant_data = pd.concat([dataset[['bmi_>=_30', 'smoker', 'charges']], sm_y_pred, standardized_residuals], axis=1)
-relevant_data = relevant_data.rename(columns = {'charges':'y', 0:'y_pred'})
-
-smoker_data = relevant_data[relevant_data['smoker']=='yes']
-nonsmoker_data = relevant_data[relevant_data['smoker']=='no']
-smoker_obese_data = smoker_data[smoker_data['bmi_>=_30']=='yes']
-smoker_nonobese_data = smoker_data[smoker_data['bmi_>=_30']=='no']
-nonsmoker_obese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='yes']
-nonsmoker_nonobese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='no']
-
-# True Values vs. Predicted Values subgrouped by smoking and bmi
-plt.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
-plt.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
-plt.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
-plt.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
-largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
-plt.plot([0, largest_num], [0, largest_num], color='darkblue', linestyle='--')
-plt.title('SM True Values vs. Predicted Values')
-plt.ylabel('SM Predicted Values')
-plt.xlabel('True Values')
-plt.legend()
-plt.show()
-
-# Plot standardized residuals vs. predicted values subgrouped by smoking and bmi
-plt.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
-plt.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
-plt.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
-plt.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
-plt.axhline(y=0, color='red', linestyle='--')
-plt.ylabel('SM Residuals (standardized)')
-plt.xlabel('SM Predicted Values')
-plt.title('SM Residuals (standardized) vs. Predicted Values')
-plt.legend()
-plt.show()
+het_metrics_1 = sm_lr_model_results_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, title_1, save_img=False, filename_unique='orig_subgrouped')
 
 # =============================
 # Quantify Heteroscedasticity
 # =============================
+
+# LEFT OFF HERE ***************************************************************
+
+
 # Model Summary
 sm_results = sm_lin_reg.summary()
 
@@ -745,12 +684,62 @@ sm_lin_reg_6, sm_y_pred_6, white_test_results_6, bp_test_results_6 = fit_ols_tes
 summary_df_6 = sm_results_to_df(sm_lin_reg_6.summary())
 sm_lin_reg_6.rsquared
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ====================================================================================================================
+# Back to sklearn models
+# ====================================================================================================================
+
+# ====================================================================================================================
+# Split and preprocess data
+# ====================================================================================================================
+# Separate target from predictors
+y = dataset['charges']
+X = dataset.drop(['charges'], axis=1)
+
+# Divide data into training and validation subsets
+X_train, X_valid, y_train, y_valid = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
+
+# Preprocess data
+X_train_processed, X_valid_processed = manual_preprocess(X_train, X_valid)
+
+# ====================================================================================================================
+# Initial modeling with sklearn Multiple Linear Regression
+# ====================================================================================================================
+
+# Fit linear regression model
+lin_reg = LinearRegression()
+fit = lin_reg.fit(X_train_processed, y_train)
+
+# Make predictions
+y_pred = lin_reg.predict(X_valid_processed)
+
+# Evaluate model
+lr_eval = evaluate_model(y_valid, y_pred, 'lin_reg', 'LR')
+
+# =======================================================================================
+# Test multiple linear regression model assumptions
+# =======================================================================================
+
+
+
 # =============================
 # Other stuff
 # =============================
 lin_reg.coef_
 lin_reg.intercept_
-
 
 
 

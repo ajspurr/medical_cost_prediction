@@ -381,6 +381,9 @@ for col in numerical_cols:
         textbox_text = "Pearson's r = %0.2f" %pearsons[col].loc['charges']
     plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
              verticalalignment='top', horizontalalignment='right')
+    
+    #save_filename = f'regplot_{col}_vs_charges'
+    #save_image(output_dir, save_filename, bbox_inches='tight')
     plt.show()
 
 # Numerical data relationships with target (joint plots)
@@ -441,8 +444,8 @@ for col in numerical_cols:
 # Finalize figure formatting and export
 fig.suptitle('Numerical Variable Exploration', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'num_var_combined'
-save_image(output_dir, save_filename, bbox_inches='tight')
+#save_filename = 'num_var_combined'
+#save_image(output_dir, save_filename, bbox_inches='tight')
 plt.show()
 
 
