@@ -659,13 +659,13 @@ new_nonobese_smoker_data = new_age_smokers_data[new_age_smokers_data['bmi_>=_30'
 
 # Within smokers group, calculate pearsons in obese and nonobese individuals
 new_pearson_obese_smoker = new_obese_smoker_data.corr(method='pearson').round(3)
-new_pearson_obese_smoker_age_charge = new_pearson_obese_smoker['age'].loc['charges']
+new_pearson_obese_smoker_age_charge = new_pearson_obese_smoker['age^2'].loc['charges']
 new_pearson_nonobese_smoker = new_nonobese_smoker_data.corr(method='pearson').round(3)
-new_pearson_nonobese_smoker_age_charge = new_pearson_nonobese_smoker['age'].loc['charges']
+new_pearson_nonobese_smoker_age_charge = new_pearson_nonobese_smoker['age^2'].loc['charges']
 
 # Calculate nonsmokers pearsons
 new_pearson_nonsmokers = new_age_nonsmokers_data.corr(method='pearson').round(3)
-new_pearson_nonsmokers_age_charge = new_pearson_nonsmokers['age'].loc['charges']
+new_pearson_nonsmokers_age_charge = new_pearson_nonsmokers['age^2'].loc['charges']
 
 # Plot nonsmoker lmplot again
 sns.lmplot(x='age^2', y='charges', data=new_age_nonsmokers_data, line_kws={'color':'cyan'})
@@ -674,8 +674,8 @@ textbox_text = "Pearson's r = %0.3f" %new_pearson_nonsmokers_age_charge
 plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
          verticalalignment='top', horizontalalignment='right')
 plt.title("Age^2 vs. Charges in nonsmokers")
-#save_filename = 'age_vs_charges_nonsmokers'
-#save_image(output_dir, save_filename, bbox_inches='tight')
+save_filename = 'age_sq_vs_charges_nonsmokers'
+save_image(save_filename)
 plt.show()
 
 # Plot smoker lmplot again
@@ -686,12 +686,12 @@ leg = ax.get_legend()
 labels = leg.get_texts()
 for legend_label in labels:
     if legend_label.get_text() == 'no':
-        legend_label.set_text("No (Pearson's %0.2f)" %new_pearson_nonobese_smoker_age_charge)
+        legend_label.set_text("No (Pearson's %0.3f)" %new_pearson_nonobese_smoker_age_charge)
     else:
-        legend_label.set_text("Yes (Pearson's %0.2f)" %new_pearson_obese_smoker_age_charge)
+        legend_label.set_text("Yes (Pearson's %0.3f)" %new_pearson_obese_smoker_age_charge)
 plt.title("Age vs. Charges in smokers, grouped by BMI (30)")
-#save_filename = 'age_vs_charges_smokers_grp_bmi30'
-#save_image(save_filename)
+save_filename = 'age_sq_vs_charges_smokers_grp_bmi30'
+save_image(save_filename)
 plt.show()
 
 
