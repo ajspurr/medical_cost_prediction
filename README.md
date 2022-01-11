@@ -27,15 +27,11 @@ Origin story of feature 'BMI >= 30'. I had noticed a bimodal distribution of cha
 
 <p align="center"><img src="/output/eda/age_vs_charges_grp_smoking_status.png" width="500"/></p>
 
-After isolating the nonsmoker data, subgrouping by categorical variables didn't account for the noise above the dense line of data points, but even without subgrouping I got a Pearson's r of 0.63, which is double the Pearson's without subgrouping by smoking status (0.30).
+After isolating the nonsmoker data, subgrouping by any categorical variable didn't account for the noise above the dense line of data points, but even without subgrouping I got a Pearson's r of 0.63, which is double the Pearson's without subgrouping by smoking status (0.30).
 
 <p align="center"><img src="/output/eda/age_vs_charges_nonsmokers.png" width="500"/></p>
 
-Looking at graph below plotting only data from smokers, there still seems to be two distinct groups. 
-
-<p align="center"><img src="/output/eda/age_vs_charges_smokers.png" width="500"/></p>
-
-Again, I tried subgrouping by all categorical variables and found that BMI separated the groups very well. The Pearson's r is included for each fit line.
+Looking at only data from smokers, I tried subgrouping by all categorical variables and found that BMI separated the groups very well. The Pearson's r is included for each fit line.
 
 <p align="center"><img src="/output/eda/age_vs_charges_smokers_grp_bmi30.png" width="500"/></p>
 
