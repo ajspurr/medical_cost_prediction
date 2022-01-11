@@ -98,8 +98,8 @@ As can be seen below, adding the new feature greatly reduced heteroscedasticity 
 For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30.
 
 <p align="center">
-  <img src="/output/eda/age_vs_charges_smokers_grp_bmi29.png" width="400"/>
-  <img src="/output/eda/age_vs_charges_smokers_grp_bmi31.png" width="400"/>
+  <img src="/output/eda/age_vs_charges_smokers_grp_bmi29.png" width="340"/>
+  <img src="/output/eda/age_vs_charges_smokers_grp_bmi31.png" width="340"/>
 </p>
 
 I tried subgrouping the nonsmokers by other variables, but none of them uncovered patterns in the data.
