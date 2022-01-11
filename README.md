@@ -76,7 +76,7 @@ There are clear groupings of predicted values, which (surprise, surprise) relate
 
 ### Linear Relationship Between Predictors and Target Variable
 #### BMI vs. Charges
-The linear relationship between BMI and charges is weak. But if you subgroup by smoking status, you can see that smokers' BMI have a strong linear relationship with charges (Pearson's of 0.8) while nonsmokers' BMI have basically no linear relationship with charges. As such, I will enginner a new feature: 'smoker * bmi'. This will remove the bmi of the nonsmokers, thus removing the data that does not have a linear relationship to the target. 
+The linear relationship between BMI and charges is weak. But if you subgroup by smoking status, you can see that smokers' BMI have a strong linear relationship with charges (Pearson's of 0.8) while nonsmokers' BMI have basically no linear relationship with charges. As such, I will enginner a new feature: **[smoker\*bmi]**. This will remove the bmi of the nonsmokers, thus removing the data that does not have a linear relationship to the target. 
 <p align="center">
   <img src="/output/eda/lmplot_bmi_vs_charges.png" width="400"/>
   <img src="/output/eda/bmi_vs_charges_grp_smoking.png" width="400"/>
@@ -95,12 +95,19 @@ As can be seen below, adding the new feature greatly reduced heteroscedasticity 
   <img src="/output/eda/age_vs_charges_smokers_grp_bmi30.png" width="310"/>
 </p>
 
-I tried subgrouping the nonsmokers by other variables, but none of them uncovered patterns in the data. For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30.
+(For the sake of further exploration, I tried subgrouping the nonsmokers by other variables, but none of them uncovered patterns in the data. I also tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30 (images in '/output/eda).)
 
-<p align="center">
-  <img src="/output/eda/age_vs_charges_smokers_grp_bmi29.png" width="340"/>
-  <img src="/output/eda/age_vs_charges_smokers_grp_bmi31.png" width="340"/>
-</p>
+##### New Feature: [smoker\*obese]
+
+In order to incorporate this relationship between obesity, smoking status, and age into the model, I tried creating multiple features. The one that worked fantastically was **[smoker\*obese]**. I originally tried **[smoker\*obese\*age]**, assuming that you needed the 'age' variable to actually make the prediction. However, if you look at the age vs. charges plot above you'll see that the 3 lines have very shallow slopes. So 'age' itself isn't very predicitive but the difference between the three groups (nonsmokers, obese smokers, and nonobese smokers) is very predictive. With this new variable, which isolates obese smokers, the model can give it a coefficient that basically adds a constant value to that group which is equal to the average difference in charges between the 'obese smokers' and 'nonobese smokers' lines in the age vs. charges plot. 
+
+I also tried to add a variable incorporating the nonobese smokers, as it has its own line as well. This didn't change anything because the model already adds ~15,000 to the charges if you're a smoker (remember, there is a 'smoker' variable that has its own constant) then with this new **[smoker\*obese]** feature, it adds another ~20,000 for obese smokers.
+
+<p align="center"><img src="/output/models/sm_lr_results_smoke_ob_feature.png" width="900"/></p>
+
+As you can see, this greatly reduced the residuals of the predictions, although the outliers remain. 
+
+##### New Feature: [age^2]
 
 Since the shape of the age vs. charges plots looks a bit parabolic, I tried squaring the age to make it more linear. It appeared to do so, but the R-squared did not change much.
 
