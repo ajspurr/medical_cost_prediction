@@ -109,14 +109,14 @@ As you can see, this greatly reduced the residuals of the predictions, although 
 
 ##### New Feature: [age^2]
 
-Since the shape of the age vs. charges plots looks a bit parabolic, I tried squaring the age to make it more linear. It appeared to do so, but the R-squared did not change much.
+There is a clear curvilinear relationship between predicted charges and residuals, which indicates an element of heteroscedasticity (even though the metrics don't support this). You can see this relationship a bit in the age vs. charges plots as well. So I added a new feature **[age^2]**. Visually, the reg line in the age vs. charges plots seems to fit better, however, this new feature doesn't seem to affect the R-squared values. This may be due to the outliers and/or the shallowness of the slopes of the reg lines. 
 
 <p align="center">
   <img src="/output/eda/age_sq_vs_charges_nonsmokers.png" width="340"/>
   <img src="/output/eda/age_sq_vs_charges_smokers_grp_bmi30.png" width="340"/>
 </p>
 
-It did slightly improve the R-squared of the model. The heteroscedasticity metrics didn't change much. 
+It did slightly improve the R-squared of the model. The heteroscedasticity metrics didn't change much. However, you can visually appreciate the better fit on the model below. It seems that the outliers are the main reason the line isn't an almost perfect fit. 
 
 <p align="center"><img src="/output/models/sm_lr_results_age_sq_feature.png" width="900"/></p>
 
