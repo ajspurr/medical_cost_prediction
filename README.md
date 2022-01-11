@@ -95,14 +95,19 @@ As can be seen below, adding the new feature greatly reduced heteroscedasticity 
   <img src="/output/eda/age_vs_charges_smokers_grp_bmi30.png" width="310"/>
 </p>
 
-For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30.
+I tried subgrouping the nonsmokers by other variables, but none of them uncovered patterns in the data. For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30.
 
 <p align="center">
   <img src="/output/eda/age_vs_charges_smokers_grp_bmi29.png" width="340"/>
   <img src="/output/eda/age_vs_charges_smokers_grp_bmi31.png" width="340"/>
 </p>
 
-I tried subgrouping the nonsmokers by other variables, but none of them uncovered patterns in the data.
+Since the shape of the age vs. charges plots looks a bit parabolic, I tried squaring the age to make it more linear. It appeared to do so, but the R-squared did not change much.
+
+<p align="center">
+  <img src="/output/eda/age_sq_vs_charges_nonsmokers.png" width="340"/>
+  <img src="/output/eda/age_sq_vs_charges_smokers_grp_bmi30.png" width="340"/>
+</p>
 
 #### Children vs. Charges
 No new insights were gained by subgrouping this relationship.
