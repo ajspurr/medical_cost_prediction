@@ -108,7 +108,7 @@ cat_ord_cols.append('bmi_>=_30')
 # Standardize image saving parameters
 def save_image(filename, dir=eda_output_dir, dpi=300, bbox_inches='tight'):
     plt.savefig(dir/filename, dpi=dpi, bbox_inches=bbox_inches)
-    print("Saved image to '" + str(dir/filename) +"'")
+    print("\nSaved image to '" + str(dir/filename) +"'\n")
 
 # Create dictionary of formatted column names  to be used for
 # figure labels (title() capitalizes every word in a string)

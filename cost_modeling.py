@@ -107,7 +107,7 @@ def initialize_fig_gs_ax(num_rows, num_cols, figsize=(16, 8)):
 # Standardize image saving parameters
 def save_image(filename, dir=models_output_dir, dpi=300, bbox_inches='tight'):
     plt.savefig(models_output_dir/filename, dpi=dpi, bbox_inches=bbox_inches)
-    print("Saved image to '" + str(dir/filename) +"'")
+    print("\nSaved image to '" + str(dir/filename) +"'\n")
     
 # ====================================================================================================================
 # Data preprocessing function via pipeline
@@ -336,7 +336,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, save_img=False
     ax2.set_title('True Values vs. Predicted Values')
     ax2.set_ylabel('Predicted Values')
     ax2.set_xlabel('True Values')
-    textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
+    textbox_text = r'$R^2$: %0.3f' %lr_model.rsquared
     ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right',)    
     if not combine_plots: plt.show()
     
@@ -345,7 +345,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, save_img=False
         fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
         if save_img:
             save_filename = 'sm_lr_results_' + filename_unique
-            save_image(output_dir, save_filename, bbox_inches='tight')
+            save_image(save_filename)
         plt.show()
     
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
@@ -421,7 +421,7 @@ def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title
     ax2.set_ylabel('Predicted Values')
     ax2.set_xlabel('True Values')
     ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
-    textbox_text = r'$R^2$: %0.2f' %lr_model.rsquared
+    textbox_text = r'$R^2$: %0.3f' %lr_model.rsquared
     ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right') 
     
     # Format and save figure
@@ -429,7 +429,7 @@ def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title
     fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
     if save_img:
         save_filename = 'sm_lr_results_' + filename_unique
-        save_image(output_dir, save_filename, bbox_inches='tight')
+        save_image(save_filename)
     plt.show()
 
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
@@ -500,7 +500,8 @@ het_metrics = sm_lr_model_results(sm_lin_reg, y, sm_y_pred, combine_plots=True, 
 
 # Plot model performance, subgrouped by smoking and obesity
 title_1 = 'Original'   
-het_metrics_1 = sm_lr_model_results_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, title_1, save_img=True, filename_unique='orig_subgrouped')
+het_metrics_1 = sm_lr_model_results_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, title_1, save_img=False, filename_unique='orig_subgrouped')
+summary_df_1 = sm_results_to_df(sm_lin_reg.summary())
 
 # =======================================================================================
 # Test for linear relationships between predictors and target variables
@@ -530,17 +531,38 @@ summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
 # Age vs. Charges
 # =============================
 
-# Since the shape of the age vs. charges plots looks a bit parabolic, I tried squaring the age to make it more linear. 
-# It appeared to do so, but the R-squared did not change much.
+# Since the shape of the age vs. charges plots looks a bit parabolic, I tried squaring the age to 
+# transform it to a more linear relationship. It appeared to do so, but the R-squared did not change much.
 # But it does seem to make the linear regression results better
 
 new_X_3 = new_X_2.copy()
+title_3 = 'w [age^2] feature'
+
+# Unfortunately, age has already been scalled around 0 and squaring will make all the negative numbers positive
+# Will have to take the original ages, square, then scale
+orig_ages = dataset['age'].to_frame()
+squared_ages = np.power(orig_ages, 2)
+scaled_sq_ages = pd.DataFrame(StandardScaler().fit_transform(squared_ages), columns=['age^2'])
+new_X_3['age^2'] = scaled_sq_ages
+
+sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X_3, y, dataset, title_3, save_img=False, filename_unique='age_sq_feature')
+summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
+# sm_lin_reg_5.rsquared
 
 
+# Removing original 'age' feature didn't change model as it already had a relatively small coefficient (-68) once
+# age^2 was added.
 
-# ###########################################
-# STOPPED HERE, remember that age has already been zeroed, so need to fix that before squaring it
-# ###########################################
+# Not scaling age^2 feature didn't change model at all. Literally same coefficients other than 
+# it's own being significantly smaller (3000 -> 3)
+
+# =============================
+# Compare coefficients before and after new features
+# =============================
+compared_df = pd.DataFrame({'coef_orig':summary_df_1['coef'], 'coef_bmi*smok':summary_df_2['coef']}, index=summary_df_1.index)
+compared_df.loc['bmi*smoker'] = [np.nan, summary_df_2.loc['bmi*smoker'][0]]
+compared_df = compared_df.apply(pd.to_numeric)
+compared_df['diff'] = compared_df['coef_bmi*smok'] - compared_df['coef_orig']
 
 
 
@@ -590,36 +612,6 @@ bp_test_results = dict(zip(labels, bp_test))
 
 
 
-    
-title_1 = 'Original'   
-white_test_results_1, bp_test_results_1 = sm_lr_model_results_comb_plots(sm_lin_reg, dataset, sm_y_pred, y, title_1)
-summary_1 = sm_lin_reg.summary()
-summary_df_1 = sm_results_to_df(summary_1)
-sm_lin_reg.rsquared
-
-# =============================
-# New model with feature incorporating relationship between BMI and smoking status
-# =============================
-# I initially tried to do this by added a new categorical column 'bmi_smoke_combo'
-# Where 0=nonsmoker/nonobese, 1=smoker/nonobese, 2=nonsmoker/obese, 3=smoker/obese
-# But that didn't work
-# But this way, you multiply BMI by smoking status. So if they don't smoke, BMI doesn't affect predicted charge
-# Which makes sense given the BMI vs. charge scatterplot
-new_X_2 = sm_processed_X.copy()
-new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
-title_2 = 'w [bmi*smoker] feature'
-
-sm_lin_reg_2, sm_y_pred_2, white_test_results_2, bp_test_results_2 = fit_ols_test_heteroscedasticity(new_X_2, y, dataset, title_2)
-summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
-sm_lin_reg_2.rsquared
-
-# =============================
-# Compare coefficients before and after new feature
-# =============================
-compared_df = pd.DataFrame({'coef_orig':summary_df_1['coef'], 'coef_bmi*smok':summary_df_2['coef']}, index=summary_df_1.index)
-compared_df.loc['bmi*smoker'] = [np.nan, summary_df_2.loc['bmi*smoker'][0]]
-compared_df = compared_df.apply(pd.to_numeric)
-compared_df['diff'] = compared_df['coef_bmi*smok'] - compared_df['coef_orig']
 
 # =============================
 # New model with feature incorporating relationship between between presence of obesity, smoking (and age)
@@ -674,25 +666,7 @@ compared_df[['coef_orig', 'coef_bmi*smok', 'coef_smok*obese', 'coef_comb']]
 # =============================
 # Still some curvature to each group of residuals. Will try squaring age - WORKED
 # =============================
-new_X_5 = new_X_4.copy()
-title_5 = 'w/ Both Features + age^2'
 
-# Unfortunately, age has already been scalled around 0 and squaring will make all the negative numbers positive
-# Will have to take the original ages, square, then scale
-
-orig_ages = dataset['age'].to_frame()
-squared_ages = np.power(orig_ages, 2)
-scaled_ages = pd.DataFrame(StandardScaler().fit_transform(squared_ages), columns=['age^2'])
-
-# plt.scatter(new_X_5['age'], y, alpha=0.5, label='orig age')
-# plt.scatter(scaled_ages, y, alpha=0.5, label='squared age')
-
-new_X_5['age'] = scaled_ages
-new_X_5 = new_X_5.rename(columns={'age':'age^2'})
-
-sm_lin_reg_5, sm_y_pred_5, white_test_results_5, bp_test_results_5 = fit_ols_test_heteroscedasticity(new_X_5, y, dataset, title_5)
-summary_df_5 = sm_results_to_df(sm_lin_reg_5.summary())
-sm_lin_reg_5.rsquared
 
 
 
