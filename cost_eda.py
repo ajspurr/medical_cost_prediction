@@ -465,13 +465,22 @@ plt.show()
 smokers_data = dataset[dataset['smoker']=='yes'].copy()
 nonsmokers_data = dataset[dataset['smoker']=='no'].copy()
 
-# Calculate pearsons in smokers and nonsmokers
+# Calculate pearsons in smokers and nonsmokers, obese and nonobese
 pearson_smokers = smokers_data.corr(method='pearson').round(2)
 pearson_smokers_age_charge = pearson_smokers['age'].loc['charges']
 pearson_nonsmokers = nonsmokers_data.corr(method='pearson').round(2)
 pearson_nonsmokers_age_charge = pearson_nonsmokers['age'].loc['charges']
 
-sns.lmplot(x='age', y='charges', hue="smoker", data=dataset, legend=False)
+# Within smokers group, calculate pearsons in obese and nonobese individuals
+obese_df = smokers_data[smokers_data['bmi_>=_30']=='yes'].copy()
+nonobese_df = smokers_data[smokers_data['bmi_>=_30']=='no'].copy()
+pearson_obese = obese_df.corr(method='pearson').round(2)
+pearson_obese_age_charge = pearson_obese['age'].loc['charges']
+pearson_nonobese = nonobese_df.corr(method='pearson').round(2)
+pearson_nonobese_age_charge = pearson_nonobese['age'].loc['charges']
+
+
+sns.lmplot(x='age', y='charges', hue="smoker", data=dataset, legend=False, line_kws={'color': 'green'})
 ax = plt.gca()
 ax.legend(title='Smoker', loc='upper right')
 leg = ax.get_legend()
@@ -482,25 +491,9 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_smokers_age_charge)
 plt.title("Age vs. Charges, grouped by smoking status")
-#save_filename = 'age_vs_charges_grp_smoking_status'
-#save_image(save_filename)
+save_filename = 'age_vs_charges_grp_smoking_status'
+save_image(save_filename)
 plt.show()
-
-
-
-g = sns.lmplot(x='age', y='charges', hue="bmi_>=_30", data=smokers_data, legend=False)
-ax = g.axes[0,0]
-ax.legend(title='BMI >= 30', loc='upper right')
-leg = ax.get_legend()
-labels = leg.get_texts()
-for legend_label in labels:
-    if legend_label.get_text() == 'no':
-        legend_label.set_text("No (Pearson's %0.2f)" %pearson_age_charge_nonob)
-    else:
-        legend_label.set_text("Yes (Pearson's %0.2f)" %pearson_age_charge_ob)
-
-
-
 
 
 
