@@ -16,7 +16,7 @@ Violin plots to visualize relationship of all categorical variables to dichotomo
 <p align="center"><img src="/output/eda/violin_cat_var.png" width="900"/></p>
 
 <br><br>
-Origin story of feature 'BMI >= 30'. I had noticed a bimodal distribution of charges in smokers. So I attempted to subgroup by other categorical variables to no avail. After noticing that there was a clear clustering of datapoints around BMI=30 in scatterplot (further down), I found that BMI explained the bimodal distribution  well:
+Origin story of feature 'BMI >= 30'. I had noticed a bimodal distribution of charges in smokers. So I attempted to subgroup by other categorical variables to no avail. After noticing that there was a clear clustering of datapoints around BMI=30 in scatterplot (further down), I found that BMI explained the bimodal distribution  very well. I will further explore the relationships between the numerical variables and target variable in the 'Assumptions of Multiple Linear Regression' section below. 
 <br><br>
 <p align="center"><img src="/output/eda/smoker_dist_by_bmi.png" width="700"/></p>
 
@@ -47,11 +47,6 @@ For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 
 </p>
 
 I tried subgrouping the nonsmokers by other variables, but none of them uncovered patterns in the data.
-
-
-### Further exploration of BMI vs. Charges relationship
-Subgrouping by smoking status effectively delineated the two groups of data points. And again, you can see that within the smoking group there are two clear clusters on either side of BMI = 30.
-<p align="center"><img src="/output/eda/bmi_vs_charges_grp_smoking.png" width="500"/></p>
 
 ### Further exploration of Children vs. Charges relationship
 No new insights were gained by subgrouping this relationship.
@@ -115,6 +110,10 @@ The linear relationship between BMI and charges is weak. But if you subgroup by 
   <img src="/output/eda/lmplot_bmi_vs_charges.png" width="400"/>
   <img src="/output/eda/bmi_vs_charges_grp_smoking.png" width="400"/>
 </p>
+
+As can be seen below, adding the new feature greatly reduced heteroscedasticity and improved R-squared.
+
+<p align="center"><img src="/output/models/sm_lr_results_smoke_bmi_feature.png" width="900"/></p>
 
 #### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
