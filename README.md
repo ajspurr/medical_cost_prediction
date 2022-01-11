@@ -22,27 +22,6 @@ Origin story of feature 'BMI >= 30'. I had noticed a bimodal distribution of cha
 
 <p align="center"><img src="/output/eda/num_var_combined.png" width="900"/></p>
 
-### Further exploration of Age vs. Charges relationship
-'Age vs. Charges' plot looks like three distinct groups. I tried subgrouping by all the categorical variables and found that smoking status explained the groups quite well (plot on left). After isolating the nonsmoker data (middle plot), subgrouping by any categorical variable didn't account for the noise above the dense line of data points, but even without subgrouping I got a Pearson's r of 0.63, which is double the Pearson's without subgrouping by smoking status (0.30). Looking at only data from smokers (plot on right), I tried subgrouping by all categorical variables and found that BMI separated the groups very well. The Pearson's r is included for each fit line.
-
-<p align="center">
-  <img src="/output/eda/age_vs_charges_grp_smoking_status.png" width="310"/>
-  <img src="/output/eda/age_vs_charges_nonsmokers.png" width="310"/>
-  <img src="/output/eda/age_vs_charges_smokers_grp_bmi30.png" width="310"/>
-</p>
-
-For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30.
-
-<p align="center">
-  <img src="/output/eda/age_vs_charges_smokers_grp_bmi29.png" width="400"/>
-  <img src="/output/eda/age_vs_charges_smokers_grp_bmi31.png" width="400"/>
-</p>
-
-I tried subgrouping the nonsmokers by other variables, but none of them uncovered patterns in the data.
-
-### Further exploration of Children vs. Charges relationship
-No new insights were gained by subgrouping this relationship.
-
 ### Relationship Between Numerical Variables
 I created multiple graphs like the one below, each subgrouping by a different categorical variable. No obvious relationships were seen between numerical variables, with or without subgrouping (other than those noted above).
 <p align="center"><img src="/output/eda/relationship_num_var_by_sex.png" width="600"/></p>
@@ -106,6 +85,27 @@ The linear relationship between BMI and charges is weak. But if you subgroup by 
 As can be seen below, adding the new feature greatly reduced heteroscedasticity and improved R-squared.
 
 <p align="center"><img src="/output/models/sm_lr_results_smoke_bmi_feature.png" width="900"/></p>
+
+##### Age vs. Charges
+'Age vs. Charges' plot looks like three distinct groups. I tried subgrouping by all the categorical variables and found that smoking status explained the groups quite well (plot on left). After isolating the nonsmoker data (middle plot), subgrouping by any categorical variable didn't account for the noise above the dense line of data points, but even without subgrouping I got a Pearson's r of 0.63, which is double the Pearson's without subgrouping by smoking status (0.30). Looking at only data from smokers (plot on right), I tried subgrouping by all categorical variables and found that BMI separated the groups very well. The Pearson's r is included for each fit line.
+
+<p align="center">
+  <img src="/output/eda/age_vs_charges_grp_smoking_status.png" width="310"/>
+  <img src="/output/eda/age_vs_charges_nonsmokers.png" width="310"/>
+  <img src="/output/eda/age_vs_charges_smokers_grp_bmi30.png" width="310"/>
+</p>
+
+For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30.
+
+<p align="center">
+  <img src="/output/eda/age_vs_charges_smokers_grp_bmi29.png" width="400"/>
+  <img src="/output/eda/age_vs_charges_smokers_grp_bmi31.png" width="400"/>
+</p>
+
+I tried subgrouping the nonsmokers by other variables, but none of them uncovered patterns in the data.
+
+#### Children vs. Charges
+No new insights were gained by subgrouping this relationship.
 
 #### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
