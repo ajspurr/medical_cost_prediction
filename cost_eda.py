@@ -355,7 +355,7 @@ for col in numerical_cols:
 # Numerical data relationships with target (lmplots)
 pearsons = dataset.corr(method='pearson').round(2)
 spearmans = dataset.corr(method='spearman').round(2) 
-box_style = {'facecolor':'white', 'boxstyle':'round'}
+box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
 for col in numerical_cols:
     fgrid = sns.lmplot(x=col, y="charges", data=dataset)
     ax = fgrid.axes[0,0]
@@ -370,7 +370,7 @@ for col in numerical_cols:
 # Numerical data relationships with target (regplots, because you can't add lmplots to gridspec)
 pearsons = dataset.corr(method='pearson').round(2)
 spearmans = dataset.corr(method='spearman').round(2) 
-box_style = {'facecolor':'white', 'boxstyle':'round'}
+box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
 for col in numerical_cols:
     fgrid = sns.regplot(x=col, y="charges", data=dataset)
     ax = fgrid.axes
