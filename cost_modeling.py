@@ -421,7 +421,7 @@ def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title
     white_lm_p_value = '{:0.2e}'.format(white_test_results['LM-Test p-value'])
     
     # Format text box with relevant metric of each plot
-    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
+    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
     
     # Create figure, gridspec, list of axes/subplots mapped to gridspec location
     fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
@@ -451,7 +451,13 @@ def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title
     ax2.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
     largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
     smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
-    ax2.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
+    
+    plot_limits = [smallest_num - (0.02*largest_num), largest_num + (0.02*largest_num)]
+    ax2.set_xlim(plot_limits)
+    ax2.set_ylim(plot_limits)
+    ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
+    
+    #ax2.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
     ax2.set_title('True Values vs. Predicted Values')
     ax2.set_ylabel('Predicted Values')
     ax2.set_xlabel('True Values')
@@ -467,13 +473,11 @@ def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title
         save_image(output_dir, save_filename, bbox_inches='tight')
     plt.show()
 
-    return white_test_results, bp_test_results
+    het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
+    return het_metrics
 
 
-white_test_results_1, bp_test_results_1 = sm_lr_model_results_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, 'Original', save_img=False, filename_unique='orig_subgrouped')
-
-type(y)
-
+het_metrics_1 = sm_lr_model_results_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, 'Original', save_img=False, filename_unique='orig_subgrouped')
 
 # Combine statsmodels linear regression model creation, fitting, and returning results    
 def fit_ols_test_heteroscedasticity(fxn_X, fxn_y, orig_dataset, plot_title):
