@@ -95,7 +95,7 @@ As can be seen below, adding the new feature greatly reduced heteroscedasticity 
   <img src="/output/eda/age_vs_charges_smokers_grp_bmi30.png" width="310"/>
 </p>
 
-For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30 (images in '/output/eda).
+For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30 (images in /output/eda).
 
 ##### New Feature: [smoker\*obese]
 
