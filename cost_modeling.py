@@ -174,12 +174,7 @@ def manual_preprocess_sm(X):
     # Numerical preprocessing
     # =============================
     X_num = X[numerical_cols]
-    
-    # Imputation (Not relevant in this dataset, but keeping for future application)
-    #num_imputer = SimpleImputer(strategy='mean')
-    #imputed_X_train_num = pd.DataFrame(num_imputer.fit_transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
-    #imputed_X_valid_num = pd.DataFrame(num_imputer.transform(X_valid_num), columns=X_valid_num.columns, index=X_valid_num.index)
-    
+        
     # Scaling
     ss = StandardScaler()
     scaled_X_num = pd.DataFrame(ss.fit_transform(X_num), columns=X_num.columns, index=X_num.index)
@@ -188,12 +183,7 @@ def manual_preprocess_sm(X):
     # Categorical preprocessing
     # =============================
     X_cat = X[categorical_cols]
-    
-    # Imputation (Not relevant in this dataset, but keeping for future application)
-    #cat_imputer = SimpleImputer(strategy='most_frequent')
-    #imputed_X_train_cat = pd.DataFrame(cat_imputer.fit_transform(X_train_cat), columns=X_train_cat.columns, index=X_train_cat.index)
-    #imputed_X_valid_cat = pd.DataFrame(cat_imputer.transform(X_valid_cat), columns=X_valid_cat.columns, index=X_valid_cat.index)
-    
+        
     # One-hot encoding
     OH_encoder = OneHotEncoder(handle_unknown='ignore', drop='first', sparse=False)
     OH_X_cat = pd.DataFrame(OH_encoder.fit_transform(X_cat), index=X_cat.index, columns=OH_encoder.get_feature_names_out())
@@ -201,15 +191,18 @@ def manual_preprocess_sm(X):
     # Add preprocessed categorical columns back to preprocessed numerical columns
     X_processed = pd.concat([scaled_X_num, OH_X_cat], axis=1)
     
+    # Add constant (required for statsmodels linear regression model)
+    X_processed = sm.add_constant(X_processed)
+    
     return X_processed
 
 # ====================================================================================================================
 # Model evaluation functions
 # ====================================================================================================================
-# Parameter 'model_name' will be used for coding and saving images
-# Parameter 'model_display_name' will be used for plot labels 
 # Written for sklearn linear regression models, but only require y, y_pred, and X, so could be used for any model
-def evaluate_model_sk(y_valid, y_pred, X, model_display_name, round_results=3):      
+# Parameter 'model_display_name' will be used for plot labels 
+# Using the 'evaluate_model_sk()' and 'evaluate_model_sm()' on the SAME sm model yield almost identical results
+def evaluate_model_sk(y_valid, y_pred, X, model_display_name, round_results=3, print_results=False):      
     metrics = {}
     metrics['max_e'] = max_error(y_valid, y_pred).round(round_results)
     metrics['mean_abs_e'] = mean_absolute_error(y_valid, y_pred).round(round_results)
@@ -219,18 +212,20 @@ def evaluate_model_sk(y_valid, y_pred, X, model_display_name, round_results=3):
     metrics['r2'] = r2_score(y_valid, y_pred).round(round_results)
     metrics['r2_adj'] = 1 - ((1-metrics['r2'])*(len(y_valid)-1)/(len(y_valid)-X.shape[1]-1)).round(round_results)
     
-    print(model_display_name + ' Evaluation')
-    print('Max Error: ' + str(metrics['max_e']))
-    print('Mean Absolute Error: ' + str(metrics['mean_abs_e']))
-    print('Mean Squared Error: ' + str(metrics['mse']))
-    print('Root Mean Squared Error: ' + str(metrics['rmse']))
-    print('Median Absolute Error: ' + str(metrics['med_abs_e']))
-    print('R-squared: ' + str(metrics['r2']))
-    print('R-squared (adj): ' + str(metrics['r2_adj']))
+    if print_results:
+        print(model_display_name + ' Evaluation')
+        print('Max Error: ' + str(metrics['max_e']))
+        print('Mean Absolute Error: ' + str(metrics['mean_abs_e']))
+        print('Mean Squared Error: ' + str(metrics['mse']))
+        print('Root Mean Squared Error: ' + str(metrics['rmse']))
+        print('Median Absolute Error: ' + str(metrics['med_abs_e']))
+        print('R-squared: ' + str(metrics['r2']))
+        print('R-squared (adj): ' + str(metrics['r2_adj']))
     return metrics
 
 # Written for statsmodels model
-def evaluate_model_sm(y, y_pred, sm_lr_model, model_display_name, round_results=3):      
+# Using the 'evaluate_model_sk()' and 'evaluate_model_sm()' on the SAME sm model yield almost identical results
+def evaluate_model_sm(y, y_pred, sm_lr_model, model_display_name, round_results=3, print_results=False):      
     metrics = {}
     metrics['max_e'] = np.round(max(sm_lr_model.resid), round_results)
     metrics['mean_abs_e'] = meanabs(y, y_pred).round(round_results)
@@ -249,16 +244,17 @@ def evaluate_model_sm(y, y_pred, sm_lr_model, model_display_name, round_results=
     metrics['bp_lm_p'] = '{:0.3e}'.format(bp_test_results['LM-Test p-value'])
     metrics['white_lm_p'] = '{:0.3e}'.format(white_test_results['LM-Test p-value'])
     
-    print(model_display_name + ' Evaluation')
-    print('Max Error: ' + str(metrics['max_e']))
-    print('Mean Absolute Error: ' + str(metrics['mean_abs_e']))
-    print('Mean Squared Error: ' + str(metrics['mse']))
-    print('Root Mean Squared Error: ' + str(metrics['rmse']))
-    print('Median Absolute Error: ' + str(metrics['med_abs_e']))
-    print('R-squared: ' + str(metrics['r2']))
-    print('R-squared (adj): ' + str(metrics['r2_adj']))
-    print('Breusch-Pagan LM p-val: ' + metrics['bp_lm_p'])
-    print('White LM p-val: ' + metrics['white_lm_p'])
+    if print_results:
+        print(model_display_name + ' Evaluation')
+        print('Max Error: ' + str(metrics['max_e']))
+        print('Mean Absolute Error: ' + str(metrics['mean_abs_e']))
+        print('Mean Squared Error: ' + str(metrics['mse']))
+        print('Root Mean Squared Error: ' + str(metrics['rmse']))
+        print('Median Absolute Error: ' + str(metrics['med_abs_e']))
+        print('R-squared: ' + str(metrics['r2']))
+        print('R-squared (adj): ' + str(metrics['r2_adj']))
+        print('Breusch-Pagan LM p-val: ' + metrics['bp_lm_p'])
+        print('White LM p-val: ' + metrics['white_lm_p'])
     return metrics
 
 # Takes evalution metrics from evaluate_model() and plots confusion matrix, ROC, PRC, and precision/recall vs. threshold
@@ -452,6 +448,102 @@ def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
     return het_metrics
 
+
+
+
+
+
+
+
+def sm_lr_model_results_subgrouped_new_test(lr_model, X_data, y, y_pred, plot_title, save_img=False, filename_unique=None):
+    # Organize relevant data
+    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
+    y_pred_series = pd.Series(y_pred, name='y_pred')
+    y_series = pd.Series(y, name='y')
+    relevant_data = pd.concat([X_data[['bmi_>=_30_yes', 'smoker_yes']], y_series, y_pred_series, standardized_residuals], axis=1)
+
+    smoker_data = relevant_data[relevant_data['smoker_yes']==1]
+    nonsmoker_data = relevant_data[relevant_data['smoker_yes']==0]
+    smoker_obese_data = smoker_data[smoker_data['bmi_>=_30_yes']==1]
+    smoker_nonobese_data = smoker_data[smoker_data['bmi_>=_30_yes']==0]
+    nonsmoker_obese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30_yes']==1]
+    nonsmoker_nonobese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30_yes']==0]
+    
+    # Quantify Heteroscedasticity using White test and Breusch-Pagan test
+    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
+    white_test = het_white(lr_model.resid, lr_model.model.exog)
+    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
+    bp_test_results = dict(zip(labels, bp_test))
+    white_test_results = dict(zip(labels, white_test))
+    bp_lm_p_value = '{:0.2e}'.format(bp_test_results['LM-Test p-value'])
+    white_lm_p_value = '{:0.2e}'.format(white_test_results['LM-Test p-value'])
+    
+    # Format text box with relevant metric of each plot
+    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
+    
+    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+    fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
+        
+    # =============================
+    # Plot standardized residuals vs. predicted values
+    # =============================
+    ax1 = ax_array_flat[0]
+    ax1.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
+    ax1.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
+    ax1.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
+    ax1.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
+    ax1.axhline(y=0, color='red', linestyle='--')
+    ax1.set_ylabel('Standardized Residuals')
+    ax1.set_xlabel('Predicted Values')
+    ax1.set_title('Standardized Residuals vs. Predicted Values')
+    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
+    ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')  
+    
+    # =============================
+    # True Values vs. Predicted Values 
+    # =============================
+    ax2 = ax_array_flat[1]
+    ax2.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
+    ax2.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
+    ax2.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
+    ax2.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
+    largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
+    smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
+    
+    plot_limits = [smallest_num - (0.02*largest_num), largest_num + (0.02*largest_num)]
+    ax2.set_xlim(plot_limits)
+    ax2.set_ylim(plot_limits)
+    ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
+    
+    #ax2.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
+    ax2.set_title('True Values vs. Predicted Values')
+    ax2.set_ylabel('Predicted Values')
+    ax2.set_xlabel('True Values')
+    ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
+    textbox_text = r'$R^2$: %0.3f' %lr_model.rsquared
+    ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right') 
+    
+    # Format and save figure
+    fig.suptitle('LR Model Performance (' + plot_title + ')', fontsize=24)
+    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+    if save_img:
+        save_filename = 'sm_lr_results_' + filename_unique
+        save_image(save_filename)
+    plt.show()
+
+    het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
+    return het_metrics
+
+
+
+
+
+
+
+
+
+
+
 # Combine statsmodels linear regression model creation, fitting, and returning results    
 def fit_lr_model_results_subgrouped(fxn_X, fxn_y, orig_dataset, plot_title, save_img=False, filename_unique=None):
     # Fit model
@@ -464,6 +556,33 @@ def fit_lr_model_results_subgrouped(fxn_X, fxn_y, orig_dataset, plot_title, save
     het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, orig_dataset, fxn_y, fxn_y_pred, plot_title, save_img=save_img, filename_unique=filename_unique)
     
     return fxn_lin_reg, fxn_y_pred, het_results
+
+
+
+
+# Combine statsmodels linear regression model creation, fitting, and returning results    
+def fit_lr_model_results_subgrouped_new_test(fxn_X, fxn_y, plot_title, save_img=False, filename_unique=None):
+    # Fit model
+    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
+    
+    # Predict target
+    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
+    
+    #fxn_white_test_results, fxn_bp_test_results = subgroup_quantify_heteroscedasticity(fxn_lin_reg, orig_dataset, fxn_y_pred, fxn_y, plot_title)
+    het_results = sm_lr_model_results_subgrouped_new_test(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, save_img=save_img, filename_unique=filename_unique)
+    
+    return fxn_lin_reg, fxn_y_pred, het_results
+
+
+
+
+
+
+
+
+
+
+
 
 # Convert statsmodels summary() output to pandas DataFrame
 def sm_results_to_df(summary):
@@ -492,7 +611,6 @@ def sm_results_to_df(summary):
     return return_df
 
 
-
 # ====================================================================================================================
 # Implement statsmodels package to test multiple linear regression model assumptions
 # ====================================================================================================================
@@ -505,50 +623,53 @@ X = dataset.drop(['charges'], axis=1)
 # This is to test for linear model assumptions in entire data set, will not perform train/test split
 sm_processed_X = manual_preprocess_sm(X)
 
-# Add constant (required for statsmodels linear regression model)
-sm_processed_X = sm.add_constant(sm_processed_X)
-
 # Fit linear regression model
 sm_lin_reg_0 = sm.OLS(y, sm_processed_X).fit()
 
 # Make predictions
 sm_y_pred_0 = sm_lin_reg_0.predict(sm_processed_X)
 
-# Plot model and calculate performs metrics
+# Plot model
 title_0 = 'True Original'
-het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=False, filename_unique='true_original')
+model_name_0 = 'true_orig'
+het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=True, filename_unique=model_name_0)
+
+# Organize model performance metrics
 summary_df_0 = sm_results_to_df(sm_lin_reg_0.summary())
-coeff_df_0 = summary_df_0['coef']
-sm_lr_results = evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0, 'LR (sm)')
-#sm_lr_sk_results = evaluate_model_sk(y, sm_y_pred_0, sm_processed_X, 'LR')# Using the sklearn and sm metrics on the SAME sm model yield almost identical results
-
-
-result_tracker_df = pd.DataFrame()
-# STOPPED HERE
+coeff_0 = pd.Series(summary_df_0['coef'], name=model_name_0)
+sm_lr_results_0 = pd.Series(evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0, 'LR (sm)'), name=model_name_0)
 
 # ====================================================================================================================
 # Feature engineering (more below)
 # ====================================================================================================================
 
 # Based on EDA, created dichotomous column 'bmi_>=_30'
-dataset['bmi_>=_30'] = dataset['bmi'] >= 30
+new_X_1 = X.copy()
+new_X_1['bmi_>=_30'] = new_X_1['bmi'] >= 30
 bmi_dict = {False:'no', True:'yes'}
-dataset['bmi_>=_30'] = dataset['bmi_>=_30'].map(bmi_dict)
+new_X_1['bmi_>=_30'] = new_X_1['bmi_>=_30'].map(bmi_dict)
 
-# Add the new feature to the columns lists
+# Add the new feature to the columns lists (necessary for preprocessing)
 categorical_cols.append('bmi_>=_30')
 cat_ord_cols.append('bmi_>=_30')
 
+# Preprocess
+new_X_1 = manual_preprocess_sm(new_X_1)
 
+# Plot model
+title_1 = 'w [bmi>=30] feature'
+model_name_1 = '[bmi_>=_30]'
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped_new_test(new_X_1, y, title_1, save_img=False, filename_unique='bmi_30_feature')
+#sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, dataset, title_1, save_img=False, filename_unique='bmi_30_feature')
 
-# Plot model performance
-title_1 = 'Original'   
-het_metrics = sm_lr_model_results(sm_lin_reg, y, sm_y_pred, combine_plots=True, plot_title=title_1, save_img=False, filename_unique='original')
+# Organize model performance metrics
+summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
+coeff_1 = pd.Series(summary_df_1['coef'], name=model_name_1)
+sm_lr_results_1 = pd.Series(evaluate_model_sm(y, sm_y_pred_1, sm_lin_reg_1, f'LR ({model_name_1})'), name=model_name_1)
 
-# Plot model performance, subgrouped by smoking and obesity
-title_1 = 'Original'   
-het_metrics_1 = sm_lr_model_results_subgrouped(sm_lin_reg, dataset, y, sm_y_pred, title_1, save_img=False, filename_unique='orig_subgrouped')
-summary_df_1 = sm_results_to_df(sm_lin_reg.summary())
+# Keep track of model performance for comparison later
+coeff_df = pd.concat([coeff_0, coeff_1], axis=1)
+sm_results_df = pd.concat([sm_lr_results_0, sm_lr_results_1], axis=1)
 
 # =======================================================================================
 # Test for linear relationships between predictors and target variables
@@ -562,11 +683,18 @@ summary_df_1 = sm_results_to_df(sm_lin_reg.summary())
 # Smokers had a strong linear relationship between BMI and charges, nonsmokers had basically no linear relationhip
 # Will engineer new feature [smoker*bmi] 
 
-new_X_2 = sm_processed_X.copy()
+new_X_2 = new_X_1.copy()
 new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
 title_2 = 'w [bmi*smoker] feature'
-sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X_2, y, dataset, title_2, save_img=False, filename_unique='smoke_bmi_feature')
+model_name_2 = '[bmi*smoker]'
+sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped_new_test(new_X_2, y, title_2, save_img=False, filename_unique='smoke_bmi_feature')
 summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
+coeff_2 = pd.Series(summary_df_2['coef'], name=model_name_2)
+sm_lr_results_2 = pd.Series(evaluate_model_sm(y, sm_y_pred_2, sm_lin_reg_2, f'LR ({model_name_2})'), name=model_name_2)
+
+# Keep track of model performance for comparison later
+coeff_df = pd.concat([coeff_df, coeff_2], axis=1)
+sm_results_df = pd.concat([sm_results_df, sm_lr_results_2], axis=1)
 
 # Tried removing original 'bmi' feature, slightly worsened model performance
 
