@@ -369,93 +369,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
 # Parameter plot_title will be added below the actual title in parentheses
 # Parameter filename_unique to be added to the end of the filename if saved
 # Returns heteroscedasticity metrics 'het_metrics'
-def sm_lr_model_results_subgrouped(lr_model, orig_dataset, y, y_pred, plot_title, save_img=False, filename_unique=None):
-    # Organize relevant data
-    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
-    y_pred_series = pd.Series(y_pred, name='y_pred')
-    y_series = pd.Series(y, name='y')
-    relevant_data = pd.concat([orig_dataset[['bmi_>=_30', 'smoker']], y_series, y_pred_series, standardized_residuals], axis=1)
-
-    smoker_data = relevant_data[relevant_data['smoker']=='yes']
-    nonsmoker_data = relevant_data[relevant_data['smoker']=='no']
-    smoker_obese_data = smoker_data[smoker_data['bmi_>=_30']=='yes']
-    smoker_nonobese_data = smoker_data[smoker_data['bmi_>=_30']=='no']
-    nonsmoker_obese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='yes']
-    nonsmoker_nonobese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30']=='no']
-    
-    # Quantify Heteroscedasticity using White test and Breusch-Pagan test
-    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
-    white_test = het_white(lr_model.resid, lr_model.model.exog)
-    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
-    bp_test_results = dict(zip(labels, bp_test))
-    white_test_results = dict(zip(labels, white_test))
-    bp_lm_p_value = '{:0.2e}'.format(bp_test_results['LM-Test p-value'])
-    white_lm_p_value = '{:0.2e}'.format(white_test_results['LM-Test p-value'])
-    
-    # Format text box with relevant metric of each plot
-    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
-    
-    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-    fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
-        
-    # =============================
-    # Plot standardized residuals vs. predicted values
-    # =============================
-    ax1 = ax_array_flat[0]
-    ax1.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
-    ax1.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
-    ax1.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
-    ax1.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
-    ax1.axhline(y=0, color='red', linestyle='--')
-    ax1.set_ylabel('Standardized Residuals')
-    ax1.set_xlabel('Predicted Values')
-    ax1.set_title('Standardized Residuals vs. Predicted Values')
-    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
-    ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')  
-    
-    # =============================
-    # True Values vs. Predicted Values 
-    # =============================
-    ax2 = ax_array_flat[1]
-    ax2.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
-    ax2.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
-    ax2.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
-    ax2.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
-    largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
-    smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
-    
-    plot_limits = [smallest_num - (0.02*largest_num), largest_num + (0.02*largest_num)]
-    ax2.set_xlim(plot_limits)
-    ax2.set_ylim(plot_limits)
-    ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
-    
-    #ax2.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
-    ax2.set_title('True Values vs. Predicted Values')
-    ax2.set_ylabel('Predicted Values')
-    ax2.set_xlabel('True Values')
-    ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
-    textbox_text = r'$R^2$: %0.3f' %lr_model.rsquared
-    ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right') 
-    
-    # Format and save figure
-    fig.suptitle('LR Model Performance (' + plot_title + ')', fontsize=24)
-    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-    if save_img:
-        save_filename = 'sm_lr_results_' + filename_unique
-        save_image(save_filename)
-    plt.show()
-
-    het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
-    return het_metrics
-
-
-
-
-
-
-
-
-def sm_lr_model_results_subgrouped_new_test(lr_model, X_data, y, y_pred, plot_title, save_img=False, filename_unique=None):
+def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, save_img=False, filename_unique=None):
     # Organize relevant data
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
     y_pred_series = pd.Series(y_pred, name='y_pred')
@@ -534,18 +448,8 @@ def sm_lr_model_results_subgrouped_new_test(lr_model, X_data, y, y_pred, plot_ti
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
     return het_metrics
 
-
-
-
-
-
-
-
-
-
-
 # Combine statsmodels linear regression model creation, fitting, and returning results    
-def fit_lr_model_results_subgrouped(fxn_X, fxn_y, orig_dataset, plot_title, save_img=False, filename_unique=None):
+def fit_lr_model_results_subgrouped(fxn_X, fxn_y, plot_title, save_img=False, filename_unique=None):
     # Fit model
     fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
     
@@ -553,36 +457,9 @@ def fit_lr_model_results_subgrouped(fxn_X, fxn_y, orig_dataset, plot_title, save
     fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
     
     #fxn_white_test_results, fxn_bp_test_results = subgroup_quantify_heteroscedasticity(fxn_lin_reg, orig_dataset, fxn_y_pred, fxn_y, plot_title)
-    het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, orig_dataset, fxn_y, fxn_y_pred, plot_title, save_img=save_img, filename_unique=filename_unique)
+    het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, save_img=save_img, filename_unique=filename_unique)
     
     return fxn_lin_reg, fxn_y_pred, het_results
-
-
-
-
-# Combine statsmodels linear regression model creation, fitting, and returning results    
-def fit_lr_model_results_subgrouped_new_test(fxn_X, fxn_y, plot_title, save_img=False, filename_unique=None):
-    # Fit model
-    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
-    
-    # Predict target
-    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
-    
-    #fxn_white_test_results, fxn_bp_test_results = subgroup_quantify_heteroscedasticity(fxn_lin_reg, orig_dataset, fxn_y_pred, fxn_y, plot_title)
-    het_results = sm_lr_model_results_subgrouped_new_test(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, save_img=save_img, filename_unique=filename_unique)
-    
-    return fxn_lin_reg, fxn_y_pred, het_results
-
-
-
-
-
-
-
-
-
-
-
 
 # Convert statsmodels summary() output to pandas DataFrame
 def sm_results_to_df(summary):
@@ -641,9 +518,10 @@ sm_lr_results_0 = pd.Series(evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0, 'LR 
 
 # ====================================================================================================================
 # Feature engineering (more below)
+# Based on EDA, created dichotomous feature 'bmi_>=_30'
 # ====================================================================================================================
 
-# Based on EDA, created dichotomous column 'bmi_>=_30'
+# Create new feature
 new_X_1 = X.copy()
 new_X_1['bmi_>=_30'] = new_X_1['bmi'] >= 30
 bmi_dict = {False:'no', True:'yes'}
@@ -659,8 +537,7 @@ new_X_1 = manual_preprocess_sm(new_X_1)
 # Plot model
 title_1 = 'w [bmi>=30] feature'
 model_name_1 = '[bmi_>=_30]'
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped_new_test(new_X_1, y, title_1, save_img=False, filename_unique='bmi_30_feature')
-#sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, dataset, title_1, save_img=False, filename_unique='bmi_30_feature')
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, title_1, save_img=False, filename_unique='bmi_30_feature')
 
 # Organize model performance metrics
 summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
@@ -679,15 +556,20 @@ sm_results_df = pd.concat([sm_lr_results_0, sm_lr_results_1], axis=1)
 
 # ==========================================================
 # BMI vs. Charges
-# ==========================================================
-# Smokers had a strong linear relationship between BMI and charges, nonsmokers had basically no linear relationhip
+# Smokers had a strong linear relationship between BMI and charges, nonsmokers had basically no linear relationship
 # Will engineer new feature [smoker*bmi] 
+# ==========================================================
 
+# Create new feature
 new_X_2 = new_X_1.copy()
 new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
+
+# Plot model
 title_2 = 'w [bmi*smoker] feature'
 model_name_2 = '[bmi*smoker]'
-sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped_new_test(new_X_2, y, title_2, save_img=False, filename_unique='smoke_bmi_feature')
+sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X_2, y, title_2, save_img=False, filename_unique='smoke_bmi_feature')
+
+# Organize model performance metrics
 summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
 coeff_2 = pd.Series(summary_df_2['coef'], name=model_name_2)
 sm_lr_results_2 = pd.Series(evaluate_model_sm(y, sm_y_pred_2, sm_lin_reg_2, f'LR ({model_name_2})'), name=model_name_2)
@@ -699,32 +581,54 @@ sm_results_df = pd.concat([sm_results_df, sm_lr_results_2], axis=1)
 # Tried removing original 'bmi' feature, slightly worsened model performance
 
 # ==========================================================
-# Age vs. Charges: new feature incorporating relationship between between presence of obesity, smoking, and age
+# Age vs. Charges
+# Explored new feature incorporating relationship between between presence of obesity, smoking, and age
 # ==========================================================
+
+# Create new feature
 new_X_3 = new_X_2.copy()
 new_X_3['smoker*obese'] = new_X_3['smoker_yes'] * new_X_3['bmi_>=_30_yes']
-title_3 = 'w [smoker*obese] Feature'
 
-sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X_3, y, dataset, title_3, save_img=True, filename_unique='smoke_ob_feature')
+# Plot model
+title_3 = 'w [smoker*obese] Feature'
+model_name_3 = '[smoker*obese]'
+sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X_3, y, title_3, save_img=False, filename_unique='smoke_ob_feature')
+
+# Organize model performance metrics
 summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
-sm_lin_reg_3.rsquared
+coeff_3 = pd.Series(summary_df_3['coef'], name=model_name_3)
+sm_lr_results_3 = pd.Series(evaluate_model_sm(y, sm_y_pred_3, sm_lin_reg_3, f'LR ({model_name_3})'), name=model_name_3)
+
+# Keep track of model performance for comparison later
+coeff_df = pd.concat([coeff_df, coeff_3], axis=1)
+sm_results_df = pd.concat([sm_results_df, sm_lr_results_3], axis=1)
 
 # ==========================================================
 # Age vs. Charges: accounting for curvilinear relationship between age and charges
 # ==========================================================
-new_X_4 = new_X_3.copy()
-title_4 = 'w [age^2] feature'
 
-# Age has already been scalled around 0 and squaring the values will make all the negative numbers positive
-# So I will to take the original ages, square them, then scale.
+# Create new feature
+new_X_4 = new_X_3.copy()
+# Age has already been scaled around 0 and squaring the values will make all the negative numbers positive
+# So I will take the original ages, square them, then scale.
 orig_ages = dataset['age'].to_frame()
 squared_ages = np.power(orig_ages, 2)
 scaled_sq_ages = pd.DataFrame(StandardScaler().fit_transform(squared_ages), columns=['age^2'])
 new_X_4['age^2'] = scaled_sq_ages
 
-sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, dataset, title_4, save_img=False, filename_unique='age_sq_feature')
+# Plot model
+title_4 = 'w [age^2] feature'
+model_name_4 = '[age^2]'
+sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, title_4, save_img=False, filename_unique='age_sq_feature')
+
+# Organize model performance metrics
 summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
-sm_lin_reg_4.rsquared
+coeff_4 = pd.Series(summary_df_4['coef'], name=model_name_4)
+sm_lr_results_4 = pd.Series(evaluate_model_sm(y, sm_y_pred_4, sm_lin_reg_4, f'LR ({model_name_4})'), name=model_name_4)
+
+# Keep track of model performance for comparison later
+coeff_df = pd.concat([coeff_df, coeff_4], axis=1)
+sm_results_df = pd.concat([sm_results_df, sm_lr_results_4], axis=1)
 
 # Removing original 'age' feature didn't change model as it already had a relatively small coefficient (-68) once
 # age^2 was added. I also tried not scaling the age^2 feature. This didn't change model at all. Literally same 
@@ -734,45 +638,29 @@ sm_lin_reg_4.rsquared
 # Compare coefficients before and after new features
 # ==========================================================
 
-compared_df = pd.DataFrame({'age^2':summary_df_4['coef']}, index=summary_df_4.index)
-compared_df['smoker*obese'] = summary_df_3['coef']
-compared_df['bmi*smoker'] = summary_df_2['coef']
-compared_df['bmi_>=_30'] = summary_df_1['coef']
+orig_features_df = coeff_df.iloc[0:9]
+orig_features_df = orig_features_df.apply(pd.to_numeric)
 
-# For curiosity's sake, will also add coefficients from before ['bmi_>=_30'] feature addition
-old_X_orig = sm_processed_X.copy()
-old_X_orig = old_X_orig.drop(['bmi_>=_30_yes'], axis=1)
-sm_lin_reg_0 = sm.OLS(y, old_X_orig).fit()
-sm_y_pred_0 = sm_lin_reg_0.predict(old_X_orig)
+orig_small_features_list = ['const', 'age', 'smoker_yes']
+large_coeff_df = orig_features_df.loc[orig_small_features_list]
+small_coeff_df = orig_features_df.drop(orig_small_features_list, axis=0)
 
-title_0 = 'True Original'
-het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=False, filename_unique='orig_original')
-summary_df_0 = sm_results_to_df(sm_lin_reg_0.summary())
+new_features = coeff_df.iloc[9:len(coeff_df.index)]
+new_features = new_features.replace(np.nan, 0)
+new_features = new_features.apply(pd.to_numeric)
 
-compared_df['original'] = summary_df_0['coef']
+for feature in large_coeff_df.index:
+    plt.plot(large_coeff_df.columns, large_coeff_df.loc[feature].to_list(), label=feature)
+plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
 
-compared_df = compared_df.reindex(columns=['original', 'bmi_>=_30', 'bmi*smoker', 'smoker*obese', 'age^2'])
+for feature in small_coeff_df.index:
+    plt.plot(small_coeff_df.columns, small_coeff_df.loc[feature].to_list(), label=feature)
+plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
 
+for feature in new_features.index:
+    plt.plot(new_features.columns, new_features.loc[feature].to_list(), label=feature)
+plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
 
-
-
-
-
-
-
-
-# =============================
-# Add to coefficient comparison dataframe
-# =============================
-compared_df['coef_smok*obese'] = summary_df_3['coef']
-compared_df.loc['smoker*obese'] = [np.nan, np.nan, np.nan, summary_df_3.loc['smoker*obese'][0]]
-
-
-# =============================
-# Add to coefficient comparison dataframe
-# =============================
-compared_df['coef_comb'] = summary_df_4['coef']
-compared_df[['coef_orig', 'coef_bmi*smok', 'coef_smok*obese', 'coef_comb']]
 
 
 # =======================================================================================
@@ -789,8 +677,6 @@ plt.scatter(smoker_dataset['bmi'], smoker_dataset['age'])
 # =============================
 # Quantify Heteroscedasticity
 # =============================
-
-
 
 # Model Summary
 sm_results = sm_lin_reg.summary()
