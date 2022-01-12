@@ -109,7 +109,7 @@ As you can see, this greatly reduced the residuals of the predictions, although 
 
 ##### New Feature: [age^2]
 
-There is a clear curvilinear relationship between predicted charges and residuals, which indicates an element of heteroscedasticity (even though the metrics don't support this). You can see this relationship a bit in the age vs. charges plots as well. So I added a new feature **[age^2]**. Visually, the reg line in the age vs. charges plots seems to fit better, however, this new feature doesn't seem to affect the R-squared values. This may be due to the outliers and/or the shallowness of the slopes of the reg lines. 
+There is a clear curvilinear relationship between predicted charges and residuals. You can see this relationship a bit in the age vs. charges plots as well. So I added a new feature **[age^2]**. Visually, the regression line in the age^2 vs. charges plots seems to fit better, however, this new feature doesn't seem to affect the R-squared values. This may be due to the outliers and/or the shallowness of the slopes of the reg lines. 
 
 <p align="center">
   <img src="/output/eda/age_sq_vs_charges_nonsmokers.png" width="340"/>
