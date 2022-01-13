@@ -205,7 +205,7 @@ def manual_preprocess_sm(X):
 def evaluate_model_sk(y_valid, y_pred, X, model_display_name, round_results=3, print_results=False):      
     metrics = {}
     metrics['max_e'] = max_error(y_valid, y_pred).round(round_results)
-    metrics['mean_abs_e'] = mean_absolute_error(y_valid, y_pred).round(round_results)
+    metrics['mae'] = mean_absolute_error(y_valid, y_pred).round(round_results)
     metrics['mse'] = mean_squared_error(y_valid, y_pred).round(round_results)
     metrics['rmse'] = np.sqrt(metrics['mse']).round(round_results)
     metrics['med_abs_e'] = median_absolute_error(y_valid, y_pred).round(round_results)
@@ -215,7 +215,7 @@ def evaluate_model_sk(y_valid, y_pred, X, model_display_name, round_results=3, p
     if print_results:
         print(model_display_name + ' Evaluation')
         print('Max Error: ' + str(metrics['max_e']))
-        print('Mean Absolute Error: ' + str(metrics['mean_abs_e']))
+        print('Mean Absolute Error: ' + str(metrics['mae']))
         print('Mean Squared Error: ' + str(metrics['mse']))
         print('Root Mean Squared Error: ' + str(metrics['rmse']))
         print('Median Absolute Error: ' + str(metrics['med_abs_e']))
@@ -228,7 +228,7 @@ def evaluate_model_sk(y_valid, y_pred, X, model_display_name, round_results=3, p
 def evaluate_model_sm(y, y_pred, sm_lr_model, model_display_name, round_results=3, print_results=False):      
     metrics = {}
     metrics['max_e'] = np.round(max(sm_lr_model.resid), round_results)
-    metrics['mean_abs_e'] = meanabs(y, y_pred).round(round_results)
+    metrics['mae'] = meanabs(y, y_pred).round(round_results)
     metrics['mse'] = sm_lr_model.mse_resid.round(round_results) # this is the closet metric to mse. It was within 3% of both my calculation and sklearn's. 'mse_model' and 'mse_total' were 99% and 75% different
     metrics['rmse'] = np.sqrt(metrics['mse']).round(round_results)
     metrics['med_abs_e'] = np.median(abs(sm_lr_model.resid)).round(round_results)
@@ -247,7 +247,7 @@ def evaluate_model_sm(y, y_pred, sm_lr_model, model_display_name, round_results=
     if print_results:
         print(model_display_name + ' Evaluation')
         print('Max Error: ' + str(metrics['max_e']))
-        print('Mean Absolute Error: ' + str(metrics['mean_abs_e']))
+        print('Mean Absolute Error: ' + str(metrics['mae']))
         print('Mean Squared Error: ' + str(metrics['mse']))
         print('Root Mean Squared Error: ' + str(metrics['rmse']))
         print('Median Absolute Error: ' + str(metrics['med_abs_e']))
@@ -637,141 +637,34 @@ sm_results_df = pd.concat([sm_results_df, sm_lr_results_4], axis=1)
 # =======================================================================================
 # Compare coefficients before and after new features
 # =======================================================================================
-# All features
-coeff_df = coeff_df.apply(pd.to_numeric)
-
-# Filter out original features
-orig_features_df = coeff_df.iloc[0:9]
-
-# Separate larger and smaller coefficients (scale makes smaller coefficients harder to visualize)
-orig_small_features_list = ['const', 'age', 'smoker_yes']
-large_coeff_df = orig_features_df.loc[orig_small_features_list]
-small_coeff_df = orig_features_df.drop(orig_small_features_list, axis=0)
-
-# Filter out new features
-new_features = coeff_df.iloc[9:len(coeff_df.index)]
-new_features = new_features.replace(np.nan, 0)
-
-# =============================
-# Plot separately
-# =============================
-for feature in small_coeff_df.index:
-    plt.plot(small_coeff_df.columns, small_coeff_df.loc[feature].to_list(), label=feature)
-plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
-plt.show()
-
-for feature in large_coeff_df.index:
-    plt.plot(large_coeff_df.columns, large_coeff_df.loc[feature].to_list(), label=feature)
-plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
-plt.show()
-
-for feature in new_features.index:
-    plt.plot(new_features.columns, new_features.loc[feature].to_list(), label=feature)
-plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
-plt.show()
-
-# =============================
-# Plot together horizontal
-# =============================
-# Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=3, figsize=(16, 6))
-
-# Small coeff features
-ax1 = ax_array_flat[0]
-for feature in small_coeff_df.index:
-    ax1.plot(small_coeff_df.columns, small_coeff_df.loc[feature].to_list(), label=feature)
-
-ax1.legend(loc='upper right', borderaxespad=0.5, title='Variable')
-ax1.set_ylabel('Coefficient', fontsize=16)
-plt.setp(ax1.get_xticklabels(), rotation=30, horizontalalignment='right')
-
-# Large coeff features
-ax2 = ax_array_flat[1]
-for feature in large_coeff_df.index:
-    ax2.plot(large_coeff_df.columns, large_coeff_df.loc[feature].to_list(), label=feature)
-ax2.legend(loc='upper right', borderaxespad=0.5, title='Variable')
-ax2.set_xlabel('New Features', fontsize=16)
-plt.setp(ax2.get_xticklabels(), rotation=30, horizontalalignment='right')
-
-# New features
-ax3 = ax_array_flat[2]
-for feature in new_features.index:
-    ax3.plot(new_features.columns, new_features.loc[feature].to_list(), label=feature)
-ax3.legend(loc='upper left', borderaxespad=0.5, title='Variable')
-plt.setp(ax3.get_xticklabels(), rotation=30, horizontalalignment='right')
-
-fig.suptitle('Variable coefficients with each additional feature', fontsize=24)
-fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'coeff_new_feat_horiz'
-#save_image(save_filename)
-plt.show()
-
-# =============================
-# Plot together vertical
-# =============================
-# Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=3, num_cols=1, figsize=(6, 10))
-
-# Small coeff features
-ax1 = ax_array_flat[0]
-for feature in small_coeff_df.index:
-    ax1.plot(small_coeff_df.columns, small_coeff_df.loc[feature].to_list(), label=feature)
-ax1.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Variable')
-ax1.set_ylabel('Coefficient', fontsize=16)
-plt.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
-
-# Large coeff features
-ax2 = ax_array_flat[1]
-for feature in large_coeff_df.index:
-    ax2.plot(large_coeff_df.columns, large_coeff_df.loc[feature].to_list(), label=feature)
-ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Variable')
-ax2.set_ylabel('Coefficient', fontsize=16)
-plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
-
-# New features
-ax3 = ax_array_flat[2]
-for feature in new_features.index:
-    ax3.plot(new_features.columns, new_features.loc[feature].to_list(), label=feature)
-ax3.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Variable')
-ax3.set_xlabel('New Features', fontsize=16)
-ax3.set_ylabel('Coefficient', fontsize=16)
-plt.setp(ax3.get_xticklabels(), rotation=20, horizontalalignment='right')
-
-fig.suptitle('Variable coeff w/ each additional feature', fontsize=24)
-fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'coeff_new_feat_vert'
-#save_image(save_filename)
-plt.show()
-
 # =============================
 # Drop variables whose coefficients don't change much
 # =============================
-# Variables that don't change much: # children, sex_male, all regions, const.
+# Variables that don't change much: children, sex_male, all regions, const.
 # All features
 coeff_df_new = coeff_df.apply(pd.to_numeric)
 
 # Drop variables
-drop_var = ['children', 'region_northwest', 'region_southeast', 'region_southwest', 'const']
+drop_var = ['region_northwest', 'region_southeast', 'region_southwest', 'const']
 coeff_df_new = coeff_df_new.drop(drop_var, axis=0)
 
 # Replace NaN with 0
 coeff_df_new = coeff_df_new.replace(np.nan, 0)
 
 # Separate new and old features
-orig_features_df = coeff_df_new.iloc[0:4]
-new_features_df = coeff_df_new.iloc[4:len(coeff_df_new.index)]
+orig_features_df = coeff_df_new.iloc[0:5]
+new_features_df = coeff_df_new.iloc[5:len(coeff_df_new.index)]
 
 # Plot combined
 fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=3, num_cols=1, figsize=(9, 13))
 
-smoker_df = orig_features_df['smoker_yes']
+smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
 ax1 = ax_array_flat[0]
 for feature in smoker_df.index:
     ax1.plot(smoker_df.columns, smoker_df.loc[feature].to_list(), label=feature, linewidth=3)
 ax1.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
 plt.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
-ax1.set_title('New Feature Coefficients')
-ax1.set_xlabel('Additional Features', fontsize=16)
+#ax1.set_title('New Feature Coefficients')
 ax1.set_ylabel('Coefficient', fontsize=16)
 ax1.grid()
 
@@ -781,25 +674,100 @@ for feature in orig_features_no_smoker.index:
     ax2.plot(orig_features_no_smoker.columns, orig_features_no_smoker.loc[feature].to_list(), label=feature, linewidth=3)
 ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
 plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
-ax2.set_title('New Feature Coefficients')
-ax2.set_xlabel('Additional Features', fontsize=16)
+#ax2.set_title('New Feature Coefficients')
 ax2.set_ylabel('Coefficient', fontsize=16)
 ax2.grid()
 
-ax2 = ax_array_flat[0]
+ax3 = ax_array_flat[2]
 for feature in new_features_df.index:
-    ax2.plot(new_features_df.columns, new_features_df.loc[feature].to_list(), label=feature, linewidth=2.5)
-ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
-plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
-ax2.set_title('Original Feature Coefficients')
-ax2.set_ylabel('Coefficient', fontsize=16)
-ax2.grid()
+    ax3.plot(new_features_df.columns, new_features_df.loc[feature].to_list(), label=feature, linewidth=3)
+ax3.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
+plt.setp(ax3.get_xticklabels(), rotation=20, horizontalalignment='right')
+#ax3.set_title('Original Feature Coefficients')
+ax3.set_xlabel('Additional Features', fontsize=16)
+ax3.set_ylabel('Coefficient', fontsize=16)
+ax3.grid()
 
 fig.suptitle('Feature coeff w/ each additional feature', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
 #save_filename = 'coeff_new_feat_vert_3'
 #save_image(save_filename)
 plt.show()
+
+
+# =======================================================================================
+# Compare performance before and after new features
+# =======================================================================================
+
+sm_results_df = sm_results_df.apply(pd.to_numeric)
+sm_results_df = sm_results_df.rename(index={'mean_abs_e':'mae'})
+
+# Separate out metrics by scale
+#sm_results_df_new = sm_results_df.drop(index=['mse', 'med_abs_e'])
+all__error_mets = sm_results_df.loc[['max_e', 'rmse', 'mae', 'med_abs_e']]
+max_e_df = sm_results_df.loc['max_e'].to_frame().T
+error_metrics = sm_results_df.loc[['rmse', 'mae', 'med_abs_e']]
+r_metrics = sm_results_df.loc[['r2', 'r2_adj']]
+het_stats = sm_results_df.loc[['bp_lm_p', 'white_lm_p']]
+
+# Plot all
+df_to_plot = all__error_mets
+for metric in df_to_plot.index:
+    plt.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
+plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Metric')
+ax = plt.gca()
+plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
+plt.grid()
+plt.show()
+
+# Plot combined
+fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=2, num_cols=2, figsize=(9, 13))
+
+ax1 = ax_array_flat[0]
+df_to_plot = max_e_df
+for metric in df_to_plot.index:
+    ax1.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
+ax1.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Metric')
+#ax = plt.gca()
+ax1.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
+ax1.grid()
+
+ax1 = ax_array_flat[0]
+df_to_plot = error_metrics
+for metric in df_to_plot.index:
+    plt.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
+plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Metric')
+ax = plt.gca()
+plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
+plt.grid()
+plt.show()
+
+ax1 = ax_array_flat[0]
+df_to_plot = r_metrics
+for metric in df_to_plot.index:
+    plt.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
+plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Metric')
+ax = plt.gca()
+plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
+plt.grid()
+plt.show()
+
+ax1 = ax_array_flat[0]
+df_to_plot = het_stats
+for metric in df_to_plot.index:
+    plt.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
+plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Metric')
+ax = plt.gca()
+plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
+plt.grid()
+
+fig.suptitle('LR Performance w/ each additional feature', fontsize=24)
+fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+#save_filename = 'performance_new_feat'
+#save_image(save_filename)
+plt.show()
+
+
 
 
 # =======================================================================================
@@ -836,11 +804,14 @@ bp_test_results = dict(zip(labels, bp_test))
 
 # Both have a p-value <<< 0.05, indicating presence of heteroscedasticity
 
-# Before performingfeature engineering, tried log transforming target. Did not work either before
+# Before performing feature engineering, tried log transforming target. Did not work either before
 # or after feature engineering.
 
 
 
+# =============================
+# Identify Outliers?
+# =============================
 
 
 
