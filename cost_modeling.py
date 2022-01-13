@@ -703,72 +703,62 @@ sm_results_df = sm_results_df.apply(pd.to_numeric)
 sm_results_df = sm_results_df.rename(index={'mean_abs_e':'mae'})
 
 # Separate out metrics by scale
-#sm_results_df_new = sm_results_df.drop(index=['mse', 'med_abs_e'])
 all__error_mets = sm_results_df.loc[['max_e', 'rmse', 'mae', 'med_abs_e']]
 max_e_df = sm_results_df.loc['max_e'].to_frame().T
 error_metrics = sm_results_df.loc[['rmse', 'mae', 'med_abs_e']]
 r_metrics = sm_results_df.loc[['r2', 'r2_adj']]
 het_stats = sm_results_df.loc[['bp_lm_p', 'white_lm_p']]
 
-# Plot all
-df_to_plot = all__error_mets
-for metric in df_to_plot.index:
-    plt.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
-plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Metric')
-ax = plt.gca()
-plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
-plt.grid()
-plt.show()
-
 # Plot combined
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=2, num_cols=2, figsize=(9, 13))
+fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=2, num_cols=2, figsize=(12, 7))
 
 ax1 = ax_array_flat[0]
 df_to_plot = max_e_df
 for metric in df_to_plot.index:
     ax1.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
-ax1.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Metric')
+ax1.legend(loc='upper right', borderaxespad=0.5, title='Metric')
 #ax = plt.gca()
-ax1.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
+plt.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
 ax1.grid()
 
-ax1 = ax_array_flat[0]
+ax2 = ax_array_flat[1]
 df_to_plot = error_metrics
 for metric in df_to_plot.index:
-    plt.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
-plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Metric')
-ax = plt.gca()
-plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
-plt.grid()
-plt.show()
+    ax2.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
+ax2.legend(loc='upper right', borderaxespad=0.5, title='Metric')
+#ax = plt.gca()
+plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
+ax2.grid()
 
-ax1 = ax_array_flat[0]
+ax3 = ax_array_flat[2]
 df_to_plot = r_metrics
 for metric in df_to_plot.index:
-    plt.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
-plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Metric')
-ax = plt.gca()
-plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
-plt.grid()
-plt.show()
+    ax3.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
+ax3.legend(loc='upper left', borderaxespad=0.5, title='Metric')
+#ax = plt.gca()
+plt.setp(ax3.get_xticklabels(), rotation=20, horizontalalignment='right')
+ax3.grid()
 
-ax1 = ax_array_flat[0]
+ax4 = ax_array_flat[3]
 df_to_plot = het_stats
 for metric in df_to_plot.index:
-    plt.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
-plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Metric')
-ax = plt.gca()
-plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
-plt.grid()
+    ax4.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
+ax4.legend(loc='upper left', borderaxespad=0.5, title='Metric')
+#ax = plt.gca()
+plt.setp(ax4.get_xticklabels(), rotation=20, horizontalalignment='right')
+ax4.grid()
 
 fig.suptitle('LR Performance w/ each additional feature', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'performance_new_feat'
-#save_image(save_filename)
+save_filename = 'performance_new_feat'
+save_image(save_filename)
 plt.show()
 
+# =============================
+# Identify Outliers?
+# =============================
 
-
+# LEFT OFF HERE
 
 # =======================================================================================
 # Test for multicollinearity
@@ -808,10 +798,6 @@ bp_test_results = dict(zip(labels, bp_test))
 # or after feature engineering.
 
 
-
-# =============================
-# Identify Outliers?
-# =============================
 
 
 
