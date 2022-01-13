@@ -136,4 +136,4 @@ RMSE penalizes large errors. MAE does not penalize large errors (there are sever
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
 
 ## Potential Future Exploration
-- Use of median absolute error as a model metric
+- 
