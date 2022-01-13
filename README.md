@@ -126,11 +126,14 @@ No new insights were gained by subgrouping this relationship.
 ### Changes in Multiple Regression Feature Coefficients with Each New Feature
 
 <p align="center"><img src="/output/models/coeff_new_feat_vert_3.png" width="500"/></p>
+
 Several of the features did not have much fluctuation in their coefficients. I took most of them out. I left two in (and separated the features into 3 graphs) in order to appreciate the scale of the change of the other feature coefficients. When [bmi >= 30] feature was added, the 'bmi' feature's coefficient decreased significantly. When the [bmi\*smoker] feature was added, [bmi]'s coefficient continued to decrease. When the [smoker\*obese] feature as added, the [smoker_yes] feature decreased dramatically (note the scales). In addition, the new features [bmi >= 30] and [bmi\*smoker] decreased as well, with [bmi >= 30]'s coefficient reaching close to 0! This means [smoker\*obese] was a much better predicitor of charges.. Lastly, when [age^2] was added, the [age] feature coefficient decreased to about 0.
 
 ### Summary of Model Performance with Each New Feature
 
-RMSE penalizes large errors. MAE does not penalize large errors (there are several here). R-squared represents the percent of the variation of the target that is explained by it's relationship with the features. R-squared is a relative measure whereas RMSE and MAE are absolute measures. One drawback of R-squared is that by the nature of its calculation, it improves every time you add a new variable to the model. Adjusted R-squared corrects for this.([Source](https://towardsdatascience.com/evaluation-metrics-model-selection-in-linear-regression-73c7573208be))
+<p align="center"><img src="/output/models/performance_new_feat.png" width="800"/></p>
+
+RMSE penalizes large errors. MAE does not penalize large errors (there are several here). R-squared represents the percent of the variation of the target that is explained by it's relationship with the features. R-squared is a relative measure whereas RMSE and MAE are absolute measures. One drawback of R-squared is that by the nature of its calculation, it improves every time you add a new variable to the model. Adjusted R-squared corrects for this. ([Source](https://towardsdatascience.com/evaluation-metrics-model-selection-in-linear-regression-73c7573208be))
 
 ### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
