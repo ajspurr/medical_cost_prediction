@@ -508,7 +508,7 @@ sm_y_pred_0 = sm_lin_reg_0.predict(sm_processed_X)
 
 # Plot model
 title_0 = 'True Original'
-model_name_0 = 'true_orig'
+model_name_0 = 'original'
 het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=True, filename_unique=model_name_0)
 
 # Organize model performance metrics
@@ -634,33 +634,172 @@ sm_results_df = pd.concat([sm_results_df, sm_lr_results_4], axis=1)
 # age^2 was added. I also tried not scaling the age^2 feature. This didn't change model at all. Literally same 
 # coefficients other than it's own being significantly smaller (3000 -> 3)
 
-# ==========================================================
+# =======================================================================================
 # Compare coefficients before and after new features
-# ==========================================================
+# =======================================================================================
+# All features
+coeff_df = coeff_df.apply(pd.to_numeric)
 
+# Filter out original features
 orig_features_df = coeff_df.iloc[0:9]
-orig_features_df = orig_features_df.apply(pd.to_numeric)
 
+# Separate larger and smaller coefficients (scale makes smaller coefficients harder to visualize)
 orig_small_features_list = ['const', 'age', 'smoker_yes']
 large_coeff_df = orig_features_df.loc[orig_small_features_list]
 small_coeff_df = orig_features_df.drop(orig_small_features_list, axis=0)
 
+# Filter out new features
 new_features = coeff_df.iloc[9:len(coeff_df.index)]
 new_features = new_features.replace(np.nan, 0)
-new_features = new_features.apply(pd.to_numeric)
+
+# =============================
+# Plot separately
+# =============================
+for feature in small_coeff_df.index:
+    plt.plot(small_coeff_df.columns, small_coeff_df.loc[feature].to_list(), label=feature)
+plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
+plt.show()
 
 for feature in large_coeff_df.index:
     plt.plot(large_coeff_df.columns, large_coeff_df.loc[feature].to_list(), label=feature)
 plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
-
-for feature in small_coeff_df.index:
-    plt.plot(small_coeff_df.columns, small_coeff_df.loc[feature].to_list(), label=feature)
-plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
+plt.show()
 
 for feature in new_features.index:
     plt.plot(new_features.columns, new_features.loc[feature].to_list(), label=feature)
 plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
+plt.show()
 
+# =============================
+# Plot together horizontal
+# =============================
+# Create figure, gridspec, list of axes/subplots mapped to gridspec location
+fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=3, figsize=(16, 6))
+
+# Small coeff features
+ax1 = ax_array_flat[0]
+for feature in small_coeff_df.index:
+    ax1.plot(small_coeff_df.columns, small_coeff_df.loc[feature].to_list(), label=feature)
+
+ax1.legend(loc='upper right', borderaxespad=0.5, title='Variable')
+ax1.set_ylabel('Coefficient', fontsize=16)
+plt.setp(ax1.get_xticklabels(), rotation=30, horizontalalignment='right')
+
+# Large coeff features
+ax2 = ax_array_flat[1]
+for feature in large_coeff_df.index:
+    ax2.plot(large_coeff_df.columns, large_coeff_df.loc[feature].to_list(), label=feature)
+ax2.legend(loc='upper right', borderaxespad=0.5, title='Variable')
+ax2.set_xlabel('New Features', fontsize=16)
+plt.setp(ax2.get_xticklabels(), rotation=30, horizontalalignment='right')
+
+# New features
+ax3 = ax_array_flat[2]
+for feature in new_features.index:
+    ax3.plot(new_features.columns, new_features.loc[feature].to_list(), label=feature)
+ax3.legend(loc='upper left', borderaxespad=0.5, title='Variable')
+plt.setp(ax3.get_xticklabels(), rotation=30, horizontalalignment='right')
+
+fig.suptitle('Variable coefficients with each additional feature', fontsize=24)
+fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+#save_filename = 'coeff_new_feat_horiz'
+#save_image(save_filename)
+plt.show()
+
+# =============================
+# Plot together vertical
+# =============================
+# Create figure, gridspec, list of axes/subplots mapped to gridspec location
+fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=3, num_cols=1, figsize=(6, 10))
+
+# Small coeff features
+ax1 = ax_array_flat[0]
+for feature in small_coeff_df.index:
+    ax1.plot(small_coeff_df.columns, small_coeff_df.loc[feature].to_list(), label=feature)
+ax1.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Variable')
+ax1.set_ylabel('Coefficient', fontsize=16)
+plt.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
+
+# Large coeff features
+ax2 = ax_array_flat[1]
+for feature in large_coeff_df.index:
+    ax2.plot(large_coeff_df.columns, large_coeff_df.loc[feature].to_list(), label=feature)
+ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Variable')
+ax2.set_ylabel('Coefficient', fontsize=16)
+plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
+
+# New features
+ax3 = ax_array_flat[2]
+for feature in new_features.index:
+    ax3.plot(new_features.columns, new_features.loc[feature].to_list(), label=feature)
+ax3.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Variable')
+ax3.set_xlabel('New Features', fontsize=16)
+ax3.set_ylabel('Coefficient', fontsize=16)
+plt.setp(ax3.get_xticklabels(), rotation=20, horizontalalignment='right')
+
+fig.suptitle('Variable coeff w/ each additional feature', fontsize=24)
+fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+#save_filename = 'coeff_new_feat_vert'
+#save_image(save_filename)
+plt.show()
+
+# =============================
+# Drop variables whose coefficients don't change much
+# =============================
+# Variables that don't change much: # children, sex_male, all regions, const.
+# All features
+coeff_df_new = coeff_df.apply(pd.to_numeric)
+
+# Drop variables
+drop_var = ['children', 'region_northwest', 'region_southeast', 'region_southwest', 'const']
+coeff_df_new = coeff_df_new.drop(drop_var, axis=0)
+
+# Replace NaN with 0
+coeff_df_new = coeff_df_new.replace(np.nan, 0)
+
+# Separate new and old features
+orig_features_df = coeff_df_new.iloc[0:4]
+new_features_df = coeff_df_new.iloc[4:len(coeff_df_new.index)]
+
+# Plot combined
+fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=3, num_cols=1, figsize=(9, 13))
+
+smoker_df = orig_features_df['smoker_yes']
+ax1 = ax_array_flat[0]
+for feature in smoker_df.index:
+    ax1.plot(smoker_df.columns, smoker_df.loc[feature].to_list(), label=feature, linewidth=3)
+ax1.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
+plt.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
+ax1.set_title('New Feature Coefficients')
+ax1.set_xlabel('Additional Features', fontsize=16)
+ax1.set_ylabel('Coefficient', fontsize=16)
+ax1.grid()
+
+orig_features_no_smoker = orig_features_df.drop(['smoker_yes'], axis=0)
+ax2 = ax_array_flat[1]
+for feature in orig_features_no_smoker.index:
+    ax2.plot(orig_features_no_smoker.columns, orig_features_no_smoker.loc[feature].to_list(), label=feature, linewidth=3)
+ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
+plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
+ax2.set_title('New Feature Coefficients')
+ax2.set_xlabel('Additional Features', fontsize=16)
+ax2.set_ylabel('Coefficient', fontsize=16)
+ax2.grid()
+
+ax2 = ax_array_flat[0]
+for feature in new_features_df.index:
+    ax2.plot(new_features_df.columns, new_features_df.loc[feature].to_list(), label=feature, linewidth=2.5)
+ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
+plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
+ax2.set_title('Original Feature Coefficients')
+ax2.set_ylabel('Coefficient', fontsize=16)
+ax2.grid()
+
+fig.suptitle('Feature coeff w/ each additional feature', fontsize=24)
+fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+#save_filename = 'coeff_new_feat_vert_3'
+#save_image(save_filename)
+plt.show()
 
 
 # =======================================================================================
