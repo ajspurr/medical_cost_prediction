@@ -123,5 +123,12 @@ It did slightly improve the R-squared of the model. The heteroscedasticity metri
 #### Children vs. Charges
 No new insights were gained by subgrouping this relationship.
 
+### Changes in Multiple Regression Feature Coefficients with Each New Feature
+
+<p align="center"><img src="/output/models/coeff_new_feat_vert_3.png" width="500"/></p>
+Several of the features did not have much fluctuation in their coefficients. I took most of them out. I left two in (and separated the features into 3 graphs) in order to appreciate the scale of the change of the other feature coefficients. When [bmi >= 30] feature was added, the 'bmi' feature's coefficient decreased significantly. When the [bmi\*smoker] feature was added, [bmi]'s coefficient continued to decrease. When the [smoker\*obese] feature as added, the [smoker_yes] feature decreased dramatically (note the scales). Lastly, when [age^2] was added, the [age] feature coefficient decreased to about 0.
+
+### Summary of Model Performance with Each New Feature
+
 ### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
