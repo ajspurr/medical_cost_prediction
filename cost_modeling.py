@@ -879,7 +879,7 @@ nonob_smoker_outlier_df = orig_data_w_outlier[(orig_data_w_outlier['smoker']=='y
 # LM plot just makes it easier to color by outlier
 sns.lmplot(x='age', y='charges', hue="outlier", data=nonob_smoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False)
 plt.title("Age vs. Charges in obese smokers")
-plt.legend(title="Cook's Distance Outlier")
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title="Cook's Outlier")
 #dh.save_image('outliers_age_v_charges_nonob_smoker', models_output_dir)
 
 num_outliers_in_nonob_smokers = nonob_smoker_outlier_df[nonob_smoker_outlier_df['outlier'] == 1].shape[0] # 7
@@ -921,7 +921,7 @@ for col in cat_ord_cols:
     i+=1
 fig.suptitle('Percent Outliers in Each Subcategory', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'perc_outlier_subcat'
+#save_filename = 'perc_outlier_subcat'
 dh.save_image(save_filename, models_output_dir)
 
 
