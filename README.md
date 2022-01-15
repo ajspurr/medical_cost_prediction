@@ -148,6 +148,9 @@ Cook's Distance outliers maps to the outliers in age vs. charges plots.
   <img src="/output/models/outliers_age_v_charges_nonob_smoker.png" width="350"/> 
 </p>
 
+No subcategory has a significantly large percentage of outliers. Subcategory '4 children' has the highest percentage, 15%, compared to percentage of outliers in the entire dataset, which is about 6.7%. But This is such a tiny subcategory that it only accounts for 4 outliers out of 90. 
+
+<p align="center"><img src="/output/models/perc_outlier_subcat.png" width="900"/></p>
 
 ### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
