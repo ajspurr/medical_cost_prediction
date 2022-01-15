@@ -815,9 +815,13 @@ outlier_df['y_pred'] = sm_y_pred_4
 outlier_df['stud_resid'] = sm_lin_reg_4.get_influence().resid_studentized_internal
 
 # Visualiz Cook's Distances
-plt.title("Cook's distance plot")
+plt.title("Cook's Distance Plot")
 plt.stem(range(len(cooks)), cooks, markerfmt=",")
-plt.plot([0, len(cooks)], [cooks_cutoff, cooks_cutoff], color='darkblue', linestyle='--')
+plt.plot([0, len(cooks)], [cooks_cutoff, cooks_cutoff], color='darkblue', linestyle='--', label='4 / (N-k-1)')
+plt.xlabel("Observation")
+plt.ylabel("Cook's Distance")
+plt.legend(title="Cook's Distance Cutoff")
+dh.save_image('cooks_dist_plot', models_output_dir)
 plt.show()
 
 # ==========================================================
@@ -827,12 +831,13 @@ outlier_data = outlier_df[outlier_df['outlier']==1]
 nonoutlier_data = outlier_df[outlier_df['outlier']==0]
 
 # Stand Resid vs. Stud Residuals
-plt.scatter(outlier_data['y_pred'], outlier_data['stud_resid'], alpha=0.5, label='outliers')
-plt.scatter(nonoutlier_data['y_pred'], nonoutlier_data['stud_resid'], alpha=0.5, label='not outliers')
+plt.scatter(outlier_data['y_pred'], outlier_data['stud_resid'], alpha=0.7, label='Outliers')
+plt.scatter(nonoutlier_data['y_pred'], nonoutlier_data['stud_resid'], alpha=0.7)
 plt.ylabel('Standardized Residuals')
 plt.xlabel('Predicted Values')
 plt.title('Standardized Residuals vs. Predicted Values')
 plt.legend()
+plt.show()
 
 # ==========================================================
 # Plot with respect to original data
@@ -911,6 +916,9 @@ for col in cat_ord_cols:
     i+=1
 fig.suptitle('Percent Outliers in Each Subcategory', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+save_filename = 'perc_outlier_subcat'
+dh.save_image(save_filename, models_output_dir)
+
 
 # Subcategory of 4 children has 15% outliers whereas basically all other subcategories range between 5-8%
 # You can also see in 'Categorical Variable Relationships with Target' figure that samples with 4 kids 
