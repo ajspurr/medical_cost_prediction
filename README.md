@@ -135,6 +135,19 @@ Several of the features did not have much fluctuation in their coefficients. I t
 
 RMSE penalizes large errors. MAE does not penalize large errors (there are several here). R-squared represents the percent of the variation of the target that is explained by it's relationship with the features. R-squared is a relative measure whereas RMSE and MAE are absolute measures. One drawback of R-squared is that by the nature of its calculation, it improves every time you add a new variable to the model. Adjusted R-squared corrects for this. ([Source](https://towardsdatascience.com/evaluation-metrics-model-selection-in-linear-regression-73c7573208be))
 
+### Outlier Detection
+Cooks distance using statsmodels. 
+
+<p align="center"><img src="/output/models/cooks_dist_plot.png" width="600"/></p>
+
+Cook's Distance outliers 
+<p align="center">
+  <img src="/output/model/outliers_age_v_charges_nonsmoker.png" width="300"/>
+  <img src="/output/model/outliers_age_v_charges_ob_smoker.png" width="300"/>
+  <img src="/output/model/outliers_age_v_charges_nonob_smoker.png" width="340"/>
+</p>
+
+
 ### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
 
