@@ -144,7 +144,7 @@ Cook's Distance outliers
 <p align="center">
   <img src="/output/models/outliers_age_v_charges_nonsmoker.png" width="290"/>
   <img src="/output/models/outliers_age_v_charges_ob_smoker.png" width="290"/>
-  <img src="/output/models/outliers_age_v_charges_nonob_smoker.png" width="350"/>
+  <img src="/output/models/outliers_age_v_charges_nonob_smoker.png" width="350"/> 
 </p>
 
 
