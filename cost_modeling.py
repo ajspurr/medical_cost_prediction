@@ -821,7 +821,7 @@ plt.plot([0, len(cooks)], [cooks_cutoff, cooks_cutoff], color='darkblue', linest
 plt.xlabel("Observation")
 plt.ylabel("Cook's Distance")
 plt.legend(title="Cook's Distance Cutoff")
-dh.save_image('cooks_dist_plot', models_output_dir)
+#dh.save_image('cooks_dist_plot', models_output_dir)
 plt.show()
 
 # ==========================================================
@@ -837,6 +837,7 @@ plt.ylabel('Standardized Residuals')
 plt.xlabel('Predicted Values')
 plt.title('Standardized Residuals vs. Predicted Values')
 plt.legend()
+#dh.save_image('outliers_pred_vs_resid', models_output_dir)
 plt.show()
 
 # ==========================================================
@@ -856,8 +857,9 @@ orig_data_w_outlier['bmi_>=_30'] = orig_data_w_outlier['bmi_>=_30'].map(bmi_dict
 # Nonsmoker age vs. charges
 nonsmoker_outlier_df = orig_data_w_outlier[orig_data_w_outlier['smoker']=='no']
 # LM plot just makes it easier to color by outlier
-sns.lmplot(x='age', y='charges', hue="outlier", data=nonsmoker_outlier_df, ci=None, line_kws={'alpha':0})
+sns.lmplot(x='age', y='charges', hue="outlier", data=nonsmoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False)
 plt.title("Age vs. Charges in nonsmokers")
+#dh.save_image('outliers_age_v_charges_nonsmoker', models_output_dir)
 
 num_outliers_in_nonsmokers = nonsmoker_outlier_df[nonsmoker_outlier_df['outlier'] == 1].shape[0] # 74
 perc_outliers_in_nonsmokers = num_outliers_in_nonsmokers / nonsmoker_outlier_df.shape[0] # 0.0695
@@ -865,8 +867,9 @@ perc_outliers_in_nonsmokers = num_outliers_in_nonsmokers / nonsmoker_outlier_df.
 # Obese smoker age vs. charges
 ob_smoker_outlier_df = orig_data_w_outlier[(orig_data_w_outlier['smoker']=='yes') & (orig_data_w_outlier['bmi_>=_30']=='yes')]
 # LM plot just makes it easier to color by outlier
-sns.lmplot(x='age', y='charges', hue="outlier", data=ob_smoker_outlier_df, ci=None, line_kws={'alpha':0})
+sns.lmplot(x='age', y='charges', hue="outlier", data=ob_smoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False)
 plt.title("Age vs. Charges in obese smokers")
+#dh.save_image('outliers_age_v_charges_ob_smoker', models_output_dir)
 
 num_outliers_in_ob_smokers = ob_smoker_outlier_df[ob_smoker_outlier_df['outlier'] == 1].shape[0] # 9
 perc_outliers_in_ob_smokers = num_outliers_in_ob_smokers / ob_smoker_outlier_df.shape[0] # 0.0620
@@ -874,8 +877,10 @@ perc_outliers_in_ob_smokers = num_outliers_in_ob_smokers / ob_smoker_outlier_df.
 # Nonobese smoker age vs. charges
 nonob_smoker_outlier_df = orig_data_w_outlier[(orig_data_w_outlier['smoker']=='yes') & (orig_data_w_outlier['bmi_>=_30']=='no')]
 # LM plot just makes it easier to color by outlier
-sns.lmplot(x='age', y='charges', hue="outlier", data=nonob_smoker_outlier_df, ci=None, line_kws={'alpha':0})
+sns.lmplot(x='age', y='charges', hue="outlier", data=nonob_smoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False)
 plt.title("Age vs. Charges in obese smokers")
+plt.legend(title="Cook's Distance Outlier")
+#dh.save_image('outliers_age_v_charges_nonob_smoker', models_output_dir)
 
 num_outliers_in_nonob_smokers = nonob_smoker_outlier_df[nonob_smoker_outlier_df['outlier'] == 1].shape[0] # 7
 perc_outliers_in_nonob_smokers = num_outliers_in_nonob_smokers / nonob_smoker_outlier_df.shape[0] # 0.0542
