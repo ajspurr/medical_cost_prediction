@@ -14,10 +14,12 @@ from sklearn.preprocessing import StandardScaler
 
 import statsmodels.api as sm
 from statsmodels.tools.tools import add_constant
+from statsmodels.graphics.gofplots import qqplot
 from statsmodels.stats.diagnostic import het_white
 from statsmodels.tools.eval_measures import meanabs
 from statsmodels.stats.diagnostic import het_breuschpagan
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+from statsmodels.stats.outliers_influence import OLSInfluence as influence
 
 from sklearn.linear_model import LinearRegression
 
@@ -37,6 +39,15 @@ project_dir = PureWindowsPath(r"D:\GitHubProjects\medical_cost_prediction\\")
 chdir(project_dir)
 dataset = pd.read_csv('./input/insurance.csv')
 models_output_dir = Path(project_dir, Path('./output/models'))
+
+# Import my data science helper functions (relative dir based on project_dir)
+import sys
+module_dir = Path('../my_ds_modules')
+module_dir = Path.resolve(module_dir)
+module_dir = str(module_dir)
+sys.path.insert(0, module_dir)
+import ds_helper as dh
+
 
 # ====================================================================================================================
 # Categorize and process features
@@ -68,6 +79,18 @@ cont_cols_w_target.append('charges')
 # ====================================================================================================================
 # Visualization helper functions
 # ====================================================================================================================
+# Create dictionary of formatted column names  to be used for
+# figure labels (title() capitalizes every word in a string)
+formatted_cols = {}
+for col in dataset.columns:
+    formatted_cols[col] = col.replace('_', ' ').title()
+formatted_cols['bmi'] = 'BMI'
+formatted_cols['bmi_>=_30'] = 'BMI >= 30'
+
+# Function returning the formatted version of column name
+def format_col(col_name):
+    return formatted_cols[col_name]
+
 # Create 2d array of given size, used for figures with gridspec
 def create_2d_array(num_rows, num_cols):
     matrix = []
@@ -754,11 +777,197 @@ save_filename = 'performance_new_feat'
 save_image(save_filename)
 plt.show()
 
-# =============================
-# Identify Outliers?
-# =============================
+# =======================================================================================
+# Test for normality of residuals
+# =======================================================================================
+# https://www.statology.org/multiple-linear-regression-assumptions/
+# https://towardsdatascience.com/linear-regression-model-with-python-481c89f0f05b
 
-# LEFT OFF HERE
+fig = qqplot(sm_lin_reg_4.resid_pearson,line='45',fit='True')
+plt.xlabel('Theoretical quantiles')
+plt.ylabel('Sample quantiles')
+plt.show()
+
+# =======================================================================================
+# Outlier Analysis
+# =======================================================================================
+# https://towardsdatascience.com/linear-regression-model-with-python-481c89f0f05b
+# Observation has a high influence if the Cook's distance is greater than 4/(N-k-1)
+# N = number of observations, k = number of predictors, yellow horizontal line in the plot
+
+# ==========================================================
+# Identify Outliers
+# ==========================================================
+inf = influence(sm_lin_reg_4)
+(cooks, d) = inf.cooks_distance
+cooks_cutoff = 4 / (len(cooks) - (new_X_4.shape[1] - 1) - 1)
+
+outlier_df = new_X_4.copy()
+outlier_df['cooks'] = cooks
+outlier_df['outlier'] = outlier_df['cooks'] > cooks_cutoff
+outlier_dict = {False:0, True:1}
+outlier_df['outlier'] = outlier_df['outlier'].map(outlier_dict)
+
+num_outliers = outlier_df[outlier_df['outlier'] == 1].shape[0] # 90
+perc_outliers = num_outliers / outlier_df.shape[0] # 0.0672
+outlier_df['true_values'] = y
+outlier_df['y_pred'] = sm_y_pred_4
+outlier_df['stud_resid'] = sm_lin_reg_4.get_influence().resid_studentized_internal
+
+# Visualiz Cook's Distances
+plt.title("Cook's distance plot")
+plt.stem(range(len(cooks)), cooks, markerfmt=",")
+plt.plot([0, len(cooks)], [cooks_cutoff, cooks_cutoff], color='darkblue', linestyle='--')
+plt.show()
+
+# ==========================================================
+# Plot with respect to model results
+# ==========================================================
+outlier_data = outlier_df[outlier_df['outlier']==1]
+nonoutlier_data = outlier_df[outlier_df['outlier']==0]
+
+# Stand Resid vs. Stud Residuals
+plt.scatter(outlier_data['y_pred'], outlier_data['stud_resid'], alpha=0.5, label='outliers')
+plt.scatter(nonoutlier_data['y_pred'], nonoutlier_data['stud_resid'], alpha=0.5, label='not outliers')
+plt.ylabel('Standardized Residuals')
+plt.xlabel('Predicted Values')
+plt.title('Standardized Residuals vs. Predicted Values')
+plt.legend()
+
+# ==========================================================
+# Plot with respect to original data
+# ==========================================================
+# Make dataset of original data with new outlier information
+orig_data_w_outlier = dataset.copy()
+orig_data_w_outlier['outlier'] = outlier_df['outlier']
+
+orig_data_w_outlier['bmi_>=_30'] = orig_data_w_outlier['bmi'] >= 30
+bmi_dict = {False:'no', True:'yes'}
+orig_data_w_outlier['bmi_>=_30'] = orig_data_w_outlier['bmi_>=_30'].map(bmi_dict)
+
+# =============================
+# Scatterplots of numerical variables
+# =============================
+# Nonsmoker age vs. charges
+nonsmoker_outlier_df = orig_data_w_outlier[orig_data_w_outlier['smoker']=='no']
+# LM plot just makes it easier to color by outlier
+sns.lmplot(x='age', y='charges', hue="outlier", data=nonsmoker_outlier_df, ci=None, line_kws={'alpha':0})
+plt.title("Age vs. Charges in nonsmokers")
+
+num_outliers_in_nonsmokers = nonsmoker_outlier_df[nonsmoker_outlier_df['outlier'] == 1].shape[0] # 74
+perc_outliers_in_nonsmokers = num_outliers_in_nonsmokers / nonsmoker_outlier_df.shape[0] # 0.0695
+
+# Obese smoker age vs. charges
+ob_smoker_outlier_df = orig_data_w_outlier[(orig_data_w_outlier['smoker']=='yes') & (orig_data_w_outlier['bmi_>=_30']=='yes')]
+# LM plot just makes it easier to color by outlier
+sns.lmplot(x='age', y='charges', hue="outlier", data=ob_smoker_outlier_df, ci=None, line_kws={'alpha':0})
+plt.title("Age vs. Charges in obese smokers")
+
+num_outliers_in_ob_smokers = ob_smoker_outlier_df[ob_smoker_outlier_df['outlier'] == 1].shape[0] # 9
+perc_outliers_in_ob_smokers = num_outliers_in_ob_smokers / ob_smoker_outlier_df.shape[0] # 0.0620
+
+# Nonobese smoker age vs. charges
+nonob_smoker_outlier_df = orig_data_w_outlier[(orig_data_w_outlier['smoker']=='yes') & (orig_data_w_outlier['bmi_>=_30']=='no')]
+# LM plot just makes it easier to color by outlier
+sns.lmplot(x='age', y='charges', hue="outlier", data=nonob_smoker_outlier_df, ci=None, line_kws={'alpha':0})
+plt.title("Age vs. Charges in obese smokers")
+
+num_outliers_in_nonob_smokers = nonob_smoker_outlier_df[nonob_smoker_outlier_df['outlier'] == 1].shape[0] # 7
+perc_outliers_in_nonob_smokers = num_outliers_in_nonob_smokers / nonob_smoker_outlier_df.shape[0] # 0.0542
+
+# Not really much going on in these next two
+# Smoker bmi vs. charges
+smoker_outlier_df = orig_data_w_outlier[orig_data_w_outlier['smoker'] >= 'yes']
+# LM plot just makes it easier to color by outlier
+sns.lmplot(x='bmi', y='charges', hue="outlier", data=smoker_outlier_df, ci=None, line_kws={'alpha':0})
+plt.plot()
+
+# Children vs. charges
+# LM plot just makes it easier to color by outlier
+sns.lmplot(x='children', y='charges', hue="outlier", data=orig_data_w_outlier)#, ci=None, line_kws={'alpha':0})
+plt.plot()
+
+# =============================
+# Boxplots of categorical variables
+# =============================
+# Create figure, gridspec, list of axes/subplots mapped to gridspec location
+fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=5, figsize=(18, 4))
+
+target_col = 'outlier'
+i = 0
+for col in cat_ord_cols:
+    df_grouped = dh.dataframe_percentages(orig_data_w_outlier, target_col, col)
+    #sns.barplot(x=df_grouped[col], y=df_grouped['percent_of_cat_var'], hue=df_grouped[target_col])
+    ax = ax_array_flat[i]
+    sns.barplot(x=df_grouped[col], y=df_grouped[(df_grouped[target_col]==1)]['percent_of_cat_var'], ax=ax)
+    ax.axline(xy1=(0, (perc_outliers*100)), slope=0, color='darkblue', linestyle='--', label='Dataset % Outliers')
+    ax.set_title('Percent Outlier by ' + format_col(col))
+    ax.set_xlabel(format_col(col))
+    ax.set_ylabel('Percent Outlier')
+    if col=='region':
+        plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
+    if i==(len(cat_ord_cols)-1):
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)#, title=target_col)
+    i+=1
+fig.suptitle('Percent Outliers in Each Subcategory', fontsize=24)
+fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+
+# Subcategory of 4 children has 15% outliers whereas basically all other subcategories range between 5-8%
+# You can also see in 'Categorical Variable Relationships with Target' figure that samples with 4 kids 
+# have a different distribution than the rest
+# However, that only represents 4 outlieres out of 90, so unsurprisingly, further exploration didn't lead anywhere
+
+
+# =============================
+# Explore those with 4 children vs. not
+# =============================
+four_child_df = orig_data_w_outlier.copy()
+four_child_df['four_children'] = four_child_df['children']==4
+child_dict = {False:'no', True:'yes'}
+four_child_df['four_children']  = four_child_df['four_children'] .map(child_dict)
+
+# Nonsmoker age vs. charges
+nonsmoker_child_df = four_child_df[four_child_df['smoker']=='no']
+# LM plot just makes it easier to color by outlier
+sns.lmplot(x='age', y='charges', hue="four_children", data=nonsmoker_child_df, ci=None, line_kws={'alpha':0})
+plt.title("Age vs. Charges in nonsmokers")
+# Doesn't match up with outliers
+
+
+
+# =============================
+# NEXT STEPS
+# =============================
+#Further subcategorize smoker bmi vs. charges plot
+sns.lmplot(x='bmi', y='charges', hue="outlier", data=smoker_outlier_df, ci=None, line_kws={'alpha':0})
+plt.plot()
+
+sns.lmplot(x='bmi', y='children', data=orig_data_w_outlier, ci=None, line_kws={'alpha':0})
+plt.plot()
+
+sns.boxplot(data=orig_data_w_outlier, x='bmi', y='children', orient='h')
+
+
+sns.kdeplot(data=orig_data_w_outlier[orig_data_w_outlier['outlier']==1], x='charges', shade=True, alpha=0.5, label='Outlier')
+sns.kdeplot(data=orig_data_w_outlier[orig_data_w_outlier['outlier']==0], x='charges', shade=True, alpha=0.5, label='Not Outlier')
+plt.legend()
+
+
+
+
+# ==========================================================
+# Influence plot
+# ==========================================================
+inf = influence(sm_lin_reg_4)
+fig, ax = plt.subplots()
+ax.axhline(-2.5, linestyle='-', color='C1')
+ax.axhline(2.5, linestyle='-', color='C1')
+ax.scatter(inf.hat_matrix_diag, inf.resid_studentized_internal, s=1000 * np.sqrt(inf.cooks_distance[0]), alpha=0.5)
+ax.set_xlabel('H Leverage')
+ax.set_ylabel('Studentized Residuals')
+ax.set_title('Influence Plot')
+plt.tight_layout()
+plt.show()
 
 # =======================================================================================
 # Test for multicollinearity
@@ -768,44 +977,19 @@ vif = calulate_vif(dataset, numerical_cols)
 
 # All very close to 1, no multicollinearity. (Greater than 5-10 indicates multicollinearity)
 
-smoker_dataset = dataset[dataset['smoker']=='yes']
-plt.scatter(smoker_dataset['bmi'], smoker_dataset['age'])
-
 # =============================
 # Quantify Heteroscedasticity
 # =============================
 
-# Model Summary
-sm_results = sm_lin_reg.summary()
-
 # Quantify Heteroscedasticity using White test and Breusch-Pagan test
 # https://medium.com/@remycanario17/tests-for-heteroskedasticity-in-python-208a0fdb04ab
 # https://www.statology.org/breusch-pagan-test/
-white_test = het_white(sm_lin_reg.resid, sm_lin_reg.model.exog)
-bp_test = het_breuschpagan(sm_lin_reg.resid, sm_lin_reg.model.exog)
 
-# Results returned as tuple of results: LM Statistic, LM-Test p-value, F-Statistic, F-Test p-value
-white_lm_p_value = white_test[1]
-formatted = '{:0.2e}'.format(white_lm_p_value)
+# Before feature engineering, both had a p-value <<< 0.05, indicating presence of heteroscedasticity. After feature
+# engineering, both were well above 0.05. 
 
-labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
-white_test_results = dict(zip(labels, white_test))
-bp_test_results = dict(zip(labels, bp_test))
-
-# Both have a p-value <<< 0.05, indicating presence of heteroscedasticity
-
-# Before performing feature engineering, tried log transforming target. Did not work either before
+# Before performing feature engineering, I tried log transforming target. Did not work either before
 # or after feature engineering.
-
-
-
-
-
-
-
-
-
-
 
 # ====================================================================================================================
 # Back to sklearn models
@@ -836,7 +1020,7 @@ fit = lin_reg.fit(X_train_processed, y_train)
 y_pred = lin_reg.predict(X_valid_processed)
 
 # Evaluate model
-lr_eval = evaluate_model(y_valid, y_pred, 'lin_reg', 'LR')
+lr_eval = evaluate_model_sk(y_valid, y_pred, 'lin_reg', 'LR')
 
 # =======================================================================================
 # Test multiple linear regression model assumptions
