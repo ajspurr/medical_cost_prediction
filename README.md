@@ -140,6 +140,10 @@ Cooks distance using statsmodels.
 
 <p align="center"><img src="/output/models/cooks_dist_plot.png" width="600"/></p>
 
+Visualization of Cook's outliers on Studentized Residual vs. Predicted Value plot. Nothing surprising.
+
+<p align="center"><img src="/output/models/outliers_pred_vs_resid.png" width="600"/></p>
+
 Cook's Distance outliers maps to the outliers in age vs. charges plots.
 
 <p align="center">
