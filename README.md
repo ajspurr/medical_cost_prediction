@@ -120,7 +120,7 @@ There is a clear curvilinear relationship between predicted charges and residual
 
 It did slightly improve the R-squared of the model. The heteroscedasticity metrics didn't change much. However, you can visually appreciate the better fit on the model below. It seems that the outliers are the main reason the line isn't an almost perfect fit. 
 
-<p align="center"><img src="/output/models/sm_lr_results_age_sq_feature.png" width="900"/></p>
+<p align="center"><img src="/output/models/sm_lr_results_4_age_sq_feature.png" width="900"/></p>
 
 #### Children vs. Charges
 No new insights were gained by subgrouping this relationship.
