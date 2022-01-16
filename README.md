@@ -161,7 +161,13 @@ No subcategory has a significantly large percentage of outliers. Subcategory '4 
 Outlier data subcategory composition not very different than rest of data. 
 <p align="center"><img src="/output/models/perc_subcat_by_outlier.png" width="900"/></p>
 
-So far there is nothing I found that could categorize or explain the outliers other than the fact that they map well to the Charges vs. Age plot. Without knowing more about the origin of the data, at this point I will just remove the outliers so I can compare the model performance before and after. 
+So far there is nothing I found that could categorize or explain the outliers other than the fact that they map well to the Charges vs. Age plot. Without knowing more about the origin of the data, at this point I will just remove the outliers so I can compare the model performance before and after. The resulting improvements are not surprising:
+
+<p align="center"><img src="/output/models/sm_lr_results_5_no_outliers.png" width="900"/></p>
+
+Updated changes in model performance metrics below. I didn't replot the changes in model coefficients as they didn't change much. The 'age' coefficient increased from ~-250 to ~0, and the 'smoker' coefficient increased from ~16000 to ~16250. 
+
+<p align="center"><img src="/output/models/performance_new_feat.png" width="800"/></p>
 
 
 ### Homoscedasticity
