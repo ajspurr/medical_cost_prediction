@@ -571,12 +571,13 @@ file_name_1_0 = '1_bmi_30_feature'
 sm_lin_reg_1_0, sm_y_pred_1_0, het_results_1_0 = fit_lr_model_results(new_X_1, y, title_1, combine_plots=True, save_img=False, filename_unique=file_name_1_0)
 
 # Plot model with subgrouping
+file_name_1 = '1_bmi_30_feature_grouped'
 sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, title_1, save_img=False, filename_unique=file_name_1)
 
 # Organize model performance metrics
 summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
 coeff_1 = pd.Series(summary_df_1['coef'], name=model_name_1)
-sm_lr_results_1 = pd.Series(evaluate_model_sm(y, sm_y_pred_1, sm_lin_reg_1, f'LR ({model_name_1})'), name=model_name_1)
+sm_lr_results_1 = pd.Series(evaluate_model_sm(y, sm_y_pred_1, sm_lin_reg_1), name=model_name_1)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_0, coeff_1], axis=1)
@@ -601,7 +602,8 @@ new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
 # Plot model
 title_2 = 'w [bmi*smoker] feature'
 model_name_2 = '[bmi*smoker]'
-sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X_2, y, title_2, save_img=False, filename_unique='smoke_bmi_feature')
+file_name_2 = '2_smoke_bmi_feature'
+sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X_2, y, title_2, save_img=False, filename_unique=file_name_2)
 
 # Organize model performance metrics
 summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
