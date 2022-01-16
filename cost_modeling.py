@@ -628,7 +628,7 @@ new_X_4['age^2'] = scaled_sq_ages
 title_4 = 'w [age^2] feature'
 model_name_4 = '[age^2]'
 file_name_4 = '4_age_sq_feature'
-sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, title_4, save_img=True, filename_unique=file_name_4)
+sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, title_4, save_img=False, filename_unique=file_name_4)
 
 # Organize model performance metrics
 summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
@@ -673,7 +673,6 @@ for feature in smoker_df.index:
     ax1.plot(smoker_df.columns, smoker_df.loc[feature].to_list(), label=feature, linewidth=3)
 ax1.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
 plt.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
-#ax1.set_title('New Feature Coefficients')
 ax1.set_ylabel('Coefficient', fontsize=16)
 ax1.grid()
 
@@ -683,7 +682,6 @@ for feature in orig_features_no_smoker.index:
     ax2.plot(orig_features_no_smoker.columns, orig_features_no_smoker.loc[feature].to_list(), label=feature, linewidth=3)
 ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
 plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
-#ax2.set_title('New Feature Coefficients')
 ax2.set_ylabel('Coefficient', fontsize=16)
 ax2.grid()
 
@@ -692,14 +690,13 @@ for feature in new_features_df.index:
     ax3.plot(new_features_df.columns, new_features_df.loc[feature].to_list(), label=feature, linewidth=3)
 ax3.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
 plt.setp(ax3.get_xticklabels(), rotation=20, horizontalalignment='right')
-#ax3.set_title('Original Feature Coefficients')
 ax3.set_xlabel('Additional Features', fontsize=16)
 ax3.set_ylabel('Coefficient', fontsize=16)
 ax3.grid()
 
 fig.suptitle('Feature coeff w/ each additional feature', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'coeff_new_feat_vert_3'
+#save_filename = 'coeff_vert_4_no_outliers'
 #dh.save_image(save_filename, models_output_dir)
 plt.show()
 
@@ -725,7 +722,6 @@ df_to_plot = max_e_df
 for metric in df_to_plot.index:
     ax1.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
 ax1.legend(loc='upper right', borderaxespad=0.5, title='Metric')
-#ax = plt.gca()
 plt.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
 ax1.grid()
 
@@ -734,7 +730,6 @@ df_to_plot = error_metrics
 for metric in df_to_plot.index:
     ax2.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
 ax2.legend(loc='upper right', borderaxespad=0.5, title='Metric')
-#ax = plt.gca()
 plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
 ax2.grid()
 
@@ -743,7 +738,6 @@ df_to_plot = r_metrics
 for metric in df_to_plot.index:
     ax3.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
 ax3.legend(loc='upper left', borderaxespad=0.5, title='Metric')
-#ax = plt.gca()
 plt.setp(ax3.get_xticklabels(), rotation=20, horizontalalignment='right')
 ax3.grid()
 
@@ -752,13 +746,12 @@ df_to_plot = het_stats
 for metric in df_to_plot.index:
     ax4.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
 ax4.legend(loc='upper left', borderaxespad=0.5, title='Metric')
-#ax = plt.gca()
 plt.setp(ax4.get_xticklabels(), rotation=20, horizontalalignment='right')
 ax4.grid()
 
 fig.suptitle('LR Performance w/ each additional feature', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'performance_new_feat'
+#save_filename = 'performance_no_outliers'
 #dh.save_image(save_filename, models_output_dir)
 plt.show()
 
@@ -856,7 +849,7 @@ nonob_smoker_outlier_df = orig_data_w_outlier[(orig_data_w_outlier['smoker']=='y
 sns.lmplot(x='age', y='charges', hue="outlier", data=nonob_smoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False)
 plt.title("Age vs. Charges in obese smokers")
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title="Cook's Outlier")
-dh.save_image('outliers_age_v_charges_nonob_smoker', models_output_dir)
+#dh.save_image('outliers_age_v_charges_nonob_smoker', models_output_dir)
 
 # In the next two graphs, the outliers are scattered around, there is no obvious grouping
 # Smoker bmi vs. charges
@@ -909,34 +902,54 @@ i = 0
 for col in cat_ord_cols:
     df_grouped = dh.dataframe_percentages(orig_data_w_outlier, target_col, col)
     ax = ax_array_flat[i]
-    #sns.barplot(x=df_grouped[col], y=df_grouped[(df_grouped[target_col]==1)]['percent_of_cat_var'], ax=ax)
     sns.barplot(x=df_grouped[target_col], y=df_grouped['perc_of_target_cat'], hue=df_grouped[col], ax=ax)
     ax.set_title('Comp. by ' + format_col(col) + ' Subcategory')
     ax.set_xlabel(format_col(col))
     ax.set_ylabel('Percent Outlier')
     ax.set_xlabel('Outlier')
     ax.set_ylabel('Percent Subcategory')
-    ax.legend(framealpha=0.5)
+    ax.legend(title=format_col(col), framealpha=0.5)
     i+=1
     
 fig.suptitle('Outlier Composition by Subcategory', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
 save_filename = 'perc_subcat_by_outlier'
-# dh.save_image(save_filename, models_output_dir)
+#dh.save_image(save_filename, models_output_dir)
 
 
 
-# ==========================================================
-# NEXT STEP
 # ==========================================================
 # Remove outliers and compare models
+# ==========================================================
+merge_newX_y = pd.concat([new_X_4, y, outlier_df['outlier']], axis=1)
+no_outliers_df = merge_newX_y[merge_newX_y['outlier']=='no']
 
-# STOPPED HERE
+# Separate target from predictors
+no_outliers_y = no_outliers_df['charges']
+no_outliers_X = no_outliers_df.drop(['charges', 'outlier'], axis=1)
+
+# Plot model
+title_5 = 'removed outliers'
+model_name_5 = 'no_out'
+file_name_5 = '5_no_outliers'
+sm_lin_reg_5, sm_y_pred_5, het_results_5 = fit_lr_model_results_subgrouped(no_outliers_X, no_outliers_y, title_5, save_img=False, filename_unique=file_name_5)
+
+# Organize model performance metrics
+summary_df_5 = sm_results_to_df(sm_lin_reg_5.summary())
+coeff_5 = pd.Series(summary_df_5['coef'], name=model_name_5)
+sm_lr_results_5 = pd.Series(evaluate_model_sm(no_outliers_y, sm_y_pred_5, sm_lin_reg_5), name=model_name_5)
+
+# Keep track of model performance for comparison later
+coeff_df = pd.concat([coeff_df, coeff_5], axis=1)
+sm_results_df = pd.concat([sm_results_df, sm_lr_results_5], axis=1)
 
 
+# I just ran the plotting coefficients and performance metrics code again after updating the results dataframes
 
-
-
+fig = qqplot(sm_lin_reg_5.resid_pearson, line='45', fit='True')
+plt.xlabel('Theoretical quantiles')
+plt.ylabel('Sample quantiles')
+plt.show()
 
 
 
