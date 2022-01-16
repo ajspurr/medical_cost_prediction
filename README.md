@@ -70,11 +70,11 @@ To test for these assumptions, I used package 'statsmodels' (as opposed to 'skle
 
 <p align="center"><img src="/output/models/sm_lr_results_0_original.png" width="700"/></p>
 
-<p align="center"><img src="/output/models/sm_lr_results_original.png" width="700"/></p>
+<p align="center"><img src="/output/models/sm_lr_results_1_bmi_30_feature.png" width="700"/></p>
 
 There are clear groupings of predicted values, which (surprise, surprise) relate to BMI and smoking status. Subgrouped plot below. In the plot on the left, 'BP' represents the p-value for the Breusch-Pagan Lagrange Multiplier Test for Heteroscedasticity and 'White' represents the p-value of White’s Lagrange Multiplier Test for Heteroscedasticity. These will be discussed in the 'Homoscedasticity' section below. Values less than 0.05 indicate presence of heteroscedasticity.
 
-<p align="center"><img src="/output/models/sm_lr_results_orig_subgrouped.png" width="900"/></p>
+<p align="center"><img src="/output/models/sm_lr_results_1_bmi_30_feature_grouped.png" width="900"/></p>
 
 ### Linear Relationship Between Predictors and Target Variable
 #### BMI vs. Charges
