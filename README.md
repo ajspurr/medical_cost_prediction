@@ -135,7 +135,7 @@ Several of the features did not have much fluctuation in their coefficients. I t
 
 <p align="center"><img src="/output/models/performance_new_feat.png" width="800"/></p>
 
-RMSE penalizes large errors. MAE does not penalize large errors (there are several here). R-squared represents the percent of the variation of the target that is explained by it's relationship with the features. R-squared is a relative measure whereas RMSE and MAE are absolute measures. One drawback of R-squared is that by the nature of its calculation, it improves every time you add a new variable to the model. Adjusted R-squared corrects for this. ([Source](https://towardsdatascience.com/evaluation-metrics-model-selection-in-linear-regression-73c7573208be))
+RMSE penalizes large errors the most. MAE does not penalize large errors as much. Median absolute error penalizes large errors the least. R-squared represents the percent of the variation of the target that is explained by it's relationship with the features. R-squared is a relative measure whereas RMSE and MAE are absolute measures. One drawback of R-squared is that by the nature of its calculation, it improves every time you add a new variable to the model. Adjusted R-squared corrects for this. ([Source](https://towardsdatascience.com/evaluation-metrics-model-selection-in-linear-regression-73c7573208be))
 
 ### Outlier Detection
 Cooks distance using statsmodels. 
