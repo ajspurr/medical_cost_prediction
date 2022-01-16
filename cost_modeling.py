@@ -938,22 +938,30 @@ target_col = 'outlier'
 i = 0
 for col in cat_ord_cols:
     df_grouped = dh.dataframe_percentages(orig_data_w_outlier, target_col, col)
-    #sns.barplot(x=df_grouped[col], y=df_grouped['percent_of_cat_var'], hue=df_grouped[target_col])
     ax = ax_array_flat[i]
-    sns.barplot(x=df_grouped[col], y=df_grouped[(df_grouped[target_col]==1)]['percent_of_cat_var'], ax=ax)
-    ax.axline(xy1=(0, (perc_outliers*100)), slope=0, color='darkblue', linestyle='--', label='Dataset % Outliers')
-    ax.set_title('Percent Outlier by ' + format_col(col))
+    #sns.barplot(x=df_grouped[col], y=df_grouped[(df_grouped[target_col]==1)]['percent_of_cat_var'], ax=ax)
+    sns.barplot(x=df_grouped[target_col], y=df_grouped['perc_of_target_cat'], hue=df_grouped[col], ax=ax)
+    ax.set_title('Comp. by ' + format_col(col) + ' Subcategory')
     ax.set_xlabel(format_col(col))
     ax.set_ylabel('Percent Outlier')
-    if col=='region':
-        plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
-    if i==(len(cat_ord_cols)-1):
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)#, title=target_col)
+    ax.set_xlabel('Outlier')
+    ax.set_ylabel('Percent Subcategory')
+    ax.legend(framealpha=0.5)
     i+=1
-fig.suptitle('Percent Subcategory by Outlier', fontsize=24)
+    
+fig.suptitle('Outlier Composition by Subcategory', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
 save_filename = 'perc_subcat_by_outlier'
-#dh.save_image(save_filename, models_output_dir)
+# dh.save_image(save_filename, models_output_dir)
+
+
+
+# ==========================================================
+# NEXT STEP
+# ==========================================================
+# Remove outliers and compare models
+
+# STOPPED HERE
 
 
 
@@ -961,39 +969,6 @@ save_filename = 'perc_subcat_by_outlier'
 
 
 
-# =============================
-# Explore those with 4 children vs. not
-# =============================
-four_child_df = orig_data_w_outlier.copy()
-four_child_df['four_children'] = four_child_df['children']==4
-child_dict = {False:'no', True:'yes'}
-four_child_df['four_children']  = four_child_df['four_children'] .map(child_dict)
-
-# Nonsmoker age vs. charges
-nonsmoker_child_df = four_child_df[four_child_df['smoker']=='no']
-# LM plot just makes it easier to color by outlier
-sns.lmplot(x='age', y='charges', hue="four_children", data=nonsmoker_child_df, ci=None, line_kws={'alpha':0})
-plt.title("Age vs. Charges in nonsmokers")
-# Doesn't match up with outliers
-
-
-
-# =============================
-# NEXT STEPS
-# =============================
-#Further subcategorize smoker bmi vs. charges plot
-sns.lmplot(x='bmi', y='charges', hue="outlier", data=smoker_outlier_df, ci=None, line_kws={'alpha':0})
-plt.plot()
-
-sns.lmplot(x='bmi', y='children', data=orig_data_w_outlier, ci=None, line_kws={'alpha':0})
-plt.plot()
-
-sns.boxplot(data=orig_data_w_outlier, x='bmi', y='children', orient='h')
-
-
-sns.kdeplot(data=orig_data_w_outlier[orig_data_w_outlier['outlier']==1], x='charges', shade=True, alpha=0.5, label='Outlier')
-sns.kdeplot(data=orig_data_w_outlier[orig_data_w_outlier['outlier']==0], x='charges', shade=True, alpha=0.5, label='Not Outlier')
-plt.legend()
 
 
 
