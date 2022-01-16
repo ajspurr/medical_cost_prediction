@@ -152,6 +152,10 @@ No subcategory has a significantly large percentage of outliers. Subcategory '4 
 
 <p align="center"><img src="/output/models/perc_outlier_subcat.png" width="900"/></p>
 
+Outlier data subcategory composition not very different than rest of data. 
+<p align="center"><img src="/output/models/perc_subcat_by_outlier.png" width="900"/></p>
+
+
 ### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
 
