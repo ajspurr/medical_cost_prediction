@@ -167,7 +167,7 @@ So far there is nothing I found that could categorize or explain the outliers ot
 
 Updated changes in model performance metrics below. I didn't replot the changes in model coefficients as they didn't change much. The 'age' coefficient increased from ~-250 to ~0, and the 'smoker' coefficient increased from ~16000 to ~16250. 
 
-<p align="center"><img src="/output/models/performance_new_feat.png" width="800"/></p>
+<p align="center"><img src="/output/models/performance_no_outliers.png" width="800"/></p>
 
 
 ### Homoscedasticity
