@@ -86,35 +86,6 @@ dh.create_formatted_cols_dict(dataset.columns, custom_dict)
 # Function returning the formatted version of column name
 def format_col(col_name):
     return dh.format_col(col_name)
-
-# Create 2d array of given size, used for figures with gridspec
-def create_2d_array(num_rows, num_cols):
-    matrix = []
-    for r in range(0, num_rows):
-        matrix.append([0 for c in range(0, num_cols)])
-    return matrix
-
-# Initialize figure, grid spec, axes variables
-def initialize_fig_gs_ax(num_rows, num_cols, figsize=(16, 8)):
-    # Create figure, gridspec, and 2d array of axes/subplots with given number of rows and columns
-    fig = plt.figure(constrained_layout=True, figsize=figsize)
-    ax_array = create_2d_array(num_rows, num_cols)
-    gs = fig.add_gridspec(num_rows, num_cols)
-
-    # Map each subplot/axis to gridspec location
-    for r in range(len(ax_array)):
-        for c in range(len(ax_array[r])):
-            ax_array[r][c] = fig.add_subplot(gs[r,c])
-
-    # Flatten 2d array of axis objects to iterate through easier
-    ax_array_flat = np.array(ax_array).flatten()
-    
-    return fig, gs, ax_array_flat
-
-# Standardize image saving parameters
-def save_image(filename, dir=models_output_dir, dpi=300, bbox_inches='tight'):
-    plt.savefig(models_output_dir/filename, dpi=dpi, bbox_inches=bbox_inches)
-    print("\nSaved image to '" + str(dir/filename) +"'\n")
     
 # ====================================================================================================================
 # Data preprocessing function via pipeline
@@ -603,12 +574,12 @@ new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
 title_2 = 'w [bmi*smoker] feature'
 model_name_2 = '[bmi*smoker]'
 file_name_2 = '2_smoke_bmi_feature'
-sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X_2, y, title_2, save_img=False, filename_unique=file_name_2)
+sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X_2, y, title_2, save_img=True, filename_unique=file_name_2)
 
 # Organize model performance metrics
 summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
 coeff_2 = pd.Series(summary_df_2['coef'], name=model_name_2)
-sm_lr_results_2 = pd.Series(evaluate_model_sm(y, sm_y_pred_2, sm_lin_reg_2, f'LR ({model_name_2})'), name=model_name_2)
+sm_lr_results_2 = pd.Series(evaluate_model_sm(y, sm_y_pred_2, sm_lin_reg_2), name=model_name_2)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_2], axis=1)
@@ -626,14 +597,15 @@ new_X_3 = new_X_2.copy()
 new_X_3['smoker*obese'] = new_X_3['smoker_yes'] * new_X_3['bmi_>=_30_yes']
 
 # Plot model
-title_3 = 'w [smoker*obese] Feature'
+title_3 = 'w [smoker*obese] feature'
 model_name_3 = '[smoker*obese]'
-sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X_3, y, title_3, save_img=False, filename_unique='smoke_ob_feature')
+file_name_3 = '3_smoke_ob_feature'
+sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X_3, y, title_3, save_img=False, filename_unique=file_name_3)
 
 # Organize model performance metrics
 summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
 coeff_3 = pd.Series(summary_df_3['coef'], name=model_name_3)
-sm_lr_results_3 = pd.Series(evaluate_model_sm(y, sm_y_pred_3, sm_lin_reg_3, f'LR ({model_name_3})'), name=model_name_3)
+sm_lr_results_3 = pd.Series(evaluate_model_sm(y, sm_y_pred_3, sm_lin_reg_3), name=model_name_3)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_3], axis=1)
@@ -655,7 +627,8 @@ new_X_4['age^2'] = scaled_sq_ages
 # Plot model
 title_4 = 'w [age^2] feature'
 model_name_4 = '[age^2]'
-sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, title_4, save_img=False, filename_unique='age_sq_feature')
+file_name_4 = '4_age_sq_feature'
+sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, title_4, save_img=False, filename_unique=file_name_4)
 
 # Organize model performance metrics
 summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
