@@ -921,14 +921,44 @@ for col in cat_ord_cols:
     i+=1
 fig.suptitle('Percent Outliers in Each Subcategory', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'perc_outlier_subcat'
-dh.save_image(save_filename, models_output_dir)
-
+save_filename = 'perc_outlier_subcat'
+#dh.save_image(save_filename, models_output_dir)
 
 # Subcategory of 4 children has 15% outliers whereas basically all other subcategories range between 5-8%
 # You can also see in 'Categorical Variable Relationships with Target' figure that samples with 4 kids 
 # have a different distribution than the rest
 # However, that only represents 4 outlieres out of 90, so unsurprisingly, further exploration didn't lead anywhere
+
+
+# Reverse of the above graph
+# Create figure, gridspec, list of axes/subplots mapped to gridspec location
+fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=5, figsize=(18, 4))
+
+target_col = 'outlier'
+i = 0
+for col in cat_ord_cols:
+    df_grouped = dh.dataframe_percentages(orig_data_w_outlier, target_col, col)
+    #sns.barplot(x=df_grouped[col], y=df_grouped['percent_of_cat_var'], hue=df_grouped[target_col])
+    ax = ax_array_flat[i]
+    sns.barplot(x=df_grouped[col], y=df_grouped[(df_grouped[target_col]==1)]['percent_of_cat_var'], ax=ax)
+    ax.axline(xy1=(0, (perc_outliers*100)), slope=0, color='darkblue', linestyle='--', label='Dataset % Outliers')
+    ax.set_title('Percent Outlier by ' + format_col(col))
+    ax.set_xlabel(format_col(col))
+    ax.set_ylabel('Percent Outlier')
+    if col=='region':
+        plt.setp(ax.get_xticklabels(), rotation=20, horizontalalignment='right')
+    if i==(len(cat_ord_cols)-1):
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)#, title=target_col)
+    i+=1
+fig.suptitle('Percent Subcategory by Outlier', fontsize=24)
+fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+save_filename = 'perc_subcat_by_outlier'
+#dh.save_image(save_filename, models_output_dir)
+
+
+
+
+
 
 
 # =============================
