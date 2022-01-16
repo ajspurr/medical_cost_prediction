@@ -219,9 +219,8 @@ def manual_preprocess_sm(X):
 # Model evaluation functions
 # ====================================================================================================================
 # Written for sklearn linear regression models, but only require y, y_pred, and X, so could be used for any model
-# Parameter 'model_display_name' will be used for plot labels 
 # Using the 'evaluate_model_sk()' and 'evaluate_model_sm()' on the SAME sm model yield almost identical results
-def evaluate_model_sk(y_valid, y_pred, X, model_display_name, round_results=3, print_results=False):      
+def evaluate_model_sk(y_valid, y_pred, X, round_results=3, print_results=False):      
     metrics = {}
     metrics['max_e'] = max_error(y_valid, y_pred).round(round_results)
     metrics['mae'] = mean_absolute_error(y_valid, y_pred).round(round_results)
@@ -232,7 +231,6 @@ def evaluate_model_sk(y_valid, y_pred, X, model_display_name, round_results=3, p
     metrics['r2_adj'] = 1 - ((1-metrics['r2'])*(len(y_valid)-1)/(len(y_valid)-X.shape[1]-1)).round(round_results)
     
     if print_results:
-        print(model_display_name + ' Evaluation')
         print('Max Error: ' + str(metrics['max_e']))
         print('Mean Absolute Error: ' + str(metrics['mae']))
         print('Mean Squared Error: ' + str(metrics['mse']))
@@ -243,8 +241,8 @@ def evaluate_model_sk(y_valid, y_pred, X, model_display_name, round_results=3, p
     return metrics
 
 # Written for statsmodels model
-# Using the 'evaluate_model_sk()' and 'evaluate_model_sm()' on the SAME sm model yield almost identical results
-def evaluate_model_sm(y, y_pred, sm_lr_model, model_display_name, round_results=3, print_results=False):      
+# Using the 'evaluate_model_sk()' and 'evaluate_model_sm()' on the same sm model yield almost identical results
+def evaluate_model_sm(y, y_pred, sm_lr_model, round_results=3, print_results=False):      
     metrics = {}
     metrics['max_e'] = np.round(max(sm_lr_model.resid), round_results)
     metrics['mae'] = meanabs(y, y_pred).round(round_results)
@@ -264,7 +262,6 @@ def evaluate_model_sm(y, y_pred, sm_lr_model, model_display_name, round_results=
     metrics['white_lm_p'] = '{:0.3e}'.format(white_test_results['LM-Test p-value'])
     
     if print_results:
-        print(model_display_name + ' Evaluation')
         print('Max Error: ' + str(metrics['max_e']))
         print('Mean Absolute Error: ' + str(metrics['mae']))
         print('Mean Squared Error: ' + str(metrics['mse']))
@@ -415,7 +412,7 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, save
     box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
     
     # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-    fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
+    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
         
     # =============================
     # Plot standardized residuals vs. predicted values
@@ -461,11 +458,24 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, save
     fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
     if save_img:
         save_filename = 'sm_lr_results_' + filename_unique
-        save_image(save_filename)
+        dh.save_image(save_filename, models_output_dir)
     plt.show()
 
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
     return het_metrics
+
+# Combine statsmodels linear regression model creation, fitting, and returning results    
+def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, save_img=False, filename_unique=None):
+    # Fit model
+    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
+    
+    # Predict target
+    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
+    
+    # Plot results, get heteroscedasticity metrics
+    het_results = sm_lr_model_results(fxn_lin_reg, fxn_y, fxn_y_pred, combine_plots=combine_plots, plot_title=plot_title, save_img=save_img, filename_unique=filename_unique)
+  
+    return fxn_lin_reg, fxn_y_pred, het_results
 
 # Combine statsmodels linear regression model creation, fitting, and returning results    
 def fit_lr_model_results_subgrouped(fxn_X, fxn_y, plot_title, save_img=False, filename_unique=None):
@@ -475,7 +485,7 @@ def fit_lr_model_results_subgrouped(fxn_X, fxn_y, plot_title, save_img=False, fi
     # Predict target
     fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
     
-    #fxn_white_test_results, fxn_bp_test_results = subgroup_quantify_heteroscedasticity(fxn_lin_reg, orig_dataset, fxn_y_pred, fxn_y, plot_title)
+    # Plot results subgrouped, get heteroscedasticity metrics
     het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, save_img=save_img, filename_unique=filename_unique)
     
     return fxn_lin_reg, fxn_y_pred, het_results
@@ -528,12 +538,13 @@ sm_y_pred_0 = sm_lin_reg_0.predict(sm_processed_X)
 # Plot model
 title_0 = 'Original'
 model_name_0 = 'original'
-het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=False, filename_unique=model_name_0)
+file_name_0 = '0_' + model_name_0
+het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=False, filename_unique=file_name_0)
 
 # Organize model performance metrics
 summary_df_0 = sm_results_to_df(sm_lin_reg_0.summary())
 coeff_0 = pd.Series(summary_df_0['coef'], name=model_name_0)
-sm_lr_results_0 = pd.Series(evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0, 'LR (sm)'), name=model_name_0)
+sm_lr_results_0 = pd.Series(evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0), name=model_name_0)
 
 # ====================================================================================================================
 # Feature engineering (more below)
@@ -550,13 +561,17 @@ new_X_1['bmi_>=_30'] = new_X_1['bmi_>=_30'].map(bmi_dict)
 categorical_cols.append('bmi_>=_30')
 cat_ord_cols.append('bmi_>=_30')
 
-# Preprocess
+# Preprocess with new feature
 new_X_1 = manual_preprocess_sm(new_X_1)
 
-# Plot model
+# Plot model without subgrouping
 title_1 = 'w [bmi>=30] feature'
 model_name_1 = '[bmi_>=_30]'
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, title_1, save_img=False, filename_unique='bmi_30_feature')
+file_name_1_0 = '1_bmi_30_feature'
+sm_lin_reg_1_0, sm_y_pred_1_0, het_results_1_0 = fit_lr_model_results(new_X_1, y, title_1, combine_plots=True, save_img=False, filename_unique=file_name_1_0)
+
+# Plot model with subgrouping
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, title_1, save_img=False, filename_unique=file_name_1)
 
 # Organize model performance metrics
 summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
