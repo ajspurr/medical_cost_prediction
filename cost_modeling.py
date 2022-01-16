@@ -628,12 +628,12 @@ new_X_4['age^2'] = scaled_sq_ages
 title_4 = 'w [age^2] feature'
 model_name_4 = '[age^2]'
 file_name_4 = '4_age_sq_feature'
-sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, title_4, save_img=False, filename_unique=file_name_4)
+sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, title_4, save_img=True, filename_unique=file_name_4)
 
 # Organize model performance metrics
 summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
 coeff_4 = pd.Series(summary_df_4['coef'], name=model_name_4)
-sm_lr_results_4 = pd.Series(evaluate_model_sm(y, sm_y_pred_4, sm_lin_reg_4, f'LR ({model_name_4})'), name=model_name_4)
+sm_lr_results_4 = pd.Series(evaluate_model_sm(y, sm_y_pred_4, sm_lin_reg_4), name=model_name_4)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_4], axis=1)
@@ -665,7 +665,7 @@ orig_features_df = coeff_df_new.iloc[0:5]
 new_features_df = coeff_df_new.iloc[5:len(coeff_df_new.index)]
 
 # Plot combined
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=3, num_cols=1, figsize=(9, 13))
+fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=3, num_cols=1, figsize=(9, 13))
 
 smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
 ax1 = ax_array_flat[0]
@@ -700,7 +700,7 @@ ax3.grid()
 fig.suptitle('Feature coeff w/ each additional feature', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
 #save_filename = 'coeff_new_feat_vert_3'
-#save_image(save_filename)
+#dh.save_image(save_filename, models_output_dir)
 plt.show()
 
 
@@ -709,7 +709,6 @@ plt.show()
 # =======================================================================================
 
 sm_results_df = sm_results_df.apply(pd.to_numeric)
-sm_results_df = sm_results_df.rename(index={'mean_abs_e':'mae'})
 
 # Separate out metrics by scale
 all__error_mets = sm_results_df.loc[['max_e', 'rmse', 'mae', 'med_abs_e']]
@@ -719,7 +718,7 @@ r_metrics = sm_results_df.loc[['r2', 'r2_adj']]
 het_stats = sm_results_df.loc[['bp_lm_p', 'white_lm_p']]
 
 # Plot combined
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=2, num_cols=2, figsize=(12, 7))
+fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=2, num_cols=2, figsize=(12, 7))
 
 ax1 = ax_array_flat[0]
 df_to_plot = max_e_df
@@ -760,7 +759,7 @@ ax4.grid()
 fig.suptitle('LR Performance w/ each additional feature', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
 save_filename = 'performance_new_feat'
-save_image(save_filename)
+#dh.save_image(save_filename, models_output_dir)
 plt.show()
 
 # =======================================================================================
@@ -769,7 +768,7 @@ plt.show()
 # https://www.statology.org/multiple-linear-regression-assumptions/
 # https://towardsdatascience.com/linear-regression-model-with-python-481c89f0f05b
 
-fig = qqplot(sm_lin_reg_4.resid_pearson,line='45',fit='True')
+fig = qqplot(sm_lin_reg_4.resid_pearson, line='45', fit='True')
 plt.xlabel('Theoretical quantiles')
 plt.ylabel('Sample quantiles')
 plt.show()
@@ -791,10 +790,10 @@ cooks_cutoff = 4 / (len(cooks) - (new_X_4.shape[1] - 1) - 1)
 outlier_df = new_X_4.copy()
 outlier_df['cooks'] = cooks
 outlier_df['outlier'] = outlier_df['cooks'] > cooks_cutoff
-outlier_dict = {False:0, True:1}
+outlier_dict = {False:'no', True:'yes'}
 outlier_df['outlier'] = outlier_df['outlier'].map(outlier_dict)
 
-num_outliers = outlier_df[outlier_df['outlier'] == 1].shape[0] # 90
+num_outliers = outlier_df[outlier_df['outlier'] == 'yes'].shape[0] # 90
 perc_outliers = num_outliers / outlier_df.shape[0] # 0.0672
 outlier_df['true_values'] = y
 outlier_df['y_pred'] = sm_y_pred_4
@@ -813,8 +812,8 @@ plt.show()
 # ==========================================================
 # Plot with respect to model results
 # ==========================================================
-outlier_data = outlier_df[outlier_df['outlier']==1]
-nonoutlier_data = outlier_df[outlier_df['outlier']==0]
+outlier_data = outlier_df[outlier_df['outlier']=='yes']
+nonoutlier_data = outlier_df[outlier_df['outlier']=='no']
 
 # Stand Resid vs. Stud Residuals
 plt.scatter(outlier_data['y_pred'], outlier_data['stud_resid'], alpha=0.7, label='Outliers')
@@ -842,44 +841,30 @@ orig_data_w_outlier['bmi_>=_30'] = orig_data_w_outlier['bmi_>=_30'].map(bmi_dict
 # =============================
 # Nonsmoker age vs. charges
 nonsmoker_outlier_df = orig_data_w_outlier[orig_data_w_outlier['smoker']=='no']
-# LM plot just makes it easier to color by outlier
-sns.lmplot(x='age', y='charges', hue="outlier", data=nonsmoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False)
+sns.lmplot(x='age', y='charges', hue="outlier", data=nonsmoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False) # LM plot just makes it easier to color by outlier
 plt.title("Age vs. Charges in nonsmokers")
 #dh.save_image('outliers_age_v_charges_nonsmoker', models_output_dir)
 
-num_outliers_in_nonsmokers = nonsmoker_outlier_df[nonsmoker_outlier_df['outlier'] == 1].shape[0] # 74
-perc_outliers_in_nonsmokers = num_outliers_in_nonsmokers / nonsmoker_outlier_df.shape[0] # 0.0695
-
 # Obese smoker age vs. charges
 ob_smoker_outlier_df = orig_data_w_outlier[(orig_data_w_outlier['smoker']=='yes') & (orig_data_w_outlier['bmi_>=_30']=='yes')]
-# LM plot just makes it easier to color by outlier
 sns.lmplot(x='age', y='charges', hue="outlier", data=ob_smoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False)
 plt.title("Age vs. Charges in obese smokers")
 #dh.save_image('outliers_age_v_charges_ob_smoker', models_output_dir)
 
-num_outliers_in_ob_smokers = ob_smoker_outlier_df[ob_smoker_outlier_df['outlier'] == 1].shape[0] # 9
-perc_outliers_in_ob_smokers = num_outliers_in_ob_smokers / ob_smoker_outlier_df.shape[0] # 0.0620
-
 # Nonobese smoker age vs. charges
 nonob_smoker_outlier_df = orig_data_w_outlier[(orig_data_w_outlier['smoker']=='yes') & (orig_data_w_outlier['bmi_>=_30']=='no')]
-# LM plot just makes it easier to color by outlier
 sns.lmplot(x='age', y='charges', hue="outlier", data=nonob_smoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False)
 plt.title("Age vs. Charges in obese smokers")
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title="Cook's Outlier")
-#dh.save_image('outliers_age_v_charges_nonob_smoker', models_output_dir)
+dh.save_image('outliers_age_v_charges_nonob_smoker', models_output_dir)
 
-num_outliers_in_nonob_smokers = nonob_smoker_outlier_df[nonob_smoker_outlier_df['outlier'] == 1].shape[0] # 7
-perc_outliers_in_nonob_smokers = num_outliers_in_nonob_smokers / nonob_smoker_outlier_df.shape[0] # 0.0542
-
-# Not really much going on in these next two
+# In the next two graphs, the outliers are scattered around, there is no obvious grouping
 # Smoker bmi vs. charges
 smoker_outlier_df = orig_data_w_outlier[orig_data_w_outlier['smoker'] >= 'yes']
-# LM plot just makes it easier to color by outlier
-sns.lmplot(x='bmi', y='charges', hue="outlier", data=smoker_outlier_df, ci=None, line_kws={'alpha':0})
+sns.lmplot(x='bmi', y='charges', hue="outlier", data=smoker_outlier_df)#, ci=None, line_kws={'alpha':0})
 plt.plot()
 
 # Children vs. charges
-# LM plot just makes it easier to color by outlier
 sns.lmplot(x='children', y='charges', hue="outlier", data=orig_data_w_outlier)#, ci=None, line_kws={'alpha':0})
 plt.plot()
 
@@ -893,9 +878,8 @@ target_col = 'outlier'
 i = 0
 for col in cat_ord_cols:
     df_grouped = dh.dataframe_percentages(orig_data_w_outlier, target_col, col)
-    #sns.barplot(x=df_grouped[col], y=df_grouped['percent_of_cat_var'], hue=df_grouped[target_col])
     ax = ax_array_flat[i]
-    sns.barplot(x=df_grouped[col], y=df_grouped[(df_grouped[target_col]==1)]['percent_of_cat_var'], ax=ax)
+    sns.barplot(x=df_grouped[col], y=df_grouped[(df_grouped[target_col]=='yes')]['percent_of_cat_var'], ax=ax)
     ax.axline(xy1=(0, (perc_outliers*100)), slope=0, color='darkblue', linestyle='--', label='Dataset % Outliers')
     ax.set_title('Percent Outlier by ' + format_col(col))
     ax.set_xlabel(format_col(col))
