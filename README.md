@@ -105,7 +105,7 @@ In order to incorporate this relationship between obesity, smoking status, and a
 
 I also tried to add a variable incorporating the nonobese smokers, as it has its own line as well. This didn't change anything because the model already adds ~15,000 to the charges if you're a smoker (remember, there is a 'smoker' variable that has its own constant) then with this new **[smoker\*obese]** feature, it adds another ~20,000 for obese smokers.
 
-<p align="center"><img src="/output/models/sm_lr_results_smoke_ob_feature.png" width="900"/></p>
+<p align="center"><img src="/output/models/sm_lr_results_3_smoke_ob_feature.png" width="900"/></p>
 
 As you can see, this greatly reduced the residuals of the predictions, although the outliers remain. 
 
