@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import pandas as pd
 from os import chdir
@@ -41,11 +42,8 @@ dataset = pd.read_csv('./input/insurance.csv')
 models_output_dir = Path(project_dir, Path('./output/models'))
 
 # Import my data science helper functions (relative dir based on project_dir)
-import sys
-module_dir = Path('../my_ds_modules')
-module_dir = Path.resolve(module_dir)
-module_dir = str(module_dir)
-sys.path.insert(0, module_dir)
+my_module_dir = str(Path.resolve(Path('../my_ds_modules')))
+sys.path.insert(0, my_module_dir)
 import ds_helper as dh
 
 
@@ -76,20 +74,18 @@ cont_cols.remove('children')
 cont_cols_w_target = cont_cols.copy()
 cont_cols_w_target.append('charges')
 
+# Create formatted columns dictionary in helper module
+custom_dict = {}
+custom_dict['bmi'] = 'BMI'
+custom_dict['bmi_>=_30'] = 'BMI >= 30'
+dh.create_formatted_cols_dict(dataset.columns, custom_dict)
+
 # ====================================================================================================================
 # Visualization helper functions
 # ====================================================================================================================
-# Create dictionary of formatted column names  to be used for
-# figure labels (title() capitalizes every word in a string)
-formatted_cols = {}
-for col in dataset.columns:
-    formatted_cols[col] = col.replace('_', ' ').title()
-formatted_cols['bmi'] = 'BMI'
-formatted_cols['bmi_>=_30'] = 'BMI >= 30'
-
 # Function returning the formatted version of column name
 def format_col(col_name):
-    return formatted_cols[col_name]
+    return dh.format_col(col_name)
 
 # Create 2d array of given size, used for figures with gridspec
 def create_2d_array(num_rows, num_cols):
@@ -320,7 +316,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
     
     if combine_plots:
         # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-        fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
+        fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
     
     # =============================
     # Plot standardized residuals vs. predicted values
@@ -381,7 +377,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
         fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
         if save_img:
             save_filename = 'sm_lr_results_' + filename_unique
-            save_image(save_filename)
+            dh.save_image(save_filename, models_output_dir)
         plt.show()
     
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
@@ -530,9 +526,9 @@ sm_lin_reg_0 = sm.OLS(y, sm_processed_X).fit()
 sm_y_pred_0 = sm_lin_reg_0.predict(sm_processed_X)
 
 # Plot model
-title_0 = 'True Original'
+title_0 = 'Original'
 model_name_0 = 'original'
-het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=True, filename_unique=model_name_0)
+het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=False, filename_unique=model_name_0)
 
 # Organize model performance metrics
 summary_df_0 = sm_results_to_df(sm_lin_reg_0.summary())
