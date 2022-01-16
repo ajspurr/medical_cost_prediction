@@ -86,7 +86,7 @@ The linear relationship between BMI and charges is weak. But if you subgroup by 
 
 As can be seen below, adding the new feature greatly reduced heteroscedasticity and improved R-squared.
 
-<p align="center"><img src="/output/models/sm_lr_results_smoke_bmi_feature.png" width="900"/></p>
+<p align="center"><img src="/output/models/sm_lr_results_2_smoke_bmi_feature.png" width="900"/></p>
 
 #### Age vs. Charges
 'Age vs. Charges' plot looks like three distinct groups. I tried subgrouping by all the categorical variables and found that smoking status explained the groups quite well (plot on left). After isolating the nonsmoker data (middle plot), subgrouping by any categorical variable didn't account for the noise above the dense line of data points, but even without subgrouping I got a Pearson's r of 0.63, which is double the Pearson's without subgrouping by smoking status (0.30). Looking at only data from smokers (plot on right), I tried subgrouping by all categorical variables and found that BMI separated the groups very well. The Pearson's r is included for each fit line.
