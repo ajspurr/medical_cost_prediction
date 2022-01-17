@@ -1010,7 +1010,7 @@ no_outliers_X_2 = no_outliers_df_2.drop(['charges', 'outlier'], axis=1)
 title_6 = 'removed outliers x2'
 model_name_6 = 'no_out_2'
 file_name_6 = '6_no_outliers_2'
-sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results_subgrouped(no_outliers_X_2, no_outliers_y_2, title_6, save_img=False, filename_unique=file_name_6)
+sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results_subgrouped(no_outliers_X_2, no_outliers_y_2, title_6, save_img=True, filename_unique=file_name_6)
 
 # Organize model performance metrics
 summary_df_6 = sm_results_to_df(sm_lin_reg_6.summary())
@@ -1040,6 +1040,7 @@ ax.set_xlabel('H Leverage')
 ax.set_ylabel('Studentized Residuals')
 ax.set_title('Influence Plot Before Removing Outliers')
 plt.tight_layout()
+dh.save_image('influence_plot_1', models_output_dir)
 plt.show()
 
 # =============================
@@ -1052,8 +1053,9 @@ ax.axhline(2.5, linestyle='-', color='C1')
 ax.scatter(inf.hat_matrix_diag, inf.resid_studentized_internal, s=1000 * np.sqrt(inf.cooks_distance[0]), alpha=0.5)
 ax.set_xlabel('H Leverage')
 ax.set_ylabel('Studentized Residuals')
-ax.set_title('Influence Plot After Removing Outliers')
+ax.set_title('Influence Plot After Removing Outliers (first time)')
 plt.tight_layout()
+dh.save_image('influence_plot_2', models_output_dir)
 plt.show()
 
 # =============================
@@ -1093,7 +1095,6 @@ plt.show()
 
 sns.kdeplot(data=sm_lin_reg_4.get_influence().resid_studentized_internal, shade=True)
 plt.show()
-
 
 # sns.kdeplot(data=dataset[dataset[col]==category], x='charges', shade=True, alpha=alpha, label=category)
 
