@@ -301,8 +301,6 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
     white_lm_p_value = '{:0.2e}'.format(white_test_results['LM-Test p-value'])
     
     if not combine_plots:
-        #plot1 = plt.scatter(y_pred, standardized_residuals)   
-        #ax = plot1.axes
         plt.scatter(y_pred, standardized_residuals)
         ax1 = plt.gca()
     else:
@@ -310,9 +308,9 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
         ax1.scatter(y_pred, standardized_residuals) 
         
     ax1.axhline(y=0, color='darkblue', linestyle='--')
-    ax1.set_ylabel('Standardized Residuals')
+    ax1.set_ylabel('Studentized Residuals')
     ax1.set_xlabel('Predicted Values')
-    ax1.set_title('Standardized Residuals vs. Predicted Values')
+    ax1.set_title('Studentized Residuals vs. Predicted Values')
     textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
     ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')   
     if not combine_plots: plt.show()
@@ -394,9 +392,9 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, save
     ax1.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
     ax1.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
     ax1.axhline(y=0, color='red', linestyle='--')
-    ax1.set_ylabel('Standardized Residuals')
+    ax1.set_ylabel('Studentized Residuals')
     ax1.set_xlabel('Predicted Values')
-    ax1.set_title('Standardized Residuals vs. Predicted Values')
+    ax1.set_title('Studentized Residuals vs. Predicted Values')
     textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
     ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')  
     
@@ -493,6 +491,32 @@ def sm_results_to_df(summary):
 # ====================================================================================================================
 # https://datatofish.com/multiple-linear-regression-python/
 
+# =======================================================================================
+# Test for multicollinearity
+# =======================================================================================
+# Calculate VIF
+vif = calulate_vif(dataset, numerical_cols)
+
+# All very close to 1, no multicollinearity. (Greater than 5-10 indicates multicollinearity)
+
+# =======================================================================================
+# Quantify Heteroscedasticity
+# =======================================================================================
+
+# Quantify Heteroscedasticity using White test and Breusch-Pagan test
+# https://medium.com/@remycanario17/tests-for-heteroskedasticity-in-python-208a0fdb04ab
+# https://www.statology.org/breusch-pagan-test/
+
+# Before feature engineering (below), both had a p-value <<< 0.05, indicating presence of heteroscedasticity. After feature
+# engineering, both were well above 0.05. 
+
+# I tried log transforming target before and after performing feature engineering. Did not work 
+# either time
+
+# =======================================================================================
+# Test for linear relationships between predictors and target variables
+# Involves plenty of feature engineering 
+# =======================================================================================
 # Separate target from predictors
 y = dataset['charges']
 X = dataset.drop(['charges'], axis=1)
@@ -517,11 +541,9 @@ summary_df_0 = sm_results_to_df(sm_lin_reg_0.summary())
 coeff_0 = pd.Series(summary_df_0['coef'], name=model_name_0)
 sm_lr_results_0 = pd.Series(evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0), name=model_name_0)
 
-# ====================================================================================================================
-# Feature engineering (more below)
+# ==========================================================
 # Based on EDA, created dichotomous feature 'bmi_>=_30'
-# ====================================================================================================================
-
+# ==========================================================
 # Create new feature
 new_X_1 = X.copy()
 new_X_1['bmi_>=_30'] = new_X_1['bmi'] >= 30
@@ -554,18 +576,12 @@ sm_lr_results_1 = pd.Series(evaluate_model_sm(y, sm_y_pred_1, sm_lin_reg_1), nam
 coeff_df = pd.concat([coeff_0, coeff_1], axis=1)
 sm_results_df = pd.concat([sm_lr_results_0, sm_lr_results_1], axis=1)
 
-# =======================================================================================
-# Test for linear relationships between predictors and target variables
-# =======================================================================================
-
-# This analysis was done in the EDA section. Will explain findings here.
 
 # ==========================================================
 # BMI vs. Charges
 # Smokers had a strong linear relationship between BMI and charges, nonsmokers had basically no linear relationship
 # Will engineer new feature [smoker*bmi] 
 # ==========================================================
-
 # Create new feature
 new_X_2 = new_X_1.copy()
 new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
@@ -591,7 +607,6 @@ sm_results_df = pd.concat([sm_results_df, sm_lr_results_2], axis=1)
 # Age vs. Charges
 # Explored new feature incorporating relationship between between presence of obesity, smoking, and age
 # ==========================================================
-
 # Create new feature
 new_X_3 = new_X_2.copy()
 new_X_3['smoker*obese'] = new_X_3['smoker_yes'] * new_X_3['bmi_>=_30_yes']
@@ -614,7 +629,6 @@ sm_results_df = pd.concat([sm_results_df, sm_lr_results_3], axis=1)
 # ==========================================================
 # Age vs. Charges: accounting for curvilinear relationship between age and charges
 # ==========================================================
-
 # Create new feature
 new_X_4 = new_X_3.copy()
 # Age has already been scaled around 0 and squaring the values will make all the negative numbers positive
@@ -696,7 +710,7 @@ ax3.grid()
 
 fig.suptitle('Feature coeff w/ each additional feature', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'coeff_vert_4_no_outliers'
+#save_filename = 'coeff_vert_5_no_outliers_2'
 #dh.save_image(save_filename, models_output_dir)
 plt.show()
 
@@ -751,19 +765,8 @@ ax4.grid()
 
 fig.suptitle('LR Performance w/ each additional feature', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'performance_no_outliers'
+#save_filename = 'performance_no_outliers_2'
 #dh.save_image(save_filename, models_output_dir)
-plt.show()
-
-# =======================================================================================
-# Test for normality of residuals
-# =======================================================================================
-# https://www.statology.org/multiple-linear-regression-assumptions/
-# https://towardsdatascience.com/linear-regression-model-with-python-481c89f0f05b
-
-fig = qqplot(sm_lin_reg_4.resid_pearson, line='45', fit='True')
-plt.xlabel('Theoretical quantiles')
-plt.ylabel('Sample quantiles')
 plt.show()
 
 # =======================================================================================
@@ -778,7 +781,7 @@ plt.show()
 # ==========================================================
 inf = influence(sm_lin_reg_4)
 (cooks, d) = inf.cooks_distance
-cooks_cutoff = 4 / (len(cooks) - (new_X_4.shape[1] - 1) - 1)
+cooks_cutoff = 4 / (len(cooks) - (new_X_4.shape[1] - 1) - 1) # 0.00301
 
 outlier_df = new_X_4.copy()
 outlier_df['cooks'] = cooks
@@ -792,7 +795,7 @@ outlier_df['true_values'] = y
 outlier_df['y_pred'] = sm_y_pred_4
 outlier_df['stud_resid'] = sm_lin_reg_4.get_influence().resid_studentized_internal
 
-# Visualiz Cook's Distances
+# Visualize Cook's Distances
 plt.title("Cook's Distance Plot")
 plt.stem(range(len(cooks)), cooks, markerfmt=",")
 plt.plot([0, len(cooks)], [cooks_cutoff, cooks_cutoff], color='darkblue', linestyle='--', label='4 / (N-k-1)')
@@ -917,7 +920,6 @@ save_filename = 'perc_subcat_by_outlier'
 #dh.save_image(save_filename, models_output_dir)
 
 
-
 # ==========================================================
 # Remove outliers and compare models
 # ==========================================================
@@ -943,22 +945,91 @@ sm_lr_results_5 = pd.Series(evaluate_model_sm(no_outliers_y, sm_y_pred_5, sm_lin
 coeff_df = pd.concat([coeff_df, coeff_5], axis=1)
 sm_results_df = pd.concat([sm_results_df, sm_lr_results_5], axis=1)
 
+# (I just ran the code to plot coefficients and performance metrics again after updating the coeff and results dataframes)
 
-# I just ran the plotting coefficients and performance metrics code again after updating the results dataframes
+# =======================================================================================
+# Outlier Analysis Round 2
+# =======================================================================================
+# ==========================================================
+# Identify Outliers Again
+# ==========================================================
+inf_5 = influence(sm_lin_reg_5)
+(cooks_5, d) = inf_5.cooks_distance
+cooks_cutoff_5 = 4 / (len(cooks_5) - (no_outliers_X.shape[1] - 1) - 1) # 0.00323
 
-fig = qqplot(sm_lin_reg_5.resid_pearson, line='45', fit='True')
-plt.xlabel('Theoretical quantiles')
-plt.ylabel('Sample quantiles')
+outlier_df_5 = no_outliers_X.copy()
+outlier_df_5['cooks'] = cooks_5
+outlier_df_5['outlier'] = outlier_df_5['cooks'] > cooks_cutoff_5
+outlier_dict = {False:'no', True:'yes'}
+outlier_df_5['outlier'] = outlier_df_5['outlier'].map(outlier_dict)
+
+num_outliers_5 = outlier_df_5[outlier_df_5['outlier'] == 'yes'].shape[0] # 29
+perc_outliers_5 = num_outliers_5 / outlier_df_5.shape[0] # 0.0232
+outlier_df_5['true_values'] = y
+outlier_df_5['y_pred'] = sm_y_pred_5
+outlier_df_5['stud_resid'] = sm_lin_reg_5.get_influence().resid_studentized_internal
+
+# Visualiz Cook's Distances
+plt.title("Cook's Distance Plot (second outlier detection)")
+plt.stem(range(len(cooks_5)), cooks_5, markerfmt=",")
+plt.plot([0, len(cooks_5)], [cooks_cutoff_5, cooks_cutoff_5], color='darkblue', linestyle='--', label='4 / (N-k-1)')
+plt.xlabel("Observation")
+plt.ylabel("Cook's Distance")
+plt.legend(title="Cook's Distance Cutoff")
+#dh.save_image('cooks_dist_plot', models_output_dir)
 plt.show()
 
+# ==========================================================
+# Plot with respect to model results again
+# ==========================================================
+outlier_data_5 = outlier_df_5[outlier_df_5['outlier']=='yes']
+nonoutlier_data_5 = outlier_df_5[outlier_df_5['outlier']=='no']
 
+# Stand Resid vs. Stud Residuals
+plt.scatter(outlier_data_5['y_pred'], outlier_data_5['stud_resid'], alpha=0.7, label='Outliers')
+plt.scatter(nonoutlier_data_5['y_pred'], nonoutlier_data_5['stud_resid'], alpha=0.7)
+plt.ylabel('Standardized Residuals')
+plt.xlabel('Predicted Values')
+plt.title('Standardized Residuals vs. Predicted Values (second time)')
+plt.legend()
+#dh.save_image('outliers_pred_vs_resid', models_output_dir)
+plt.show()
 
+# ==========================================================
+# Remove outliers and compare models again
+# ==========================================================
+merge_newX_y_2 = pd.concat([no_outliers_X, no_outliers_y, outlier_df_5['outlier']], axis=1)
+no_outliers_df_2 = merge_newX_y_2[merge_newX_y_2['outlier']=='no']
 
+# Separate target from predictors
+no_outliers_y_2 = no_outliers_df_2['charges']
+no_outliers_X_2 = no_outliers_df_2.drop(['charges', 'outlier'], axis=1)
+
+# Plot model
+title_6 = 'removed outliers x2'
+model_name_6 = 'no_out_2'
+file_name_6 = '6_no_outliers_2'
+sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results_subgrouped(no_outliers_X_2, no_outliers_y_2, title_6, save_img=False, filename_unique=file_name_6)
+
+# Organize model performance metrics
+summary_df_6 = sm_results_to_df(sm_lin_reg_6.summary())
+coeff_6 = pd.Series(summary_df_6['coef'], name=model_name_6)
+sm_lr_results_6 = pd.Series(evaluate_model_sm(no_outliers_y_2, sm_y_pred_6, sm_lin_reg_6), name=model_name_6)
+
+# Keep track of model performance for comparison later
+coeff_df = pd.concat([coeff_df, coeff_6], axis=1)
+sm_results_df = pd.concat([sm_results_df, sm_lr_results_6], axis=1)
+
+# Coefficients with minimal change, performance shows perfect fit of model
 
 
 # ==========================================================
-# Influence plot
+# Influence plots
 # ==========================================================
+
+# =============================
+# Before removing Cook's outliers
+# =============================
 inf = influence(sm_lin_reg_4)
 fig, ax = plt.subplots()
 ax.axhline(-2.5, linestyle='-', color='C1')
@@ -966,31 +1037,99 @@ ax.axhline(2.5, linestyle='-', color='C1')
 ax.scatter(inf.hat_matrix_diag, inf.resid_studentized_internal, s=1000 * np.sqrt(inf.cooks_distance[0]), alpha=0.5)
 ax.set_xlabel('H Leverage')
 ax.set_ylabel('Studentized Residuals')
-ax.set_title('Influence Plot')
+ax.set_title('Influence Plot Before Removing Outliers')
 plt.tight_layout()
 plt.show()
 
-# =======================================================================================
-# Test for multicollinearity
-# =======================================================================================
-# Calculate VIF
-vif = calulate_vif(dataset, numerical_cols)
-
-# All very close to 1, no multicollinearity. (Greater than 5-10 indicates multicollinearity)
+# =============================
+# After removing Cook's outliers first time
+# =============================
+inf = influence(sm_lin_reg_5)
+fig, ax = plt.subplots()
+ax.axhline(-2.5, linestyle='-', color='C1')
+ax.axhline(2.5, linestyle='-', color='C1')
+ax.scatter(inf.hat_matrix_diag, inf.resid_studentized_internal, s=1000 * np.sqrt(inf.cooks_distance[0]), alpha=0.5)
+ax.set_xlabel('H Leverage')
+ax.set_ylabel('Studentized Residuals')
+ax.set_title('Influence Plot After Removing Outliers')
+plt.tight_layout()
+plt.show()
 
 # =============================
-# Quantify Heteroscedasticity
+# After removing Cook's outliers second time
 # =============================
+inf = influence(sm_lin_reg_6)
+fig, ax = plt.subplots()
+ax.axhline(-2.5, linestyle='-', color='C1')
+ax.axhline(2.5, linestyle='-', color='C1')
+ax.scatter(inf.hat_matrix_diag, inf.resid_studentized_internal, s=1000 * np.sqrt(inf.cooks_distance[0]), alpha=0.5)
+ax.set_xlabel('H Leverage')
+ax.set_ylabel('Studentized Residuals')
+ax.set_title('Influence Plot After Removing Outliers x2')
+plt.tight_layout()
+plt.show()
 
-# Quantify Heteroscedasticity using White test and Breusch-Pagan test
-# https://medium.com/@remycanario17/tests-for-heteroskedasticity-in-python-208a0fdb04ab
-# https://www.statology.org/breusch-pagan-test/
 
-# Before feature engineering, both had a p-value <<< 0.05, indicating presence of heteroscedasticity. After feature
-# engineering, both were well above 0.05. 
+# =======================================================================================
+# Test for normality of residuals
+# =======================================================================================
+# https://www.statology.org/multiple-linear-regression-assumptions/
+# https://towardsdatascience.com/linear-regression-model-with-python-481c89f0f05b
 
-# Before performing feature engineering, I tried log transforming target. Did not work either before
-# or after feature engineering.
+# =============================
+# Before removing Cook's outliers
+# =============================
+# Q-Q plot 
+fig = qqplot(sm_lin_reg_4.resid_pearson, line='45', fit='True')
+plt.xlabel('Theoretical quantiles')
+plt.ylabel('Sample quantiles')
+plt.title('Q-Q Plot Before Removing Outliers')
+plt.show()
+
+# Residual Distribution
+sns.kdeplot(data=sm_lin_reg_4.resid_pearson, shade=True)
+plt.show()
+
+sns.kdeplot(data=sm_lin_reg_4.get_influence().resid_studentized_internal, shade=True)
+plt.show()
+
+
+# sns.kdeplot(data=dataset[dataset[col]==category], x='charges', shade=True, alpha=alpha, label=category)
+
+# =============================
+# After removing Cook's outliers first time
+# =============================
+# Q-Q plot 
+fig = qqplot(sm_lin_reg_5.resid_pearson, line='45', fit='True')
+plt.xlabel('Theoretical quantiles')
+plt.ylabel('Sample quantiles')
+plt.title('Q-Q Plot After Removing Outliers')
+plt.show()
+
+sns.kdeplot(data=sm_lin_reg_5.resid_pearson, shade=True)
+plt.show()
+
+sns.kdeplot(data=sm_lin_reg_5.get_influence().resid_studentized_internal, shade=True)
+plt.show()
+
+# =============================
+# After removing Cook's outliers second time
+# =============================
+# Q-Q plot 
+fig = qqplot(sm_lin_reg_6.resid_pearson, line='45', fit='True')
+plt.xlabel('Theoretical quantiles')
+plt.ylabel('Sample quantiles')
+plt.title('Q-Q Plot After Removing Outliersx2')
+plt.show()
+
+sns.kdeplot(data=sm_lin_reg_6.resid_pearson, shade=True)
+plt.show()
+
+sns.kdeplot(data=sm_lin_reg_6.resid, shade=True)
+plt.show()
+
+sns.kdeplot(data=sm_lin_reg_6.get_influence().resid_studentized_internal, shade=True)
+plt.show()
 
 # ====================================================================================================================
 # Back to sklearn models
