@@ -169,6 +169,13 @@ I ploted the changes in model performance metrics with this model. Again, the re
 
 <p align="center"><img src="/output/models/performance_no_outliers.png" width="800"/></p>
 
+Since there are still a few outliers, I decided to perform Cook's test again. Since it measures the degree to which your predicted values change when a given datapoint is removed, it's possible that calculating it again will identify more datapoints as outliers. Which is what happened. 
+
+<p align="center">
+  <img src="/output/models/cooks_dist_plot_2.png" width="350"/>
+  <img src="/output/models/outliers_pred_vs_resid_2.png" width="350"/>
+</p>
+
 
 ### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
