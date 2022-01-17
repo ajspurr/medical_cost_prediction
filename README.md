@@ -176,6 +176,17 @@ Since there are still a few outliers, I decided to perform Cook's test again. Si
   <img src="/output/models/outliers_pred_vs_resid_2.png" width="350"/>
 </p>
 
+New models results below. I achieved a perfect model! Of course, this is after removing 119 outliers which represents 8.9% of the data. In addition, this dataset is from a textbook so I'm sure it has been generated artificially to demonstrate the points I have been making. Real world data would not behave this perfectly, but the process I went through is still applicable.  
+
+<p align="center"><img src="/output/models/sm_lr_results_6_no_outliers_2.png" width="800"/></p>
+
+I did not included updated coefficients or model performance plots, but I can summarize here. The coefficients remained almost exactly the same. This can be explained with the influence plots below. As you can see, the datapoints with the highest Cook's distances (represented by the biggest circles) have the least leverage. And leverage "refers to the extent to which the coefficients in the regression model would change if a particular observation was removed from the dataset" ([source](https://www.statology.org/residuals-vs-leverage-plot/)). In terms of model metrics, those represented a perfect model. Interestingly, as you can see above, the BP and White's Test p-values decreased significantly, which would normally indicate heteroscedasticity. I could do a deep dive into the formula behind those tests, but I would assume with a perfect model and residuals on the order of 10^-11, that the metrics don't really apply.
+
+<p align="center">
+  <img src="/output/models/influence_plot_1.png" width="350"/>
+  <img src="/output/models/influence_plot_2.png" width="350"/>
+</p>
+
 
 ### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
