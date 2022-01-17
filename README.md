@@ -174,4 +174,4 @@ I ploted the changes in model performance metrics with this model. Again, the re
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
 
 ## Potential Future Exploration
-- 
+- Deep dive into calculation behind Breusch-Pagan Test and how a perfect-fit model would affect results (in this case, reporting that heterscedasticity is present even when it visually is not)
