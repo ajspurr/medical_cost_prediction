@@ -287,7 +287,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
         fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
     
     # =============================
-    # Plot standardized residuals vs. predicted values
+    # Plot studentized residuals vs. predicted values
     # =============================
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
     
@@ -357,6 +357,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
 def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, save_img=False, filename_unique=None):
     # Organize relevant data
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
+    #standardized_residuals = pd.DataFrame(lr_model.resid, columns=['stand_resid']) # to plot absolute residuals rather than studentized
     y_pred_series = pd.Series(y_pred, name='y_pred')
     y_series = pd.Series(y, name='y')
     relevant_data = pd.concat([X_data[['bmi_>=_30_yes', 'smoker_yes']], y_series, y_pred_series, standardized_residuals], axis=1)
@@ -384,7 +385,7 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, save
     fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
         
     # =============================
-    # Plot standardized residuals vs. predicted values
+    # Plot studentized residuals vs. predicted values
     # =============================
     ax1 = ax_array_flat[0]
     ax1.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
@@ -970,13 +971,13 @@ outlier_df_5['y_pred'] = sm_y_pred_5
 outlier_df_5['stud_resid'] = sm_lin_reg_5.get_influence().resid_studentized_internal
 
 # Visualiz Cook's Distances
-plt.title("Cook's Distance Plot (second outlier detection)")
+plt.title("Cook's Distance Plot (#2)")
 plt.stem(range(len(cooks_5)), cooks_5, markerfmt=",")
 plt.plot([0, len(cooks_5)], [cooks_cutoff_5, cooks_cutoff_5], color='darkblue', linestyle='--', label='4 / (N-k-1)')
 plt.xlabel("Observation")
 plt.ylabel("Cook's Distance")
 plt.legend(title="Cook's Distance Cutoff")
-#dh.save_image('cooks_dist_plot', models_output_dir)
+#dh.save_image('cooks_dist_plot_2', models_output_dir)
 plt.show()
 
 # ==========================================================
@@ -988,11 +989,11 @@ nonoutlier_data_5 = outlier_df_5[outlier_df_5['outlier']=='no']
 # Stand Resid vs. Stud Residuals
 plt.scatter(outlier_data_5['y_pred'], outlier_data_5['stud_resid'], alpha=0.7, label='Outliers')
 plt.scatter(nonoutlier_data_5['y_pred'], nonoutlier_data_5['stud_resid'], alpha=0.7)
-plt.ylabel('Standardized Residuals')
+plt.ylabel('Studentized Residuals')
 plt.xlabel('Predicted Values')
-plt.title('Standardized Residuals vs. Predicted Values (second time)')
+plt.title('Studentized Residuals vs. Predicted Values (#2)')
 plt.legend()
-#dh.save_image('outliers_pred_vs_resid', models_output_dir)
+#dh.save_image('outliers_pred_vs_resid_2', models_output_dir)
 plt.show()
 
 # ==========================================================
