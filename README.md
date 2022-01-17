@@ -176,6 +176,10 @@ Since there are still a few outliers, I decided to perform Cook's test again. Si
   <img src="/output/models/outliers_pred_vs_resid_2.png" width="350"/>
 </p>
 
+New models results below. I achieved a perfect model! Again, this dataset is from a textbook so I'm sure it has been generated artificially to demonstrate the points I have been making. Real world data would not behave this perfectly, but the process I went through can still be applied to real world data. 
+
+<p align="center"><img src="/output/models/sm_lr_results_6_no_outliers_2.png" width="800"/></p>
+
 
 ### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
