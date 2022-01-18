@@ -80,7 +80,7 @@ There are clear groupings of predicted values, which (surprise, surprise) relate
 
 <p align="center"><img src="/output/models/sm_lr_results_1_bmi_30_feature_grouped.png" width="900"/></p>
 
-### Linear Relationship Between Predictors and Target Variable
+### Assumptions #1: Linear Relationship Between Predictors and Target Variable
 #### BMI vs. Charges
 The linear relationship between BMI and charges is weak. But if you subgroup by smoking status, you can see that smokers' BMI have a strong linear relationship with charges (Pearson's of 0.8) while nonsmokers' BMI have basically no linear relationship with charges. As such, I will enginner a new feature: **[smoker\*bmi]**. This will remove the bmi of the nonsmokers, thus removing the data that does not have a linear relationship to the target. 
 <p align="center">
@@ -191,6 +191,10 @@ I did not include updated coefficients or model performance plots, but I can sum
   <img src="/output/models/influence_plot_2.png" width="350"/>
 </p>
 
+### Assumptions #2: No Multicollinearity Between Predictor Variables
+VIF table below shows that multicollinearity between numerical variables is not present. A value of 1 indicates that there is no correlation with any other predictor variables. A value between 1 and 5 indicates mild correlation, generally not enough to require attention. A value between 5 and 10 indicates moderate correlation. A value of 10 or greather indicates severe correlation, in which case the coefficient estimates and p-values in the regression output are likely unreliable. ([Source](https://www.statology.org/how-to-calculate-vif-in-python/))
+
+<p align="center"><img src="/output/models/vif_table.png" width="300"/></p>
 
 ### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
