@@ -70,7 +70,7 @@ plt.show()
 # Image versions of feature_summary
 # Row indeces normally not includes, rather that rewrite the function, I made them the first column
 feature_summary.insert(0, 'Feature', feature_summary.index)
-dh.render_mpl_table(feature_summary, header_columns=0, col_width=2.9)
+dh.render_mpl_table(feature_summary, header_columns=0, col_width=2.9, header_color='#2693d7')
 #dh.save_image('feature_summary', eda_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
 plt.show()
 
