@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import pandas as pd
 from os import chdir
@@ -11,6 +12,11 @@ project_dir = PureWindowsPath(r"D:\GitHubProjects\medical_cost_prediction\\")
 chdir(project_dir)
 dataset = pd.read_csv('./input/insurance.csv')
 eda_output_dir = Path(project_dir, Path('./output/eda'))
+
+# Import my data science helper functions (relative dir based on project_dir)
+my_module_dir = str(Path.resolve(Path('../my_ds_modules')))
+sys.path.insert(0, my_module_dir)
+import ds_helper as dh
 
 # ====================================================================================================================
 # EXPLORATORY DATA ANALYSIS 
@@ -51,6 +57,10 @@ feature_summary['percent_missing'] = round((feature_summary['missing_values'] / 
 
 print("\nDATASET SHAPE:")
 print(dataset.shape)
+dh.df_shape_to_img(dataset, h_spacing_between_numbers=0.45)
+#dh.save_image('data_overview', eda_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
+plt.show()
+
 print('\nFEATURE SUMMARY')
 print(feature_summary)
 
