@@ -71,7 +71,7 @@ dh.df_shape_to_img(dataset, h_spacing_between_numbers=0.45)
 plt.show()
 
 # Image versions of feature_summary
-# Row indeces normally not includes, rather that rewrite the function, I made them the first column
+# Row indeces normally not included in table image, so I inserted them as the first column
 feature_summary.insert(0, 'Feature', feature_summary.index)
 
 ax = dh.render_mpl_table(feature_summary, header_columns=0, col_width=2.9, header_color='#2693d7')

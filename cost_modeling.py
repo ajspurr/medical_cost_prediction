@@ -496,9 +496,26 @@ def sm_results_to_df(summary):
 # Test for multicollinearity
 # =======================================================================================
 # Calculate VIF
-vif = calulate_vif(dataset, numerical_cols)
+vif = calulate_vif(dataset, numerical_cols).to_frame()
 
 # All very close to 1, no multicollinearity. (Greater than 5-10 indicates multicollinearity)
+# Row indeces normally not included in table image, so I inserted them as the first column
+vif.insert(0, 'Feature', vif.index)
+
+# Rename VIF columns
+vif.rename(columns={0:'VIF'}, inplace=True)
+
+# Round to 2 decimal places
+vif = np.round(vif, decimals=2)
+
+# Convert VIF values to string to avoid render_mpl_table() removing trailing zeroes
+vif['VIF'] = vif['VIF'].map('{:,.2f}'.format)
+
+# Create table image
+dh.render_mpl_table(vif)
+#dh.save_image('vif_table', models_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
+plt.show()
+
 
 # =======================================================================================
 # Quantify Heteroscedasticity
