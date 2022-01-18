@@ -4,9 +4,7 @@ In this analysis, I explore the Kaggle [Medical Cost Dataset](https://www.kaggle
 
 # EDA
 
-
 <p align="center"><img src="/output/eda/data_overview.png" width="600"/></p>
-
 <p align="center"><img src="/output/eda/feature_summary.png" width="600"/></p>
 
 <p align="center"><img src="/output/eda/hist_charges.png" width="400"/></p>
