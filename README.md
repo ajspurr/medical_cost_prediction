@@ -2,13 +2,17 @@
 
 In this analysis, I explore the Kaggle [Medical Cost Dataset](https://www.kaggle.com/mirichoi0218/insurance). I'll go through the major steps in Machine Learning to build and evaluate regression models to predict total cost of medical care based on demographic data.
 
-Theoretically, a model like this could be used by insurance companies to predict the total medical cost of an individual, which they could base their premiums on. However, this dataset is likely artificial. According the Kaggle poster, it comes from the book 'Machine Learning with R' by Brett Lantz and is in the public domain. I could not find more information on the origin of the dataset, but based on my EDA and its behavior in a linear model, it is almost certainly artificial data. Nevertheless, the process I go through is still valid and can be applied to real-world data. 
+Theoretically, a model like this could be used by insurance companies to predict the total medical cost of an individual, which they could base their premiums on. However, this dataset is likely artificial. According to the Kaggle poster, it comes from the book 'Machine Learning with R' by Brett Lantz and is in the public domain. I could not find more information on the origin of the dataset, but based on my EDA and its behavior in a linear model, it is almost certainly artificial data. Nevertheless, the process I go through is still valid and can be applied to real-world data. 
 
 
 # EDA
 
 <p align="center"><img src="/output/eda/data_overview.png" width="600"/></p>
 <p align="center"><img src="/output/eda/feature_summary.png" width="900"/></p>
+
+Most of the features are self-explanatory, and the categories of each categorical variable can be seen below. But I will clarify a few here (per the Kaggle poster):
+- children: number of children covered by health insurance / number of dependents
+- charges: individual medical costs billed by health insurance
 
 ### Explore Target (charges)
 <p align="center"><img src="/output/eda/hist_charges.png" width="400"/></p>
