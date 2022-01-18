@@ -62,6 +62,9 @@ print(feature_summary)
 
 # No missing values
 
+# =============================
+# Create images summarizing dataset
+# =============================
 # Image versions of dataset.shape
 dh.df_shape_to_img(dataset, h_spacing_between_numbers=0.45)
 #dh.save_image('data_overview', eda_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
@@ -76,7 +79,9 @@ ax.set_title('Feature Summary:', fontdict={'fontsize':26}, loc='left', weight='b
 #dh.save_image('feature_summary', eda_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
 plt.show()
 
-
+# =============================
+# Organize features
+# =============================
 # Separate categorical and numerical features
 categorical_cols = [cname for cname in dataset.columns if dataset[cname].dtype == "object"]
 numerical_cols = [cname for cname in dataset.columns if not dataset[cname].dtype == "object"]
