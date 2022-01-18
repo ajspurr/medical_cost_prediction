@@ -50,21 +50,30 @@ print(dataset['charges'].isnull().sum())
 # Explore features
 # =============================
 feature_summary = pd.DataFrame()
-feature_summary['dtype'] = dataset.dtypes
-feature_summary['unique_values'] = dataset.nunique()
-feature_summary['missing_values'] = dataset.isnull().sum()
-feature_summary['percent_missing'] = round((feature_summary['missing_values'] / len(dataset.index)) * 100, 2)
+feature_summary['Data Type'] = dataset.dtypes
+feature_summary['Unique Values'] = dataset.nunique()
+feature_summary['Missing Values'] = dataset.isnull().sum()
+feature_summary['Percent Missing'] = round((feature_summary['Missing Values'] / len(dataset.index)) * 100, 2)
 
 print("\nDATASET SHAPE:")
 print(dataset.shape)
-dh.df_shape_to_img(dataset, h_spacing_between_numbers=0.45)
-#dh.save_image('data_overview', eda_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
-plt.show()
-
 print('\nFEATURE SUMMARY')
 print(feature_summary)
 
 # No missing values
+
+# Image versions of dataset.shape
+dh.df_shape_to_img(dataset, h_spacing_between_numbers=0.45)
+#dh.save_image('data_overview', eda_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
+plt.show()
+
+# Image versions of feature_summary
+# Row indeces normally not includes, rather that rewrite the function, I made them the first column
+feature_summary.insert(0, 'Feature', feature_summary.index)
+dh.render_mpl_table(feature_summary, header_columns=0, col_width=2.9)
+#dh.save_image('feature_summary', eda_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
+plt.show()
+
 
 # Separate categorical and numerical features
 categorical_cols = [cname for cname in dataset.columns if dataset[cname].dtype == "object"]
