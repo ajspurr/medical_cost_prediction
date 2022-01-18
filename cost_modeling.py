@@ -513,7 +513,7 @@ vif['VIF'] = vif['VIF'].map('{:,.2f}'.format)
 
 # Create table image
 dh.render_mpl_table(vif)
-#dh.save_image('vif_table', models_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
+dh.save_image('vif_table', models_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
 plt.show()
 
 
