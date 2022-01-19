@@ -1128,6 +1128,9 @@ plt.show()
 sns.kdeplot(data=sm_lin_reg_5.resid_pearson, shade=True)
 plt.show()
 
+sns.kdeplot(data=sm_lin_reg_5.resid, shade=True)
+plt.show()
+
 sns.kdeplot(data=sm_lin_reg_5.get_influence().resid_studentized_internal, shade=True)
 plt.show()
 

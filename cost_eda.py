@@ -3,15 +3,18 @@ import numpy as np
 import pandas as pd
 from os import chdir
 import seaborn as sns 
+from scipy import stats
 import scipy.stats as ss
 import matplotlib.pyplot as plt
 from pathlib import PureWindowsPath, Path
+from statsmodels.graphics.gofplots import qqplot
 
 # Read in data
 project_dir = PureWindowsPath(r"D:\GitHubProjects\medical_cost_prediction\\")
 chdir(project_dir)
 dataset = pd.read_csv('./input/insurance.csv')
 eda_output_dir = Path(project_dir, Path('./output/eda'))
+dist_output_dir = eda_output_dir / 'test_dist'
 
 # Import my data science helper functions (relative dir based on project_dir)
 my_module_dir = str(Path.resolve(Path('../my_ds_modules')))
@@ -360,11 +363,11 @@ plt.show()
 
 
 # =======================================================================================
-# Numerical variables
+# Explore Target (charges)
 # =======================================================================================
 
 # =============================
-# Plot target (charges) on its own
+# Plot charges on its own
 # =============================
 sns.distplot(dataset['charges'])
 plt.title('Charges Histogram', fontsize=20, y=1.04)
@@ -372,6 +375,134 @@ plt.title('Charges Histogram', fontsize=20, y=1.04)
 #save_image(save_filename)
 plt.show()
 
+# Check distribution
+qqplot(dataset['charges'], line='45', fit='True', dist=stats.distributions.norm)
+plt.xlabel('Theoretical quantiles')
+plt.ylabel('Sample quantiles')
+plt.title('Q-Q Plot of Target (charges)')
+plt.show()
+
+qqplot(dataset['charges'], line='45', fit='True', dist=stats.distributions.expon)
+plt.xlabel('Theoretical quantiles')
+plt.ylabel('Sample quantiles')
+plt.title('Q-Q Plot of Target (charges)')
+plt.show()
+
+# ==========================================================
+# Get all continuous distributions from SciPy, use Kolmogorov–Smirnov test to determine best fit distribution
+# ==========================================================
+# https://towardsdatascience.com/probability-distributions-with-pythons-scipy-3da89bf60565
+# https://medium.com/@amirarsalan.rajabi/distribution-fitting-with-python-scipy-bb70a42c0aed
+
+# Get scipy distribution object based on a string of its name
+dist = getattr(stats, 'norm')
+
+# Fit data to the distribution, get parameters (for normal dist, mean of fitted distribution and standard deviation of fitted distribution)
+parameters = dist.fit(dataset['charges'])
+print(parameters)
+
+# Perform a Kolmogorov–Smirnov test and check the goodness of fit
+ks_results = stats.kstest(dataset['charges'], 'norm', parameters)
+statistic, p_val = stats.kstest(dataset['charges'], 'norm', parameters)
+
+# Get list of all continuous distributions in scipy
+dist_continuous = [d for d in dir(stats) if isinstance(getattr(stats, d), stats.rv_continuous)]
+len(dist_continuous)
+
+# Remove distributions that caused errors or long runtime when trying to fit
+# kstwo: threw and error
+# levy_stable: long runtime
+# ncf: RuntimeWarning: divide by zero encountered in log: return log(self._pdf(x, *args))
+# nct: RuntimeWarning: invalid value encountered in multiply: Px *= trm1+trm2
+# powerlognorm: RuntimeWarning: divide by zero encountered in power: pow(_norm_cdf(-np.log(x)/s), c*1.0-1.0))
+# studentized_range: took forever and long complicated RuntimeWarning
+# tukeylambda: RuntimeWarning: divide by zero encountered in power: Px = Fx**(lam-1.0) + (np.asarray(1-Fx))**(lam-1.0)
+problem_dists = ['kstwo', 'levy_stable', 'studentized_range'] 
+good_dists = [dist for dist in dist_continuous if dist not in problem_dists]
+
+# Loop through distributions, fitting, and ks-test
+results = []
+index = 0
+for dist in good_dists:
+    dist_obj = getattr(stats, dist)
+    param = dist_obj.fit(dataset['charges'])
+    a = stats.kstest(dataset['charges'], dist, args=param)
+    results.append((dist, a[0], a[1], param))
+    index += 1
+
+# Sort results by ks statistic
+results.sort(key=lambda x:float(x[2]), reverse=True)
+
+# Convert results to dataframe
+ks_results_df = pd.DataFrame(results)
+ks_results_df = ks_results_df.set_index([0])
+ks_results_df = ks_results_df.rename(columns={1:'ks_stat', 2:'p_val', 3:'params'})
+ks_results_df.index.names = ['dist']
+
+# According to KS-table, for alpha of 0.05 and with n > 50, we want the test-statistic to be 
+# less than 1.36/sqrt(n). This will give us 95% confidence that our data comes from the 
+# given distribution
+statistic_cutoff = 1.36 / np.sqrt(len(dataset['charges']))
+
+good_fit_dists = ks_results_df[ks_results_df['ks_stat'] < statistic_cutoff]
+
+# Again, create list of distributions that have long runtime when making q-q plot
+dist_remove_from_df = ['norminvgauss']
+
+ks_results_df = ks_results_df.drop(index=dist_remove_from_df)
+
+top_10_dists = ks_results_df.iloc[:10]
+
+# Combine Q-Q plot and histogram/distribution comparisons
+i = 0
+#test_hist_dist_df = ks_results_df.iloc[0:3]
+for dist in ks_results_df.index:
+    # Get distribution parameters. Separate out 'loc', 'scale' and the shape parameters as that is how they are passed
+    # to scipy distribution functions
+    params = ks_results_df.loc[dist]['params']
+    loc = params[-2]
+    scale = params[-1]
+    shape_params = params[:-2]
+    
+    # Create scipy distribution object based on its name
+    dist_object = getattr(stats, dist)
+    
+    # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit() above
+    rv = dist_object(*shape_params, loc, scale)
+    
+    # Use the distribution to create x values for the plot
+    x = np.linspace(rv.ppf(0.01), rv.ppf(0.99), 100)
+    
+    # Create 1x2 figure
+    fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
+    ax1 = ax_array_flat[0]
+    ax2 = ax_array_flat[1]
+    
+    # Create Q-Q plot, fit=False because it uses the parameters we already calculated (loc, scale, distargs)
+    qqplot(dataset['charges'], line='45', fit=False, dist=dist_object, loc=loc, scale=scale, distargs=shape_params, ax=ax1)
+    ax1.set_xlabel(f'Theoretical Quantiles ({dist})')
+    ax1.set_ylabel('Sample Quantiles')
+    ax1.set_title('Charges Q-Q Plot', y=1.05)
+    
+    # Plot distribution on top of histogram of charges in order to compare
+    ax2.hist(dataset['charges'], bins=12, density=True, histtype='stepfilled', alpha=0.9, label='charges')
+    ax2.plot(x, rv.pdf(x), 'r-', lw=2.5, alpha=1, label=dist)
+    ax2.set_title('Charges histogram', y=1.05)
+    ax2.set_xlabel('Charges')
+    ax2.legend()
+    
+    fig.suptitle(f"Charges vs. {dist} distribution", fontsize=22)
+    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+    
+    #dh.save_image(f'sorted_qq_hist_{i}_{dist}', dist_output_dir)
+    #print(f'sorted_qq_hist_{i}_{dist}')
+    plt.show()
+    i+=1
+
+
+# =======================================================================================
+# Numerical variables
+# =======================================================================================
 # =============================
 # Numerical data histograms
 # =============================
