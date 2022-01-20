@@ -4,7 +4,7 @@ import pandas as pd
 from os import chdir
 import seaborn as sns 
 from scipy import stats
-import scipy.stats as ss
+#import scipy.stats as ss
 import matplotlib.pyplot as plt
 from pathlib import PureWindowsPath, Path
 from statsmodels.graphics.gofplots import qqplot
@@ -389,25 +389,20 @@ plt.title('Q-Q Plot of Target (charges)')
 plt.show()
 
 # ==========================================================
-# Get all continuous distributions from SciPy, use Kolmogorov–Smirnov test to determine best fit distribution
+# Get all continuous distributions from SciPy
+# Kolmogorov–Smirnov,  Anderson-Darling, and Cramer-von Mises tests to determine best fit distribution
 # ==========================================================
 # https://towardsdatascience.com/probability-distributions-with-pythons-scipy-3da89bf60565
 # https://medium.com/@amirarsalan.rajabi/distribution-fitting-with-python-scipy-bb70a42c0aed
 
-# Get scipy distribution object based on a string of its name
-dist = getattr(stats, 'norm')
-
-# Fit data to the distribution, get parameters (for normal dist, mean of fitted distribution and standard deviation of fitted distribution)
-parameters = dist.fit(dataset['charges'])
-print(parameters)
-
-# Perform a Kolmogorov–Smirnov test and check the goodness of fit
-ks_results = stats.kstest(dataset['charges'], 'norm', parameters)
-statistic, p_val = stats.kstest(dataset['charges'], 'norm', parameters)
-
 # Get list of all continuous distributions in scipy
 dist_continuous = [d for d in dir(stats) if isinstance(getattr(stats, d), stats.rv_continuous)]
-len(dist_continuous)
+# or
+# from scipy.stats._continuous_distns import _distn_names
+
+# List of common continuous distributions in scipy
+# https://itl.nist.gov/div898/handbook/eda/section3/eda366.htm
+common_dists = ['norm', 'expon', 'f', 't', 'uniform' 'chi', 'chi2', 'gamma', 'beta', 'weibull_min', 'lognorm', 'fatiguelife', 'laplace']
 
 # Remove distributions that caused errors or long runtime when trying to fit
 # kstwo: threw and error
@@ -420,85 +415,293 @@ len(dist_continuous)
 problem_dists = ['kstwo', 'levy_stable', 'studentized_range'] 
 good_dists = [dist for dist in dist_continuous if dist not in problem_dists]
 
-# Loop through distributions, fitting, and ks-test
-results = []
-index = 0
-for dist in good_dists:
-    dist_obj = getattr(stats, dist)
+# These are the distributions that scipy can perform Anderson-Darling Test against ('gumbel_l' same as 'gumbel' and 'extreme1')
+ad_dists = ['norm', 'expon', 'logistic', 'gumbel_l', 'gumbel_r']
+
+# Initialize all results DataFrame
+complete_results_df = pd.DataFrame(columns=['param', 'mle', 'ks_stat', 'ks_pval', 'cm_stat', 'cm_pval', 'ad_stat', 'ad_critvals', 'ad_siglevels'])
+
+# Used for output while running loop
+num_dists = len(good_dists)
+
+# Loop through scipy distributions, fit to my data, perform goodness of fit 
+# tests: Kolmogorov-Smirnov, Anderson-Darling, Cramer-von Mises
+# SciPy fit() performs parameter estimation using MLE
+for i, dist_str in enumerate(good_dists):    
+    # '>' right-justifies, makes space for 3 digits
+    print("{:>3} / {:<3}: {}".format(i+1, num_dists, dist_str))
+    
+    # Intialize df results row for this dist
+    complete_results_df.loc[dist_str] = np.nan    
+    
+    # Create scipy distribution object based on its string name
+    dist_obj = getattr(stats, dist_str)
+    
+    # Fit my data to the distribution (scipy uses MLE) and get fit disribution's parameters
     param = dist_obj.fit(dataset['charges'])
-    a = stats.kstest(dataset['charges'], dist, args=param)
-    results.append((dist, a[0], a[1], param))
-    index += 1
+    complete_results_df.loc[dist_str]['param'] = param
+    
+    # Access and save the calculated MLE
+    mle = dist_obj.nnlf(param, dataset['charges'])
+    complete_results_df.loc[dist_str]['mle'] = mle
+    
+    # Perform Kolmogorov-Smirnov Test and save results
+    ks = stats.kstest(dataset['charges'], dist_str, args=param)
+    complete_results_df.loc[dist_str]['ks_stat'] = ks[0]
+    complete_results_df.loc[dist_str]['ks_pval'] = ks[1]
+    
+    # Perform Anderson-Darling Test and save results
+    if dist_str in ad_dists:
+        ad = stats.anderson(dataset['charges'], dist=dist_str)
+        complete_results_df.loc[dist_str]['ad_stat'] = ad[0]
+        complete_results_df.loc[dist_str]['ad_critvals'] = ad[1]
+        complete_results_df.loc[dist_str]['ad_siglevels'] = ad[2]
+    
+    # Perform Cramer-von Mises Test and save results
+    cm = stats.cramervonmises(dataset['charges'], dist_str, param)
+    complete_results_df.loc[dist_str]['cm_stat'] = cm.statistic
+    complete_results_df.loc[dist_str]['cm_pval'] = cm.pvalue
+ 
 
-# Sort results by ks statistic
-results.sort(key=lambda x:float(x[2]), reverse=True)
+# Manually calculate the Sum of Squared Estimate of Errors (sse) for each dist fit
+# This should be similar to Cramer-von Mises test
+def calc_sse_dist(my_data, fit_results_df, bins=200):
+    # Get histogram of original data
+    y, x = np.histogram(my_data, bins=bins, density=True)
+    
+    # In this case 'x' represents the bin edges, which has 1 more value in it than 'y'
+    # Performing this calculation returns the center 'x' value of each bin
+    x = (x + np.roll(x, -1))[:-1] / 2.0
+    
+    # Keep track of all calculated sse's
+    sse_results = []
+        
+    # Loop through all dists
+    for i, dist_str in enumerate(fit_results_df.index):         
+        # Organize fit parameters
+        fit_params = fit_results_df.loc[dist_str]['param']
+        shape_params = fit_params[:-2]
+        loc = fit_params[-2]
+        scale = fit_params[-1]
+        
+        # Create object of distribution based on its string name
+        dist_obj = getattr(stats, dist_str)
+        
+        # Calculate fitted PDF and error with fit in distribution
+        pdf = dist_obj.pdf(x, loc=loc, scale=scale, *shape_params)
+        sse = np.sum(np.power(y - pdf, 2.0))
+        sse_results.append(sse)
+    
+    return sse_results
 
-# Convert results to dataframe
-ks_results_df = pd.DataFrame(results)
-ks_results_df = ks_results_df.set_index([0])
-ks_results_df = ks_results_df.rename(columns={1:'ks_stat', 2:'p_val', 3:'params'})
-ks_results_df.index.names = ['dist']
+# Add sse results to complete_results_df
+sse_results = calc_sse_dist(dataset['charges'], complete_results_df)
+complete_results_df['sse'] = sse_results
+
+# Add the rank for each GOF (goodness of fit) statistic (while saving top 10 of each)
+complete_results_df.sort_values(by='ks_stat', inplace=True)
+complete_results_df['ks_rank'] = range(1, len(complete_results_df.index) + 1)
+top_10_ks = complete_results_df[:10]['ks_stat']
+
+complete_results_df.sort_values(by='cm_stat', inplace=True)
+complete_results_df['cm_rank'] = range(1, len(complete_results_df.index) + 1)
+top_10_cm = complete_results_df[:10]['cm_stat']
+
+complete_results_df.sort_values(by='sse', inplace=True)
+complete_results_df['sse_rank'] = range(1, len(complete_results_df.index) + 1)
+top_10_sse = complete_results_df[:10]['sse']
+
+complete_results_df.sort_values(by='mle', inplace=True)
+complete_results_df['mle_rank'] = range(1, len(complete_results_df.index) + 1)
+top_10_mle = complete_results_df[:10]['mle']
+
+ad_sorted_df = complete_results_df.sort_values(by='ad_stat')['ad_stat'].dropna().to_frame()
+ad_sorted_df['ad_rank'] = range(1, len(ad_sorted_df.index) + 1)
+complete_results_df['ad_rank'] = ad_sorted_df['ad_rank']
+top_10_ad = ad_sorted_df['ad_stat']
+
+# Combine all top 10s into one dataframe
+top_10_df = pd.DataFrame(columns=['ks', 'cm', 'sse', 'mle', 'ad'])
+top_10_df['ks'] = top_10_ks.index
+top_10_df['cm'] = top_10_cm.index
+top_10_df['sse'] = top_10_sse.index
+top_10_df['mle'] = top_10_mle.index
+top_10_df['ad'] = pd.Series(top_10_ad.index)
+
+# Save top_10_df as image
+# Make new df to include rank as a column
+img_top_10_df = top_10_df.copy()
+img_top_10_df.insert(0, 'Rank', pd.Series(range(1, 11)))
+ax = dh.render_mpl_table(img_top_10_df, header_columns=0, col_width=2.9)
+ax.set_title('Top 10 Distributions of Each GOF Test', fontdict={'fontsize':24}, loc='left', weight='bold', pad=20)
+#dh.save_image('top_10_dists', dist_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
+plt.show()
+
+# Provides a list of every distribution that appears at least once in top_10_df
+all_top_10_dists = top_10_df.apply(pd.value_counts).index
+
+# Create numpy array of all dists in top_10_df so I can easily count the occurence of each
+top_10_np_array = top_10_df.to_numpy()
+
+# Initialize results dataframe, the indeces represent each dist that appears in top_10_df
+top_10_counts_df = pd.DataFrame(index=all_top_10_dists.tolist())
+top_10_counts_df['Top 10 Count'] = np.nan
+top_10_counts_df['Top 10 In'] = '1'#np.nan
+
+list_of_top10in_col = []
+
+# Loop through top_10_counts_df indeces, and count the number of times it appears in top_10_np_array
+for dist in top_10_counts_df.index:
+    # Get count of dist in numpy arry using np.sum (adds the boolean 1 for each appearance)
+    top_10_counts_df.at[dist, 'Top 10 Count'] = np.sum(top_10_np_array==dist)
+    
+    # Keep track of GOF tests that dist is present in
+    top_10_in_list = []
+    top_10_in_str = ''
+    
+    # Loop through each column (a GOF test) and determine if dist is present
+    for gof_test in top_10_df.columns:
+        if dist in top_10_df[gof_test].values:
+            top_10_in_list.append(gof_test)
+            
+    top_10_in_str = ', '.join(str(line) for line in top_10_in_list)
+    top_10_counts_df.at[dist, 'Top 10 In'] = top_10_in_str
+
+# Sort counts in descending order
+top_10_counts_df.sort_values(by='Top 10 Count', inplace=True, ascending=False)
+
+# Save top_10_counts_df as image
+# Make new df to include dist as a column
+img_top_10_counts_df = top_10_counts_df.copy()
+img_top_10_counts_df.insert(0, 'Dist', top_10_counts_df.index)
+ax = dh.render_mpl_table(img_top_10_counts_df, header_columns=0, col_width=2.9)
+ax.set_title('Top 10 Counts', fontdict={'fontsize':24}, loc='left', weight='bold', pad=20)
+#dh.save_image('top_10_dist_counts', dist_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
+plt.show()
+
+# Create a list of sorted top 10 dists to graph later
+sorted_top_10_dists = top_10_counts_df.index.tolist()
+
+
+# Interpret results
+# https://bookdown.org/egarpor/NP-UC3M/nptests-dist.html
 
 # According to KS-table, for alpha of 0.05 and with n > 50, we want the test-statistic to be 
 # less than 1.36/sqrt(n). This will give us 95% confidence that our data comes from the 
 # given distribution
-statistic_cutoff = 1.36 / np.sqrt(len(dataset['charges']))
+# https://oak.ucc.nau.edu/rh83/Statistics/ks1/
+ks_stat_cutoff = 1.36 / np.sqrt(len(dataset['charges']))
+ks_good_fit_dists = complete_results_df[complete_results_df['ks_stat'] < ks_stat_cutoff]
 
-good_fit_dists = ks_results_df[ks_results_df['ks_stat'] < statistic_cutoff]
+# According to sites below with 100 or more samples, the Cramer's von Mises test statistic cutoff for an alpha 
+# of 0.05 is 0.220
+# https://www.webdepot.umontreal.ca/Usagers/angers/MonDepotPublic/STT3500H10/12avril/Cramer-von%20Mises.pdf
+# https://reliawiki.org/index.php/Crow-AMSAA_(NHPP)#Critical_Values
+cm_stat_cutoff = 0.220
+cm_good_fit_dists = complete_results_df[complete_results_df['cm_stat'] < cm_stat_cutoff]
+# None
 
-# Again, create list of distributions that have long runtime when making q-q plot
+# Again, create list of distributions that have long runtime (or error) when making q-q plot
 dist_remove_from_df = ['norminvgauss']
+complete_results_df = complete_results_df.drop(index=dist_remove_from_df)
 
-ks_results_df = ks_results_df.drop(index=dist_remove_from_df)
+# Sort by ks test and get top 10 results
+sorted_complete_results_df = complete_results_df.sort_values(by='ks_stat')
 
-top_10_dists = ks_results_df.iloc[:10]
-
-# Combine Q-Q plot and histogram/distribution comparisons
-i = 0
-#test_hist_dist_df = ks_results_df.iloc[0:3]
-for dist in ks_results_df.index:
-    # Get distribution parameters. Separate out 'loc', 'scale' and the shape parameters as that is how they are passed
-    # to scipy distribution functions
-    params = ks_results_df.loc[dist]['params']
-    loc = params[-2]
-    scale = params[-1]
-    shape_params = params[:-2]
+# Combine Q-Q plot and histogram/distribution comparisons plot
+def compare_dist_plots(dist_str, loc, scale, shape_params, comp_data, comp_data_str, rank_str, bins=200, save_img=False, img_filename=None, save_dir=None):
+    """    
+    This assumes scipy fit() has already been done on the distribution and dist paramaters have been generated
+    
+    Input: dist_str - string representation of scipy distribution which my data will be compared to
+           loc - loc parameter of dist_str returned from fit() function
+           scale - scale parameter of dist_str returned from fit() function
+           shape_params - other shape parameters (if present) of dist_str returned from fit() function
+           comp_data - the data that I will be comparing to scipy distributions
+           comp_data_str - string name of comp_data for plot labeling
+    
+    Returns: No return values
+    """
     
     # Create scipy distribution object based on its name
-    dist_object = getattr(stats, dist)
+    dist_object = getattr(stats, dist_str)
     
     # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit() above
     rv = dist_object(*shape_params, loc, scale)
     
     # Use the distribution to create x values for the plot
+    # ppf() is the inverse of cdf(). So if cdf(10) = 0.1, then ppf(0.1)=10
+    # ppf(0.1) is the x-value at which 10% of the values are less than or equal to it
     x = np.linspace(rv.ppf(0.01), rv.ppf(0.99), 100)
     
     # Create 1x2 figure
-    fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
+    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(11, 5))
     ax1 = ax_array_flat[0]
     ax2 = ax_array_flat[1]
     
     # Create Q-Q plot, fit=False because it uses the parameters we already calculated (loc, scale, distargs)
-    qqplot(dataset['charges'], line='45', fit=False, dist=dist_object, loc=loc, scale=scale, distargs=shape_params, ax=ax1)
-    ax1.set_xlabel(f'Theoretical Quantiles ({dist})')
+    qqplot(comp_data, line='45', fit=False, dist=dist_object, loc=loc, scale=scale, distargs=shape_params, ax=ax1)
+    ax1.set_xlabel(f'Theoretical Quantiles ({dist_str})')
     ax1.set_ylabel('Sample Quantiles')
-    ax1.set_title('Charges Q-Q Plot', y=1.05)
+    ax1.set_title(f'{comp_data_str} Q-Q Plot', y=1.05)
     
     # Plot distribution on top of histogram of charges in order to compare
-    ax2.hist(dataset['charges'], bins=12, density=True, histtype='stepfilled', alpha=0.9, label='charges')
-    ax2.plot(x, rv.pdf(x), 'r-', lw=2.5, alpha=1, label=dist)
-    ax2.set_title('Charges histogram', y=1.05)
-    ax2.set_xlabel('Charges')
+    ax2.hist(comp_data, bins=bins, density=True, histtype='stepfilled', alpha=0.9, label=comp_data_str)
+    ax2.plot(x, rv.pdf(x), 'r-', lw=2.5, alpha=1, label=dist_str)
+    ax2.set_title(f'{comp_data_str} histogram', y=1.05)
+    ax2.set_xlabel(f'{comp_data_str}')
     ax2.legend()
     
-    fig.suptitle(f"Charges vs. {dist} distribution", fontsize=22)
+    # Include shape parameters
+    param_names = (dist_object.shapes + ', loc, scale').split(', ') if dist_object.shapes else ['loc', 'scale']
+    all_params = shape_params + (loc,) + (scale,) # Need to convert loc and scale to tuples
+    param_list = ['{}: {:0.2f}'.format(k,v) for k,v in zip(param_names, all_params)]
+    all_params_str = '\n'.join(str(line) for line in param_list)
+    textbox_text = 'Shape Params:\n' + all_params_str + '\n\nGOF Ranks: \n' + rank_str
+    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
+    ax2.text(1.05, 0.99, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='left')  
+    
+    # Figure formatting
+    fig.suptitle(f"{comp_data_str} vs. {dist_str} distribution", fontsize=22)
     fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
     
-    #dh.save_image(f'sorted_qq_hist_{i}_{dist}', dist_output_dir)
-    #print(f'sorted_qq_hist_{i}_{dist}')
+    if (save_img):
+        dh.save_image(img_filename, save_dir)
+        print(f"saving file '{img_filename}' in '{save_dir}'")
     plt.show()
-    i+=1
+    
 
+# Loop through all distributions in sorted_complete_results_df and plot QQ-plot and dist/hist plot
+#loop_df = sorted_complete_results_df.loc[['bradford', 'wrapcauchy']]
+#loop_df = sorted_complete_results_df.loc[sorted_top_10_dists]
+loop_df = sorted_complete_results_df
+num_dists = len(loop_df)
+rank_column_names = ['ks_rank', 'cm_rank', 'sse_rank', 'mle_rank', 'ad_rank']
+for i, dist_str in enumerate(loop_df.index):
+    # '>' right-justifies, makes space for 3 digits
+    print("{:>3} / {:<3}: {}".format(i+1, num_dists, dist_str))
+    
+    # Get distribution parameters. Separate out 'loc', 'scale' and the shape parameters as that is how they are passed
+    # to scipy distribution functions
+    params = loop_df.loc[dist_str]['param']
+    loc = params[-2]
+    scale = params[-1]
+    shape_params = params[:-2]
+    
+    # Get GOF ranks to include in plots
+    rank_values = complete_results_df.loc[dist_str][rank_column_names].tolist()
+    rank_list = ['{}: {:0.0f}'.format(k,v) for k,v in zip(rank_column_names, rank_values)]
+    rank_str = '\n'.join(str(line) for line in rank_list)
+    
+    # Filename if plot is saved
+    img_filename = f'ks_sorted_qqhist{i}_{dist_str}'
+    
+    # Plot
+    compare_dist_plots (dist_str, loc, scale, shape_params, dataset['charges'], 'Charges', rank_str, bins=40,
+                        save_img=False, img_filename=img_filename, save_dir=dist_output_dir)
+    
+# Dictionary comprehension option
+# param_dict1 = {k:'{:0.2f}'.format(v) for k,v in zip(param_names1, params1)}
 
 # =======================================================================================
 # Numerical variables
