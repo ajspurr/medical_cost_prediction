@@ -73,9 +73,9 @@ I used Correlation Ratio to measure the association betwee numerical and categor
 ### Assumptions of Multiple Linear Regression
 1. Linear relationship between each predictor variable and target variable
 2. No multicollinearity between predictor variables
-3. Observations are independent, i.e. no autocorrelation (not relevant as this is not time series data)
+3. Multivariate normality - **residuals** of the model are normally distributed
 4. Homoscedasticity
-5. Multivariate normality - **residuals** of the model are normally distributed
+5. Observations are independent, i.e. no autocorrelation (not relevant as this is not time series data)
 
 To test for these assumptions, I used package 'statsmodels' (as opposed to 'sklearn') to build a multiple linear regression model, as it offers a more robust set of statistical tests. I'd like to visualize the progression of the accuracy of the model as I correct any deviation from the above assumptions. So, I'll start by fitting all the data (no test/train split) to a multiple linear regression model: 
 
