@@ -154,6 +154,10 @@ VIF table below shows that multicollinearity between numerical variables is not 
 
 <p align="center"><img src="/output/models/vif_table.png" width="300"/></p>
 
+### Assumption #3: Multivariate normality (residuals of the model are normally distributed)
+As shown below, the residuals in my model are not normally distributed. 
+<p align="center"><img src="/output/models/resid_dist.png" width="800"/></p>
+
 ### Outlier Detection
 Cooks distance using statsmodels. 
 
