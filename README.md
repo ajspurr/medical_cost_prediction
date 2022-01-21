@@ -148,6 +148,12 @@ Several of the features did not have much fluctuation in their coefficients. I t
 
 RMSE penalizes large errors the most. MAE does not penalize large errors as much. Median absolute error penalizes large errors the least. R-squared represents the percent of the variation of the target that is explained by it's relationship with the features. R-squared is a relative measure whereas RMSE and MAE are absolute measures. One drawback of R-squared is that by the nature of its calculation, it improves every time you add a new variable to the model. Adjusted R-squared corrects for this. ([Source](https://towardsdatascience.com/evaluation-metrics-model-selection-in-linear-regression-73c7573208be))
 
+### Assumptions #2: No Multicollinearity Between Predictor Variables
+VIF table below shows that multicollinearity between numerical variables is not present. A value of 1 indicates that there is no correlation with any other predictor variables. A value between 1 and 5 indicates mild correlation, generally not enough to require attention. A value between 5 and 10 indicates moderate correlation. A value of 10 or greather indicates severe correlation (a.k.a. multicollinearity), in which case the coefficient estimates and p-values in the regression output are likely unreliable. Even if none of the variable pairs are highly correlated, multicollinearity can still be present as a given variable can be explained by two or more other variables.
+(References: [1](https://www.statology.org/how-to-calculate-vif-in-python/), [2](https://quantifyinghealth.com/correlation-collinearity-multicollinearity/))
+
+<p align="center"><img src="/output/models/vif_table.png" width="300"/></p>
+
 ### Outlier Detection
 Cooks distance using statsmodels. 
 
@@ -198,11 +204,7 @@ I did not include updated coefficients or model performance plots, but I can sum
   <img src="/output/models/influence_plot_2.png" width="350"/>
 </p>
 
-### Assumptions #2: No Multicollinearity Between Predictor Variables
-VIF table below shows that multicollinearity between numerical variables is not present. A value of 1 indicates that there is no correlation with any other predictor variables. A value between 1 and 5 indicates mild correlation, generally not enough to require attention. A value between 5 and 10 indicates moderate correlation. A value of 10 or greather indicates severe correlation (a.k.a. multicollinearity), in which case the coefficient estimates and p-values in the regression output are likely unreliable. Even if none of the variable pairs are highly correlated, multicollinearity can still be present as a given variable can be explained by two or more other variables.
-(References: [1](https://www.statology.org/how-to-calculate-vif-in-python/), [2](https://quantifyinghealth.com/correlation-collinearity-multicollinearity/))
 
-<p align="center"><img src="/output/models/vif_table.png" width="300"/></p>
 
 ### Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
