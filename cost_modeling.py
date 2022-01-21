@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from os import chdir
 import seaborn as sns 
+from scipy import stats
 import matplotlib.pyplot as plt
 from pathlib import PureWindowsPath, Path
 
@@ -17,6 +18,7 @@ import statsmodels.api as sm
 from statsmodels.tools.tools import add_constant
 from statsmodels.graphics.gofplots import qqplot
 from statsmodels.stats.diagnostic import het_white
+from statsmodels.stats.diagnostic import lilliefors
 from statsmodels.tools.eval_measures import meanabs
 from statsmodels.stats.diagnostic import het_breuschpagan
 from statsmodels.stats.outliers_influence import variance_inflation_factor
@@ -244,24 +246,7 @@ def evaluate_model_sm(y, y_pred, sm_lr_model, round_results=3, print_results=Fal
         print('White LM p-val: ' + metrics['white_lm_p'])
     return metrics
 
-# Takes evalution metrics from evaluate_model() and plots confusion matrix, ROC, PRC, and precision/recall vs. threshold
-# Parameter 'model_name' will be used for coding and saving images
-# Parameter 'model_display_name' will be used for plot labels
-def plot_model_metrics(model_name, model_display_name, conmat, conmat_df_perc, fpr, tpr, 
-                       AUC, precision, recall, prc_thresholds, AUPRC, baseline, export_graphs):
-
-    return
-
-# Parameter 'model_name' will be used for coding and saving images
-# Parameter 'model_display_name' will be used for plot labels
-def plot_model_metrics_combined(model_name, model_display_name, conmat, conmat_df_perc, fpr, tpr, 
-                                AUC, precision, recall, prc_thresholds, AUPRC, baseline, export_graphs):
-
-    return
     
-def calculate_residuals(y_valid, y_pred):    
-    return y_valid - y_pred
-
 def calulate_vif(data, numerical_cols):
     # https://www.statology.org/multiple-linear-regression-assumptions/
     # https://stackoverflow.com/questions/42658379/variance-inflation-factor-in-python
@@ -513,7 +498,7 @@ vif['VIF'] = vif['VIF'].map('{:,.2f}'.format)
 
 # Create table image
 dh.render_mpl_table(vif)
-dh.save_image('vif_table', models_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
+#dh.save_image('vif_table', models_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
 plt.show()
 
 
@@ -608,7 +593,7 @@ new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
 title_2 = 'w [bmi*smoker] feature'
 model_name_2 = '[bmi*smoker]'
 file_name_2 = '2_smoke_bmi_feature'
-sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X_2, y, title_2, save_img=True, filename_unique=file_name_2)
+sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X_2, y, title_2, save_img=False, filename_unique=file_name_2)
 
 # Organize model performance metrics
 summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
@@ -914,7 +899,7 @@ save_filename = 'perc_outlier_subcat'
 # However, that only represents 4 outlieres out of 90, so unsurprisingly, further exploration didn't lead anywhere
 
 
-# Reverse of the above graph
+# Inverse of the above graph
 # Create figure, gridspec, list of axes/subplots mapped to gridspec location
 fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=5, figsize=(18, 4))
 
@@ -1027,7 +1012,7 @@ no_outliers_X_2 = no_outliers_df_2.drop(['charges', 'outlier'], axis=1)
 title_6 = 'removed outliers x2'
 model_name_6 = 'no_out_2'
 file_name_6 = '6_no_outliers_2'
-sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results_subgrouped(no_outliers_X_2, no_outliers_y_2, title_6, save_img=True, filename_unique=file_name_6)
+sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results_subgrouped(no_outliers_X_2, no_outliers_y_2, title_6, save_img=False, filename_unique=file_name_6)
 
 # Organize model performance metrics
 summary_df_6 = sm_results_to_df(sm_lin_reg_6.summary())
@@ -1097,61 +1082,175 @@ plt.show()
 # https://towardsdatascience.com/linear-regression-model-with-python-481c89f0f05b
 
 # =============================
+# A few helper functions
+# =============================
+
+# Q-Q plot (default is normal dist)
+def my_qq(data, my_data_str='Residuals', dist_obj=stats.norm, fit_params=None, dist_str='Normal Dist', 
+          ax=None, y=1, save_img=False, img_filename=None): 
+    
+    if not fit_params:
+        # Fit my data to dist_obj and get fit parameters
+        fit_params = dist_obj.fit(data)
+    
+    # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit()
+    loc = fit_params[-2]
+    scale = fit_params[-1]
+    shape_params = fit_params[:-2]
+    
+    # Q-Q Plot
+    qqplot(data, line='45', fit=False, dist=dist_obj, loc=loc, scale=scale, distargs=shape_params, ax=ax)
+    
+    if not ax:
+        ax = plt.gca()
+
+    ax.set_xlabel('Theoretical Quantiles')
+    ax.set_ylabel('Sample Quantiles')
+    ax.set_title(f'Q-Q Plot {my_data_str} vs. {dist_str}', y=y)
+    
+    if save_img:
+        dh.save_image(img_filename, models_output_dir)
+
+    if not ax:
+        plt.show()
+
+# Plots a scipy distribution vs. histogram of my_data
+def hist_vs_dist_plot(my_data, my_data_str='Residuals', dist_obj=stats.norm, fit_params=None, dist_str='Normal Dist', 
+                      bins=200, ax=None, save_img=False, img_filename=None):    
+    
+    if not fit_params:
+        # Fit my data to dist_obj and get fit parameters
+        fit_params = dist_obj.fit(my_data)
+    
+    # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit()
+    loc = fit_params[-2]
+    scale = fit_params[-1]
+    shape_params = fit_params[:-2]
+    
+    # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit() above
+    rv = dist_obj(*shape_params, loc, scale)
+    
+    # Use the distribution to create x values for the plot
+    # ppf() is the inverse of cdf(). So if cdf(10) = 0.1, then ppf(0.1)=10
+    # ppf(0.1) is the x-value at which 10% of the values are less than or equal to it
+    x = np.linspace(rv.ppf(0.01), rv.ppf(0.99), 100)
+    
+    if not ax:
+        ax = plt.gca()
+    
+    # Plot distribution on top of histogram of charges in order to compare
+    ax.hist(my_data, bins=bins, density=True, histtype='stepfilled', alpha=0.9, label=my_data_str)
+    ax.plot(x, rv.pdf(x), 'r-', lw=2.5, alpha=1, label=dist_str)
+    ax.set_title(f'{my_data_str} vs. {dist_str}', y=1.05)
+    ax.set_xlabel(f'{my_data_str}')
+    ax.legend()
+    
+    if save_img:
+        dh.save_image(img_filename, models_output_dir)
+
+# Plot both qq and hist vs. dist plots in same figure
+def plot_qq_hist_dist_combined(my_data, my_data_str='Residuals', dist_obj=stats.norm, dist_str='Normal Dist', 
+                               bins=50, fig_title=None, title_fontsize = 24, figsize=(10, 5), save_img=False, img_filename=None):
+    
+    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=figsize)
+
+    # Fit my data to dist_obj and get fit parameters
+    fit_params = dist_obj.fit(my_data)
+    
+    # Plot Q-Q, add to figure
+    my_qq(my_data, my_data_str=my_data_str, dist_obj=dist_obj, fit_params=fit_params, 
+          ax=ax_array_flat[0], y=1.05) # Increase title space to match hist_vs_dist_plot()
+    
+    # Plot hist vs. dist, add to figure
+    hist_vs_dist_plot(my_data, my_data_str=my_data_str, dist_obj=dist_obj, fit_params=fit_params, 
+                      dist_str=dist_str, bins=bins, ax=ax_array_flat[1])
+    
+    # Figure title
+    if fig_title:
+        fig.suptitle(fig_title, fontsize=title_fontsize)
+    else:
+        fig.suptitle(f'{my_data_str} vs. {dist_str}', fontsize=title_fontsize)
+    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+    
+    if save_img:
+        dh.save_image(img_filename, models_output_dir)
+    plt.show()
+
+
+# ==========================================================
 # Before removing Cook's outliers
-# =============================
-# Q-Q plot 
-fig = qqplot(sm_lin_reg_4.resid_pearson, line='45', fit='True')
-plt.xlabel('Theoretical quantiles')
-plt.ylabel('Sample quantiles')
-plt.title('Q-Q Plot Before Removing Outliers')
-plt.show()
+# ==========================================================
 
-# Residual Distribution
-sns.kdeplot(data=sm_lin_reg_4.resid_pearson, shade=True)
-plt.show()
+resid4 = sm_lin_reg_4.resid_pearson
+#resid4 = sm_lin_reg_4.resid
+#resid4 = sm_lin_reg_4.get_influence().resid_studentized_internal
 
-sns.kdeplot(data=sm_lin_reg_4.get_influence().resid_studentized_internal, shade=True)
-plt.show()
-
-# sns.kdeplot(data=dataset[dataset[col]==category], x='charges', shade=True, alpha=alpha, label=category)
+# Q-Q plot and Residual Histogram vs. Normal
+plot_qq_hist_dist_combined(resid4, fig_title='Residual Dist Before Outlier Removal')
 
 # =============================
+# Statistical test for normality
+# =============================
+# https://machinelearningmastery.com/a-gentle-introduction-to-normality-tests-in-python/
+
+# Shapiro-Wilk test for normality
+# not useful for big samples(>5000), since it tends to reject normality too often. Not an issue here
+sw_stat4, sw_pval4 = stats.shapiro(sm_lin_reg_4.resid_pearson)
+
+# D’Agostino’s K-squared test
+dk_stat4, dk_pval4 = stats.normaltest(sm_lin_reg_4.resid_pearson)
+
+# Anderson-Darling Normality Test
+ad_stat4, ad_critvals4, ad_siglevels4 = stats.anderson(sm_lin_reg_4.resid_pearson, dist='norm')
+
+# Chi-Square Normality Test
+cs_stat4, cs_pval4 = stats.chisquare(sm_lin_reg_4.resid_pearson)
+
+# Jarque–Bera test for Normality
+js_stat4, js_pval4 = stats.jarque_bera(sm_lin_reg_4.resid_pearson)
+
+# Kolmogorov-Smirnov test for Normality
+ks_stat4, ks_pval4 = stats.kstest(sm_lin_reg_4.resid_pearson, 'norm')
+# According to KS-table, for alpha of 0.05 and with n > 40, we want the test-statistic to be 
+# less than 1.36/sqrt(n). This will give us 95% confidence that our data comes from the 
+# given distribution
+# https://oak.ucc.nau.edu/rh83/Statistics/ks1/
+ks_stat_cutoff = 1.36 / np.sqrt(len(dataset['charges'])) # = (1.36 / sqrt(1338)) = 0.0372
+
+# Lilliefors Test for Normality 
+# Same as Kolmogorov-Smirnov?
+lt_stat4, lt_pval4 = lilliefors(sm_lin_reg_4.resid_pearson, dist='norm')
+
+# Function combining above normaly tests and interpreting results
+normal_results4, normal_interpret4 = dh.normality_tests(sm_lin_reg_4.resid_pearson)
+
+# ==========================================================
 # After removing Cook's outliers first time
-# =============================
-# Q-Q plot 
-fig = qqplot(sm_lin_reg_5.resid_pearson, line='45', fit='True')
-plt.xlabel('Theoretical quantiles')
-plt.ylabel('Sample quantiles')
-plt.title('Q-Q Plot After Removing Outliers')
-plt.show()
+# ==========================================================
+resid5 = sm_lin_reg_5.resid_pearson
+#resid5 = sm_lin_reg_5.resid
+#resid5 = sm_lin_reg_5.get_influence().resid_studentized_internal
 
-sns.kdeplot(data=sm_lin_reg_5.resid_pearson, shade=True)
-plt.show()
+# Q-Q plot and Residual Histogram vs. Normal
+plot_qq_hist_dist_combined(resid5, fig_title='Residual Dist After Outlier Removal')
 
-sns.kdeplot(data=sm_lin_reg_5.resid, shade=True)
-plt.show()
+# Function combining normality tests and interpreting results
+normal_results5, normal_interpret5 = dh.normality_tests(sm_lin_reg_5.resid_pearson)
 
-sns.kdeplot(data=sm_lin_reg_5.get_influence().resid_studentized_internal, shade=True)
-plt.show()
-
-# =============================
+# ==========================================================
 # After removing Cook's outliers second time
-# =============================
-# Q-Q plot 
-fig = qqplot(sm_lin_reg_6.resid_pearson, line='45', fit='True')
-plt.xlabel('Theoretical quantiles')
-plt.ylabel('Sample quantiles')
-plt.title('Q-Q Plot After Removing Outliersx2')
-plt.show()
+# ==========================================================
+resid6 = sm_lin_reg_6.resid_pearson
+#resid6 = sm_lin_reg_6.resid
+#resid6 = sm_lin_reg_6.get_influence().resid_studentized_internal
 
-sns.kdeplot(data=sm_lin_reg_6.resid_pearson, shade=True)
-plt.show()
+# Q-Q plot and Residual Histogram vs. Normal
+plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Removal x2')
 
-sns.kdeplot(data=sm_lin_reg_6.resid, shade=True)
-plt.show()
+# Function combining normality tests and interpreting results
+normal_results6, normal_interpret6 = dh.normality_tests(sm_lin_reg_6.resid_pearson)
 
-sns.kdeplot(data=sm_lin_reg_6.get_influence().resid_studentized_internal, shade=True)
-plt.show()
 
 # ====================================================================================================================
 # Back to sklearn models

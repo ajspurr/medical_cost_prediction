@@ -1,0 +1,11 @@
+,Rank,ks,cm,sse,mle,ad
+0,1,invgamma,johnsonsu,exponnorm,vonmises,expon
+1,2,johnsonsu,fisk,laplace_asymmetric,johnsonsb,gumbel_r
+2,3,fatiguelife,wald,genexpon,gausshyper,logistic
+3,4,wald,fatiguelife,expon,beta,norm
+4,5,gilbrat,recipinvgauss,genpareto,gamma,gumbel_l
+5,6,recipinvgauss,gilbrat,geninvgauss,pearson3,
+6,7,fisk,invgamma,gompertz,geninvgauss,
+7,8,betaprime,gamma,foldcauchy,genpareto,
+8,9,loglaplace,genexpon,pearson3,expon,
+9,10,johnsonsb,expon,gamma,genexpon,

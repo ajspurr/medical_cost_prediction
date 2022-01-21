@@ -1,0 +1,28 @@
+,Top 10 Count,Top 10 In
+expon,4.0,"cm, sse, mle, ad"
+genexpon,3.0,"cm, sse, mle"
+gamma,3.0,"cm, sse, mle"
+geninvgauss,2.0,"sse, mle"
+johnsonsb,2.0,"ks, mle"
+invgamma,2.0,"ks, cm"
+gilbrat,2.0,"ks, cm"
+genpareto,2.0,"sse, mle"
+wald,2.0,"ks, cm"
+pearson3,2.0,"sse, mle"
+recipinvgauss,2.0,"ks, cm"
+fisk,2.0,"ks, cm"
+fatiguelife,2.0,"ks, cm"
+johnsonsu,2.0,"ks, cm"
+laplace_asymmetric,1.0,sse
+norm,1.0,ad
+loglaplace,1.0,ks
+logistic,1.0,ad
+vonmises,1.0,mle
+beta,1.0,mle
+gumbel_r,1.0,ad
+gumbel_l,1.0,ad
+betaprime,1.0,ks
+gausshyper,1.0,mle
+foldcauchy,1.0,sse
+exponnorm,1.0,sse
+gompertz,1.0,sse
