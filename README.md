@@ -186,7 +186,7 @@ So far there is nothing I found that could categorize or explain the outliers ot
 
 <p align="center"><img src="/output/models/sm_lr_results_5_no_outliers.png" width="900"/></p>
 
-I ploted the changes in model performance metrics with this model. Again, the results aren't surprising. The max error (max_e) decreases dramatically. R-squared/adjusted increases dramatically. Still no calculated heteroscedasticity. Interestingly, not only the the rmse, mae, and median asbolute errors decrease, but the difference between them decreased as well. This is a testament to the fact that they have varying sensitivities to large residuals, which have now been removed. I didn't replot the changes in model coefficients as they didn't change much. Most notably, the 'age' coefficient increased from ~-250 to ~0. 
+I ploted the changes in model performance metrics with this model. Again, the results aren't surprising. The max error (max_e) decreases dramatically. R-squared/adjusted increases dramatically. Still no calculated heteroscedasticity. Interestingly, not only did the the rmse, mae, and median asbolute errors decrease, but the difference between them decreased as well. This is a testament to the fact that they have varying sensitivities to large residuals, which have now been removed. I didn't replot the changes in model coefficients as they didn't change much. Most notably, the 'age' coefficient increased from ~-250 to ~0. 
 
 <p align="center"><img src="/output/models/performance_no_outliers.png" width="800"/></p>
 
