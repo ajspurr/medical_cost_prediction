@@ -190,7 +190,7 @@ I ploted the changes in model performance metrics with this model. Again, the re
 
 <p align="center"><img src="/output/models/performance_no_outliers.png" width="800"/></p>
 
-Since there are still a few outliers, I decided to perform Cook's test again. Since it measures the degree to which your predicted values change when a given datapoint is removed, it's possible that calculating it again will identify more datapoints as outliers. This is exactly what happened. 
+Since there are still a few outliers, I decided to perform Cook's test again. Since it measures the degree to which your predicted values change when a given datapoint is removed, it's possible that calculating it again will identify more datapoints as outliers, which is what happened. 
 
 <p align="center">
   <img src="/output/models/cooks_dist_plot_2.png" width="350"/>
