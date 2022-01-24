@@ -217,4 +217,4 @@ I did not include updated coefficients or model performance plots, but I can sum
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
 
 ## Potential Future Exploration
-- 
+- Remove uneccesary features ([Adjusted R-squared?](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac)), feature importance
