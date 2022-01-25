@@ -162,7 +162,18 @@ As shown below, the residuals in my model are not normally distributed. The norm
 
 <p align="center"><img src="/output/models/resid_dist.png" width="800"/></p>
 
-### Outlier Detection
+#### What to do with non-normal residuals ([1](https://www.statology.org/multiple-linear-regression-assumptions/), [2](https://towardsdatascience.com/is-normal-distribution-necessary-in-regression-how-to-track-and-fix-it-494105bc50dd))
+Two potential causes include:
+- Dependent or independent variables are too non-normal 
+- Existence of a few outliers/extreme values which disrupt the model prediction
+
+So what you can do is:
+- Perform transformations on dependent or independent variables
+- Explore and remove outliers
+
+
+
+#### Outlier Detection
 Cooks distance using statsmodels. 
 
 <p align="center"><img src="/output/models/cooks_dist_plot.png" width="600"/></p>
