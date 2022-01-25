@@ -1116,7 +1116,7 @@ def my_qq(data, my_data_str='Residuals', dist_obj=stats.norm, fit_params=None, d
 
 # Plots a scipy distribution vs. histogram of my_data
 def hist_vs_dist_plot(my_data, my_data_str='Residuals', dist_obj=stats.norm, fit_params=None, dist_str='Normal Dist', 
-                      bins=200, ax=None, save_img=False, img_filename=None):    
+                      bins=200, ax=None, test_interp_str=None, save_img=False, img_filename=None):    
     
     if not fit_params:
         # Fit my data to dist_obj and get fit parameters
@@ -1143,6 +1143,13 @@ def hist_vs_dist_plot(my_data, my_data_str='Residuals', dist_obj=stats.norm, fit
     ax.plot(x, rv.pdf(x), 'r-', lw=2.5, alpha=1, label=dist_str)
     ax.set_title(f'{my_data_str} vs. {dist_str}', y=1.05)
     ax.set_xlabel(f'{my_data_str}')
+    
+    if test_interp_str:
+        # Add normality test interpretation text
+        box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
+        ax.text(1.05, 0.99, test_interp_str, bbox=box_style, transform=ax.transAxes, verticalalignment='top', horizontalalignment='left') 
+    
+    
     ax.legend()
     
     if save_img:
@@ -1150,7 +1157,7 @@ def hist_vs_dist_plot(my_data, my_data_str='Residuals', dist_obj=stats.norm, fit
 
 # Plot both qq and hist vs. dist plots in same figure
 def plot_qq_hist_dist_combined(my_data, my_data_str='Residuals', dist_obj=stats.norm, dist_str='Normal Dist', 
-                               bins=50, fig_title=None, title_fontsize = 24, figsize=(10, 5), save_img=False, img_filename=None):
+                               bins=50, test_interp_str=None, fig_title=None, title_fontsize = 24, figsize=(10, 5), save_img=False, img_filename=None):
     
     # Create figure, gridspec, list of axes/subplots mapped to gridspec location
     fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=figsize)
@@ -1164,7 +1171,7 @@ def plot_qq_hist_dist_combined(my_data, my_data_str='Residuals', dist_obj=stats.
     
     # Plot hist vs. dist, add to figure
     hist_vs_dist_plot(my_data, my_data_str=my_data_str, dist_obj=dist_obj, fit_params=fit_params, 
-                      dist_str=dist_str, bins=bins, ax=ax_array_flat[1])
+                      dist_str=dist_str, bins=bins, ax=ax_array_flat[1], test_interp_str=test_interp_str)
     
     # Figure title
     if fig_title:
@@ -1178,16 +1185,14 @@ def plot_qq_hist_dist_combined(my_data, my_data_str='Residuals', dist_obj=stats.
     plt.show()
 
 
+
 # ==========================================================
-# Before removing Cook's outliers
+# Test for normality before removing Cook's outliers
 # ==========================================================
 
 resid4 = sm_lin_reg_4.resid_pearson
 #resid4 = sm_lin_reg_4.resid
 #resid4 = sm_lin_reg_4.get_influence().resid_studentized_internal
-
-# Q-Q plot and Residual Histogram vs. Normal
-plot_qq_hist_dist_combined(resid4, fig_title='Residual Dist Before Outlier Removal')
 
 # =============================
 # Statistical test for normality
@@ -1223,33 +1228,92 @@ ks_stat_cutoff = 1.36 / np.sqrt(len(dataset['charges'])) # = (1.36 / sqrt(1338))
 lt_stat4, lt_pval4 = lilliefors(sm_lin_reg_4.resid_pearson, dist='norm')
 
 # Function combining above normaly tests and interpreting results
-normal_results4, normal_interpret4 = dh.normality_tests(sm_lin_reg_4.resid_pearson)
+normal_results4, normal_interpret4, nml_interpret_txt4 = dh.normality_tests(resid4)
+
+# Q-Q plot and Residual Histogram vs. Normal
+plot_qq_hist_dist_combined(resid4, fig_title='Residual Distribution', test_interp_str=nml_interpret_txt4, save_img=True, img_filename='resid_dist')
 
 # ==========================================================
-# After removing Cook's outliers first time
+# Test for normality after removing Cook's outliers first time
 # ==========================================================
 resid5 = sm_lin_reg_5.resid_pearson
 #resid5 = sm_lin_reg_5.resid
 #resid5 = sm_lin_reg_5.get_influence().resid_studentized_internal
 
-# Q-Q plot and Residual Histogram vs. Normal
-plot_qq_hist_dist_combined(resid5, fig_title='Residual Dist After Outlier Removal')
-
 # Function combining normality tests and interpreting results
-normal_results5, normal_interpret5 = dh.normality_tests(sm_lin_reg_5.resid_pearson)
+normal_results5, normal_interpret5, nml_interpret_txt5 = dh.normality_tests(resid5)
+
+# Q-Q plot and Residual Histogram vs. Normal
+plot_qq_hist_dist_combined(resid5, fig_title='Residual Dist After Outlier Removal',  test_interp_str=nml_interpret_txt5)
+
 
 # ==========================================================
-# After removing Cook's outliers second time
+# Test for normality after removing Cook's outliers second time
 # ==========================================================
 resid6 = sm_lin_reg_6.resid_pearson
 #resid6 = sm_lin_reg_6.resid
 #resid6 = sm_lin_reg_6.get_influence().resid_studentized_internal
 
+# Function combining normality tests and interpreting results
+normal_results6, normal_interpret6, nml_interpret_txt6 = dh.normality_tests(resid6)
+
 # Q-Q plot and Residual Histogram vs. Normal
-plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Removal x2')
+plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Removal x2',  test_interp_str=nml_interpret_txt6)
+
+
+# ==========================================================
+# Try applying nonlinear transformations to variables rather than outlier removal
+# Independent variables are already close to normal or uniform distributions
+# ==========================================================
+
+# New dataset
+new_X_7 = new_X_4.copy()
+
+# Plot distribution of 'age^2'
+sns.kdeplot(x=y, shade=True)#, alpha=alpha, label=category)
+plt.hist(y, bins=50, density=True)#, histtype='stepfilled', alpha=0.9)#, label=my_data_str)
+
+# Boxcox 'charges'
+y_bc, lambd = stats.boxcox(y)
+
+# Plot distribution of 'charges' boxcox transformed
+sns.kdeplot(x=y_bc, shade=True)#, alpha=alpha, label=category)
+plt.hist(y_bc, bins=50, density=True)#, histtype='stepfilled', alpha=0.9)#, label=my_data_str)
+
+# Plot model
+title_7 = 'box-cox charges'
+model_name_7 = 'normalized [charges]'
+file_name_7 = '7_bc_charges'
+sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results_subgrouped(new_X_7, y_bc, title_7, save_img=False, filename_unique=file_name_7)
+
+# Q-Q plot and Residual Histogram vs. Normal
+plot_qq_hist_dist_combined(sm_lin_reg_7.resid_pearson, fig_title='Residual Dist After Normalizing Target')
 
 # Function combining normality tests and interpreting results
-normal_results6, normal_interpret6 = dh.normality_tests(sm_lin_reg_6.resid_pearson)
+normal_results7, normal_interpret7 = dh.normality_tests(sm_lin_reg_7.resid_pearson)
+
+
+# Organize model performance metrics
+summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
+coeff_4 = pd.Series(summary_df_4['coef'], name=model_name_4)
+sm_lr_results_4 = pd.Series(evaluate_model_sm(y, sm_y_pred_4, sm_lin_reg_4), name=model_name_4)
+
+# Keep track of model performance for comparison later
+coeff_df = pd.concat([coeff_df, coeff_4], axis=1)
+sm_results_df = pd.concat([sm_results_df, sm_lr_results_4], axis=1)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ====================================================================================================================
