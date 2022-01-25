@@ -1270,7 +1270,7 @@ lt_stat4, lt_pval4 = lilliefors(sm_lin_reg_4.resid_pearson, dist='norm')
 normal_results4, normal_interpret4, nml_interpret_txt4 = dh.normality_tests(resid4)
 
 # Q-Q plot and Residual Histogram vs. Normal
-plot_qq_hist_dist_combined(resid4, fig_title='Residual Distribution', test_interp_str=nml_interpret_txt4, save_img=True, img_filename='resid_dist')
+plot_qq_hist_dist_combined(resid4, fig_title='Residual Distribution', test_interp_str=nml_interpret_txt4, save_img=False, img_filename='resid_dist')
 
 # Plot y and predicted y histograms
 plt.hist(y, bins=50, density=True, label='charges', alpha=0.5)
@@ -1312,10 +1312,9 @@ plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Remova
 # ==========================================================
 
 # Plot distribution of nontransformed y
-sns.kdeplot(x=y, shade=True)
-plt.hist(y, bins=50, density=True)
-
-sns.boxplot(data=dataset, y='charges')
+sns.distplot(dataset['charges'], bins=50)
+# plt.hist(y, bins=50, density=True, alpha=0.8)
+# sns.kdeplot(x=y, shade=True)
 
 # Plot nontransformed y and predicted y histograms
 plt.hist(y, bins=50, density=True, label='charges transformed', alpha=0.5)
@@ -1332,20 +1331,20 @@ new_X_7 = new_X_4.copy()
 y_bc, lambd = stats.boxcox(y)
 
 # Plot distribution of 'charges' boxcox transformed
-sns.kdeplot(x=y_bc, shade=True)
-plt.hist(y_bc, bins=50, density=True)
+sns.distplot(y_bc, bins=50)
 
 # Plot model
 title_7 = 'box-cox charges'
 model_name_7 = 'normalized [charges]'
 file_name_7 = '7_bc_charges'
-sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results_subgrouped(new_X_7, y_bc, title_7, save_img=False, filename_unique=file_name_7)
+sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results_subgrouped(new_X_7, y_bc, title_7, save_img=True, filename_unique=file_name_7)
 
 # Function combining normality tests and interpreting results
 normal_results7, normal_interpret7, nml_interpret_txt7 = dh.normality_tests(sm_lin_reg_7.resid_pearson)
 
 # Q-Q plot and Residual Histogram vs. Normal
-plot_qq_hist_dist_combined(sm_lin_reg_7.resid_pearson, fig_title='Residual Dist After Normalizing Target', test_interp_str=nml_interpret_txt7)
+plot_qq_hist_dist_combined(sm_lin_reg_7.resid_pearson, fig_title='Residual Dist After Normalizing Target', 
+                           test_interp_str=nml_interpret_txt7, save_img=True, img_filename='qqhist1_boxcox_y')
 
 # Plot y and predicted y histograms
 plt.hist(y_bc, bins=50, density=True, label='charges transformed', alpha=0.5)
@@ -1355,7 +1354,7 @@ plt.legend()
 
 
 # =============================
-# Box-Cox transformation of y
+# Other transformation of y
 # =============================
 
 
