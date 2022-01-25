@@ -140,7 +140,7 @@ No new insights were gained by subgrouping this relationship.
 
 <p align="center"><img src="/output/models/coeff_new_feat_vert_3.png" width="500"/></p>
 
-Several of the features did not have much fluctuation in their coefficients so I removed them from the plots. I left two in (and separated the features into 3 graphs) in order to appreciate the scale of the change of the other feature coefficients. When [bmi >= 30] feature was added, the 'bmi' feature's coefficient decreased significantly. When the [bmi\*smoker] feature was added, [bmi]'s coefficient continued to decrease. When the [smoker\*obese] feature as added, the [smoker_yes] feature decreased dramatically (note the scales). In addition, the new features [bmi >= 30] and [bmi\*smoker] decreased as well, with [bmi >= 30]'s coefficient reaching close to 0! This means [smoker\*obese] was a much better predicitor of charges.. Lastly, when [age^2] was added, the [age] feature coefficient decreased to about 0.
+Several of the features did not have much fluctuation in their coefficients so I removed them from the plots. I left two in (and separated the features into 3 graphs) in order to appreciate the scale of the change of the other feature coefficients. When [bmi >= 30] feature was added, the 'bmi' feature's coefficient decreased significantly. When the [bmi\*smoker] feature was added, [bmi]'s coefficient continued to decrease. When the [smoker\*obese] feature as added, the [smoker_yes] feature decreased dramatically (note the scales). In addition, the new features [bmi >= 30] and [bmi\*smoker] decreased as well, with [bmi >= 30]'s coefficient reaching close to 0! This means [smoker\*obese] was a much better predicitor of charges. Lastly, when [age^2] was added, the [age] feature coefficient decreased to about 0.
 
 ### Summary of Model Performance with Each New Feature
 
@@ -157,11 +157,23 @@ VIF table below shows that multicollinearity between numerical variables is not 
 ### Assumption #3: Multivariate normality (residuals of the model are normally distributed)
 It seems this assumption is generally less relevant for machine learning than it is for classical statistics. The p-values of your model coefficients depend on this assumption. So if you are using your model to make inferences about the data, this assumption needs to be explored. However, if you are primarily concerned with your predictions (as is normally true for machine learning), this assumption is not important. Furthermore, according to [this source](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac), even if you are trying to make inferences, if your dataset is "large enough and is not too far from normality then, by the Central Limit Theorem, our assumption of normality is not that important, and any inference from the model will still be valid." For the sake of learning, I will explore this assumption. 
 
-As shown below, the residuals in my model are not normally distributed. 
+As shown below, the residuals in my model are not normally distributed. The normality tests that were performed (in the order they are displayed) are: Shapiro-Wilk, D'Agostino's K-squared, Chi-Square, Jarque–Bera, Kolmogorov-Smirnov, Lilliefors, and Anderson-Darling. While pass/fail isn't technically the correct verbage, it represents whether or not the p-value was greater than a significance level of 0.05. Or in the case of Anderson-Darling, whether or not the test statistic was greater than the critical value associatied with a significance level of 0.05. 
+
 
 <p align="center"><img src="/output/models/resid_dist.png" width="800"/></p>
 
-### Outlier Detection
+#### What to do with non-normal residuals ([1](https://www.statology.org/multiple-linear-regression-assumptions/), [2](https://towardsdatascience.com/is-normal-distribution-necessary-in-regression-how-to-track-and-fix-it-494105bc50dd))
+Two potential causes include:
+- Dependent or independent variables are too non-normal 
+- Existence of a few outliers/extreme values which disrupt the model prediction
+
+So what you can do is:
+- Perform transformations on dependent or independent variables
+- Explore and remove outliers
+
+
+
+#### Outlier Detection
 Cooks distance using statsmodels. 
 
 <p align="center"><img src="/output/models/cooks_dist_plot.png" width="600"/></p>
