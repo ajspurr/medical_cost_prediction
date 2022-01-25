@@ -660,6 +660,19 @@ sm_results_df = pd.concat([sm_results_df, sm_lr_results_4], axis=1)
 # age^2 was added. I also tried not scaling the age^2 feature. This didn't change model at all. Literally same 
 # coefficients other than it's own being significantly smaller (3000 -> 3)
 
+
+# Plot distribution of charges
+sns.kdeplot(x=y, shade=True)
+plt.hist(y, bins=50, density=True, label='charges', alpha=0.5)
+
+# Plot distribution of predicted charges
+sns.kdeplot(x=sm_y_pred_4, shade=True)
+plt.hist(sm_y_pred_4, bins=50, density=True, label='pred charges', alpha=0.5)
+
+# Plot y and predicted y historgrams
+plt.hist(y, bins=50, density=True, label='charges', alpha=0.5)
+plt.hist(sm_y_pred_4, bins=50, density=True, label='pred charges', alpha=0.5)
+plt.legend()
 # =======================================================================================
 # Compare coefficients before and after new features
 # =======================================================================================
@@ -836,8 +849,34 @@ bmi_dict = {False:'no', True:'yes'}
 orig_data_w_outlier['bmi_>=_30'] = orig_data_w_outlier['bmi_>=_30'].map(bmi_dict)
 
 # =============================
+# Distribution of charges in outliers vs. not
+# =============================
+# Make DataFrame of just charges and outlier category
+y_outlier_df = pd.DataFrame({'charges':y, 'outlier':outlier_df['outlier']})
+
+# Split outlier and nonoutlier data
+y_outlier_data = y_outlier_df[y_outlier_df['outlier']=='yes']
+y_nonoutlier_data = y_outlier_df[y_outlier_df['outlier']=='no']
+
+# Compare charges distribution with outlier and nonoutlier data
+sns.kdeplot(x=y_outlier_data['charges'], shade=True, alpha=0.5, label='outlier data')
+sns.kdeplot(x=y_nonoutlier_data['charges'], shade=True, alpha=0.5, label='nonoutlier data')
+plt.hist(y_outlier_data['charges'], bins=50, density=True, alpha=0.5)
+plt.hist(y_nonoutlier_data['charges'], bins=50, density=True, alpha=0.5)
+plt.title("Distribution of Charges")
+plt.legend()
+#dh.save_image('outliers_dist_charges', models_output_dir)
+
+
+# =============================
 # Scatterplots of numerical variables
 # =============================
+# Age vs. charges
+sns.lmplot(x='age', y='charges', hue="outlier", data=orig_data_w_outlier, ci=None, line_kws={'alpha':0}, legend=False) # LM plot just makes it easier to color by outlier
+plt.title("Age vs. Charges")
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title="Cook's Outlier")
+#dh.save_image('outliers_age_v_charges', models_output_dir)
+
 # Nonsmoker age vs. charges
 nonsmoker_outlier_df = orig_data_w_outlier[orig_data_w_outlier['smoker']=='no']
 sns.lmplot(x='age', y='charges', hue="outlier", data=nonsmoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False) # LM plot just makes it easier to color by outlier
@@ -1233,6 +1272,12 @@ normal_results4, normal_interpret4, nml_interpret_txt4 = dh.normality_tests(resi
 # Q-Q plot and Residual Histogram vs. Normal
 plot_qq_hist_dist_combined(resid4, fig_title='Residual Distribution', test_interp_str=nml_interpret_txt4, save_img=True, img_filename='resid_dist')
 
+# Plot y and predicted y histograms
+plt.hist(y, bins=50, density=True, label='charges', alpha=0.5)
+plt.hist(sm_y_pred_4, bins=50, density=True, label='pred charges', alpha=0.5)
+plt.hist(resid4, bins=50, density=True, label='resid', alpha=0.5)
+plt.legend()
+
 # ==========================================================
 # Test for normality after removing Cook's outliers first time
 # ==========================================================
@@ -1258,7 +1303,7 @@ resid6 = sm_lin_reg_6.resid_pearson
 normal_results6, normal_interpret6, nml_interpret_txt6 = dh.normality_tests(resid6)
 
 # Q-Q plot and Residual Histogram vs. Normal
-plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Removal x2',  test_interp_str=nml_interpret_txt6)
+plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Removal x2', test_interp_str=nml_interpret_txt6)
 
 
 # ==========================================================
@@ -1266,19 +1311,29 @@ plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Remova
 # Independent variables are already close to normal or uniform distributions
 # ==========================================================
 
+# Plot distribution of nontransformed y
+sns.kdeplot(x=y, shade=True)
+plt.hist(y, bins=50, density=True)
+
+sns.boxplot(data=dataset, y='charges')
+
+# Plot nontransformed y and predicted y histograms
+plt.hist(y, bins=50, density=True, label='charges transformed', alpha=0.5)
+plt.hist(sm_y_pred_4, bins=50, density=True, label='pred charges', alpha=0.5)
+plt.legend()
+
 # New dataset
 new_X_7 = new_X_4.copy()
 
-# Plot distribution of 'age^2'
-sns.kdeplot(x=y, shade=True)#, alpha=alpha, label=category)
-plt.hist(y, bins=50, density=True)#, histtype='stepfilled', alpha=0.9)#, label=my_data_str)
-
+# =============================
+# Box-Cox transformation of y
+# =============================
 # Boxcox 'charges'
 y_bc, lambd = stats.boxcox(y)
 
 # Plot distribution of 'charges' boxcox transformed
-sns.kdeplot(x=y_bc, shade=True)#, alpha=alpha, label=category)
-plt.hist(y_bc, bins=50, density=True)#, histtype='stepfilled', alpha=0.9)#, label=my_data_str)
+sns.kdeplot(x=y_bc, shade=True)
+plt.hist(y_bc, bins=50, density=True)
 
 # Plot model
 title_7 = 'box-cox charges'
@@ -1286,34 +1341,22 @@ model_name_7 = 'normalized [charges]'
 file_name_7 = '7_bc_charges'
 sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results_subgrouped(new_X_7, y_bc, title_7, save_img=False, filename_unique=file_name_7)
 
-# Q-Q plot and Residual Histogram vs. Normal
-plot_qq_hist_dist_combined(sm_lin_reg_7.resid_pearson, fig_title='Residual Dist After Normalizing Target')
-
 # Function combining normality tests and interpreting results
-normal_results7, normal_interpret7 = dh.normality_tests(sm_lin_reg_7.resid_pearson)
+normal_results7, normal_interpret7, nml_interpret_txt7 = dh.normality_tests(sm_lin_reg_7.resid_pearson)
 
+# Q-Q plot and Residual Histogram vs. Normal
+plot_qq_hist_dist_combined(sm_lin_reg_7.resid_pearson, fig_title='Residual Dist After Normalizing Target', test_interp_str=nml_interpret_txt7)
 
-# Organize model performance metrics
-summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
-coeff_4 = pd.Series(summary_df_4['coef'], name=model_name_4)
-sm_lr_results_4 = pd.Series(evaluate_model_sm(y, sm_y_pred_4, sm_lin_reg_4), name=model_name_4)
-
-# Keep track of model performance for comparison later
-coeff_df = pd.concat([coeff_df, coeff_4], axis=1)
-sm_results_df = pd.concat([sm_results_df, sm_lr_results_4], axis=1)
-
+# Plot y and predicted y histograms
+plt.hist(y_bc, bins=50, density=True, label='charges transformed', alpha=0.5)
+plt.hist(sm_y_pred_7, bins=50, density=True, label='pred charges', alpha=0.5)
+plt.legend()
 
 
 
-
-
-
-
-
-
-
-
-
+# =============================
+# Box-Cox transformation of y
+# =============================
 
 
 # ====================================================================================================================
