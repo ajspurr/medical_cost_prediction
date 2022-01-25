@@ -171,7 +171,11 @@ So what you can do is:
 - Perform transformations on dependent or independent variables
 - Explore and remove outliers
 
-
+##### Box-Cox Transformation of dependent variable 'charges'
+<p align="center">
+  <img src="/output/models/hist_charges.png" width="300"/>
+  <img src="/output/models/charges_boxcox.png" width="300"/>
+</p>
 
 #### Outlier Detection
 Cooks distance using statsmodels. 
