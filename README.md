@@ -68,9 +68,8 @@ I used Correlation Ratio to measure the association betwee numerical and categor
 
 <p align="center"><img src="/output/eda/corr_ratio_cat_num_variables.png" width="600"/></p>
 
-# Model Building
-## Linear Regression
-### Assumptions of Multiple Linear Regression
+# Model Building: Multiple Linear Regression
+## Assumptions of Multiple Linear Regression
 1. Linear relationship between each predictor variable and target variable
 2. No multicollinearity between predictor variables
 3. Multivariate normality - **residuals** of the model are normally distributed
@@ -87,8 +86,8 @@ There are clear groupings of predicted values, which (surprise, surprise) relate
 
 <p align="center"><img src="/output/models/sm_lr_results_1_bmi_30_feature_grouped.png" width="900"/></p>
 
-### Assumption #1: Linear Relationship Between Predictors and Target Variable
-#### BMI vs. Charges
+## Assumption #1: Linear Relationship Between Predictors and Target Variable
+### BMI vs. Charges
 The linear relationship between BMI and charges is weak. But if you subgroup by smoking status, you can see that smokers' BMI have a strong linear relationship with charges (Pearson's of 0.8) while nonsmokers' BMI have basically no linear relationship with charges. As such, I will enginner a new feature: **[smoker\*bmi]**. This will remove the bmi of the nonsmokers, thus removing the data that does not have a linear relationship to the target. 
 <p align="center">
   <img src="/output/eda/lmplot_bmi_vs_charges.png" width="400"/>
@@ -99,7 +98,7 @@ As can be seen below, adding the new feature greatly reduced heteroscedasticity 
 
 <p align="center"><img src="/output/models/sm_lr_results_2_smoke_bmi_feature.png" width="900"/></p>
 
-#### Age vs. Charges
+### Age vs. Charges
 'Age vs. Charges' plot looks like three distinct groups. I tried subgrouping by all the categorical variables and found that smoking status explained the groups quite well (plot on left). After isolating the nonsmoker data (middle plot), subgrouping by any categorical variable didn't account for the noise above the dense line of data points, but even without subgrouping I got a Pearson's r of 0.63, which is double the Pearson's without subgrouping by smoking status (0.30). Looking at only data from smokers (plot on right), I tried subgrouping by all categorical variables and found that BMI separated the groups very well. The Pearson's r is included for each fit line.
 
 <p align="center">
@@ -110,7 +109,7 @@ As can be seen below, adding the new feature greatly reduced heteroscedasticity 
 
 For the sake of further exploration, I tried adjusting the BMI cutoff to 29 and 31 to see if the data splits better. The average Pearson's r for both cutoffs was 0.59 compared to 0.68 for BMI cutoff of 30 (images in /output/eda).
 
-##### New Feature: [smoker\*obese]
+#### New Feature: [smoker\*obese]
 
 In order to incorporate this relationship between obesity, smoking status, and age into the model, I tried creating multiple features. The one that worked fantastically was **[smoker\*obese]**. I originally tried **[smoker\*obese\*age]**, assuming that you needed the 'age' variable to actually make the prediction. However, if you look at the age vs. charges plot above you'll see that the 3 lines have very shallow slopes. So 'age' itself isn't very predicitive but the difference between the three groups (nonsmokers, obese smokers, and nonobese smokers) is very predictive. With this new variable, which isolates obese smokers, the model can give it a coefficient that basically adds a constant value to that group which is equal to the average difference in charges between the 'obese smokers' and 'nonobese smokers' lines in the age vs. charges plot. 
 
@@ -120,7 +119,7 @@ I also tried to add a variable incorporating the nonobese smokers, as it has its
 
 As you can see, this greatly reduced the residuals of the predictions, although the outliers remain. 
 
-##### New Feature: [age^2]
+#### New Feature: [age^2]
 
 There is a clear curvilinear relationship between predicted charges and residuals. You can see this relationship a bit in the age vs. charges plots as well. So I added a new feature **[age^2]**. Visually, the regression line in the age^2 vs. charges plots seems to fit better, however, this new feature doesn't seem to affect the R-squared values. This may be due to the outliers and/or the shallowness of the slopes of the reg lines. 
 
@@ -133,7 +132,7 @@ It did slightly improve the R-squared of the model. The heteroscedasticity metri
 
 <p align="center"><img src="/output/models/sm_lr_results_4_age_sq_feature.png" width="900"/></p>
 
-#### Children vs. Charges
+### Children vs. Charges
 No new insights were gained by subgrouping this relationship.
 
 ### Changes in Multiple Regression Feature Coefficients with Each New Feature
@@ -148,13 +147,13 @@ Several of the features did not have much fluctuation in their coefficients so I
 
 RMSE penalizes large errors the most. MAE does not penalize large errors as much. Median absolute error penalizes large errors the least. R-squared represents the percent of the variation of the target that is explained by it's relationship with the features. R-squared is a relative measure whereas RMSE and MAE are absolute measures. One drawback of R-squared is that by the nature of its calculation, it improves every time you add a new variable to the model. Adjusted R-squared corrects for this. ([Source](https://towardsdatascience.com/evaluation-metrics-model-selection-in-linear-regression-73c7573208be))
 
-### Assumption #2: No Multicollinearity Between Predictor Variables
+## Assumption #2: No Multicollinearity Between Predictor Variables
 VIF table below shows that multicollinearity between numerical variables is not present. A value of 1 indicates that there is no correlation with any other predictor variables. A value between 1 and 5 indicates mild correlation, generally not enough to require attention. A value between 5 and 10 indicates moderate correlation. A value of 10 or greather indicates severe correlation (a.k.a. multicollinearity), in which case the coefficient estimates and p-values in the regression output are likely unreliable. Even if none of the variable pairs are highly correlated (as has already been shown in the 'Relationship Between Numerical Variables' section above), multicollinearity can still be present as a given variable can be explained by two or more other variables.
 (References: [1](https://www.statology.org/how-to-calculate-vif-in-python/), [2](https://quantifyinghealth.com/correlation-collinearity-multicollinearity/))
 
 <p align="center"><img src="/output/models/vif_table.png" width="300"/></p>
 
-### Assumption #3: Multivariate normality (residuals of the model are normally distributed)
+## Assumption #3: Multivariate normality (residuals of the model are normally distributed)
 It seems this assumption is generally less relevant for machine learning than it is for classical statistics. The p-values of your model coefficients depend on this assumption. So if you are using your model to make inferences about the data, this assumption needs to be explored. However, if you are primarily concerned with your predictions (as is normally true for machine learning), this assumption is not important. Furthermore, according to [this source](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac), even if you are trying to make inferences, if your dataset is "large enough and is not too far from normality then, by the Central Limit Theorem, our assumption of normality is not that important, and any inference from the model will still be valid." For the sake of learning, I will explore this assumption. 
 
 As shown below, the residuals in my model are not normally distributed. The normality tests that were performed (in the order they are displayed) are: Shapiro-Wilk, D'Agostino's K-squared, Chi-Square, Jarque–Bera, Kolmogorov-Smirnov, Lilliefors, and Anderson-Darling. While pass/fail isn't technically the correct verbage, it represents whether or not the p-value was greater than a significance level of 0.05. Or in the case of Anderson-Darling, whether or not the test statistic was greater than the critical value associatied with a significance level of 0.05. 
@@ -162,7 +161,7 @@ As shown below, the residuals in my model are not normally distributed. The norm
 
 <p align="center"><img src="/output/models/resid_dist.png" width="800"/></p>
 
-#### What to do with non-normal residuals ([1](https://www.statology.org/multiple-linear-regression-assumptions/), [2](https://towardsdatascience.com/is-normal-distribution-necessary-in-regression-how-to-track-and-fix-it-494105bc50dd))
+### What to do with non-normal residuals ([1](https://www.statology.org/multiple-linear-regression-assumptions/), [2](https://towardsdatascience.com/is-normal-distribution-necessary-in-regression-how-to-track-and-fix-it-494105bc50dd))
 Two potential causes include:
 - Dependent or independent variables are too non-normal 
 - Existence of a few outliers/extreme values which disrupt the model prediction
@@ -171,7 +170,7 @@ So what you can do is:
 - Perform transformations on dependent or independent variables
 - Explore and remove outliers
 
-##### Box-Cox Transformation of dependent variable 'charges'
+#### Box-Cox Transformation of dependent variable 'charges'
 <p align="center">
   <img src="/output/eda/hist_charges.png" width="400"/>
   <img src="/output/models/charges_boxcox.png" width="425"/>
@@ -229,8 +228,8 @@ I did not include updated coefficients or model performance plots, but I can sum
 
 
 
-### Homoscedasticity
+## Homoscedasticity
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
 
-## Potential Future Exploration
+# Potential Future Exploration
 - Remove uneccesary features ([Adjusted R-squared?](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac)), feature importance
