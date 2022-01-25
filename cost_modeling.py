@@ -295,7 +295,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
     ax1.axhline(y=0, color='darkblue', linestyle='--')
     ax1.set_ylabel('Studentized Residuals')
     ax1.set_xlabel('Predicted Values')
-    ax1.set_title('Studentized Residuals vs. Predicted Values')
+    ax1.set_title('Scale-Location')
     textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
     ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')   
     if not combine_plots: plt.show()
@@ -380,7 +380,7 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, save
     ax1.axhline(y=0, color='red', linestyle='--')
     ax1.set_ylabel('Studentized Residuals')
     ax1.set_xlabel('Predicted Values')
-    ax1.set_title('Studentized Residuals vs. Predicted Values')
+    ax1.set_title('Scale-Location')
     textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
     ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')  
     
@@ -1270,7 +1270,9 @@ lt_stat4, lt_pval4 = lilliefors(sm_lin_reg_4.resid_pearson, dist='norm')
 normal_results4, normal_interpret4, nml_interpret_txt4 = dh.normality_tests(resid4)
 
 # Q-Q plot and Residual Histogram vs. Normal
-plot_qq_hist_dist_combined(resid4, fig_title='Residual Distribution', test_interp_str=nml_interpret_txt4, save_img=False, img_filename='resid_dist')
+qqhist_filename_1 = 'qqhist1_orig'
+plot_qq_hist_dist_combined(resid4, fig_title='Residual Distribution', test_interp_str=nml_interpret_txt4, 
+                           save_img=False, img_filename=qqhist_filename_1)
 
 # Plot y and predicted y histograms
 plt.hist(y, bins=50, density=True, label='charges', alpha=0.5)
@@ -1289,7 +1291,9 @@ resid5 = sm_lin_reg_5.resid_pearson
 normal_results5, normal_interpret5, nml_interpret_txt5 = dh.normality_tests(resid5)
 
 # Q-Q plot and Residual Histogram vs. Normal
-plot_qq_hist_dist_combined(resid5, fig_title='Residual Dist After Outlier Removal',  test_interp_str=nml_interpret_txt5)
+qqhist_filename_3 = 'qqhist3_outlier_1'
+plot_qq_hist_dist_combined(resid5, fig_title='Residual Dist After Outlier Removal',  test_interp_str=nml_interpret_txt5, 
+                           save_img=False, img_filename=qqhist_filename_3)
 
 
 # ==========================================================
@@ -1303,7 +1307,9 @@ resid6 = sm_lin_reg_6.resid_pearson
 normal_results6, normal_interpret6, nml_interpret_txt6 = dh.normality_tests(resid6)
 
 # Q-Q plot and Residual Histogram vs. Normal
-plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Removal x2', test_interp_str=nml_interpret_txt6)
+qqhist_filename_4 = 'qqhist4_outlier_2'
+plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Removal x2', test_interp_str=nml_interpret_txt6,
+                           save_img=False, img_filename=qqhist_filename_4)
 
 
 # ==========================================================
@@ -1332,6 +1338,9 @@ y_bc, lambd = stats.boxcox(y)
 
 # Plot distribution of 'charges' boxcox transformed
 sns.distplot(y_bc, bins=50)
+plt.title('Charges Box-Cox Transformed', fontsize=20, y=1.04)
+plt.xlabel('charges')
+dh.save_image('charges_boxcox', models_output_dir, dpi=300, bbox_inches='tight', pad_inches=0.1)
 
 # Plot model
 title_7 = 'box-cox charges'
@@ -1343,8 +1352,9 @@ sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results_subgrouped(new_X
 normal_results7, normal_interpret7, nml_interpret_txt7 = dh.normality_tests(sm_lin_reg_7.resid_pearson)
 
 # Q-Q plot and Residual Histogram vs. Normal
+qqhist_filename_2 = 'qqhist2_boxcox_y'
 plot_qq_hist_dist_combined(sm_lin_reg_7.resid_pearson, fig_title='Residual Dist After Normalizing Target', 
-                           test_interp_str=nml_interpret_txt7, save_img=True, img_filename='qqhist1_boxcox_y')
+                           test_interp_str=nml_interpret_txt7, save_img=False, img_filename=qqhist_filename_2)
 
 # Plot y and predicted y histograms
 plt.hist(y_bc, bins=50, density=True, label='charges transformed', alpha=0.5)
