@@ -218,7 +218,7 @@ No subcategory has a significantly large percentage of outliers. Subcategory '4 
 Outlier data subcategory composition not very different than rest of data. 
 <p align="center"><img src="/output/models/perc_subcat_by_outlier.png" width="900"/></p>
 
-So far there is nothing I found that could categorize or explain the outliers other than the fact that they map well to the Charges vs. Age plot. Without knowing more about the origin of the data, at this point I will just remove the outliers so I can compare the model performance before and after. The resulting improvements are not surprising:
+So far there is nothing I found that could categorize or explain the outliers other than the fact that they map well to the Charges vs. Age plot. If this were real-world data, at this point I would investigate how it was collected and input to identify any biases or potential for mistakes. But with this artificial data, I will just remove the outliers so I can compare the model performance before and after. The resulting improvements are not surprising:
 
 <p align="center"><img src="/output/models/sm_lr_results_5_no_outliers.png" width="900"/></p>
 
