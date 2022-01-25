@@ -201,7 +201,9 @@ Do the model outliers represent outliers in the 'charges' distribution? If that 
 
 <p align="center"><img src="/output/models/outliers_dist_charges.png" width="600"/></p>
 
-Cook's Distance outliers maps to the outliers in age vs. charges plots.
+Can the model outliers be explained by outliers in the relationship between 'charges' and any of the continuous variables? If you look at the age vs. charges plot, you may intitially think the answer is 'no'. But if you subgroup it by obesity and smoker status as I did above, you can see that each scatter plot has a more dense area with a linear relationship, and sparse data points above the line that represent the model outliers. 
+
+<p align="center"><img src="/output/models/outliers_age_v_charges.png" width="600"/></p>
 
 <p align="center">
   <img src="/output/models/outliers_age_v_charges_nonsmoker.png" width="290"/>
