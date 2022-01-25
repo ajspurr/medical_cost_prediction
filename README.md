@@ -157,7 +157,8 @@ VIF table below shows that multicollinearity between numerical variables is not 
 ### Assumption #3: Multivariate normality (residuals of the model are normally distributed)
 It seems this assumption is generally less relevant for machine learning than it is for classical statistics. The p-values of your model coefficients depend on this assumption. So if you are using your model to make inferences about the data, this assumption needs to be explored. However, if you are primarily concerned with your predictions (as is normally true for machine learning), this assumption is not important. Furthermore, according to [this source](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac), even if you are trying to make inferences, if your dataset is "large enough and is not too far from normality then, by the Central Limit Theorem, our assumption of normality is not that important, and any inference from the model will still be valid." For the sake of learning, I will explore this assumption. 
 
-As shown below, the residuals in my model are not normally distributed. 
+As shown below, the residuals in my model are not normally distributed. The normality tests that were performed (in the order they are displayed) are: Shapiro-Wilk, D'Agostino's K-squared, Chi-Square, Jarque–Bera, Kolmogorov-Smirnov, Lilliefors, and Anderson-Darling. While pass/fail isn't technically the correct verbage, it represents whether or not the p-value was greater than a significance level of 0.05. Or in the case of Anderson-Darling, whether or not the test statistic was greater than the critical value associatied with a significance level of 0.05. 
+
 
 <p align="center"><img src="/output/models/resid_dist.png" width="800"/></p>
 
