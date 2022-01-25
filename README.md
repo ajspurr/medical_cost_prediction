@@ -159,7 +159,7 @@ It seems this assumption is generally less relevant for machine learning than it
 As shown below, the residuals in my model are not normally distributed. The normality tests that were performed (in the order they are displayed) are: Shapiro-Wilk, D'Agostino's K-squared, Chi-Square, Jarque–Bera, Kolmogorov-Smirnov, Lilliefors, and Anderson-Darling. While pass/fail isn't technically the correct verbage, it represents whether or not the p-value was greater than a significance level of 0.05. Or in the case of Anderson-Darling, whether or not the test statistic was greater than the critical value associatied with a significance level of 0.05. 
 
 
-<p align="center"><img src="/output/models/resid_dist.png" width="800"/></p>
+<p align="center"><img src="/output/models/qqhist1_orig.png" width="800"/></p>
 
 ### What to do with non-normal residuals ([1](https://www.statology.org/multiple-linear-regression-assumptions/), [2](https://towardsdatascience.com/is-normal-distribution-necessary-in-regression-how-to-track-and-fix-it-494105bc50dd))
 Two potential causes include:
@@ -180,7 +180,7 @@ So what you can do is:
 
 Now the residuals look closer to normal distribution as well (although they don't technically pass the tests of normality). 
 
-<p align="center"><img src="/output/models/qqhist1_boxcox_y.png" width="800"/></p>
+<p align="center"><img src="/output/models/qqhist2_boxcox_y.png" width="800"/></p>
 
 However, this skewed the model predictions and significantly decreased model performance. 
 
@@ -216,9 +216,12 @@ No subcategory has a significantly large percentage of outliers. Subcategory '4 
 <p align="center"><img src="/output/models/perc_outlier_subcat.png" width="900"/></p>
 
 Outlier data subcategory composition not very different than rest of data. 
+
 <p align="center"><img src="/output/models/perc_subcat_by_outlier.png" width="900"/></p>
 
-So far there is nothing I found that could categorize or explain the outliers other than the fact that they map well to the Charges vs. Age plot. If this were real-world data, at this point I would investigate how it was collected and input to identify any biases or potential for mistakes. But with this artificial data, I will just remove the outliers so I can compare the model performance before and after. The resulting improvements are not surprising:
+So far there is nothing I found that could categorize or explain the outliers other than the fact that they map well to the Charges vs. Age plot. If this were real-world data, at this point I would investigate how samples were selected and how the data was collected and input into the dataset. This would allow me to identify any systematic biases in sample selection or potential for data collection or data-entry mistakes. But with this artificial data, I will just remove the outliers so I can compare the model performance before and after. As you can seem below, this did not improve the distribution of the residuals much, but it grealy improved  model performance. 
+
+<p align="center"><img src="/output/models/qqhist3_outlier_1.png" width="800"/></p>
 
 <p align="center"><img src="/output/models/sm_lr_results_5_no_outliers.png" width="900"/></p>
 
@@ -233,7 +236,9 @@ Since there are still a few outliers, I decided to perform Cook's test again. Si
   <img src="/output/models/outliers_pred_vs_resid_2.png" width="350"/>
 </p>
 
-New models results below. I achieved a perfect model! Of course, this is after removing 119 outliers, which represent 8.9% of the data. In addition, this dataset is from a textbook so I'm sure it has been generated artificially to demonstrate the points I have been making. Real world data would not behave this perfectly, but the process I went through is still applicable.  
+New model results below. The residuals look much more normal and even passed three tests for normality: D'Agostino's K-squared, Chi-Square, and Jarque–Bera. I also achieved a perfect model! Of course, this is after removing 119 outliers, which represent 8.9% of the data. In addition, this dataset is from a textbook so I'm sure it has been generated artificially to demonstrate the points I have been making. Real world data would not behave this perfectly, but the process I went through is still applicable.  
+
+<p align="center"><img src="/output/models/qqhist4_outlier_2.png" width="800"/></p>
 
 <p align="center"><img src="/output/models/sm_lr_results_6_no_outliers_2.png" width="800"/></p>
 
