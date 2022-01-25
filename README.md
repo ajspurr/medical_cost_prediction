@@ -171,10 +171,21 @@ So what you can do is:
 - Explore and remove outliers
 
 #### Box-Cox Transformation of dependent variable 'charges'
+'Charges' certainly looks more normally distributed after performed a Box-Cox transformation.
+
 <p align="center">
   <img src="/output/eda/hist_charges.png" width="400"/>
   <img src="/output/models/charges_boxcox.png" width="425"/>
 </p>
+
+Now the residuals look closer to normal distribution as well (although they don't technically pass the tests of normality). 
+
+<p align="center"><img src="/output/models/qqhist1_boxcox_y.png" width="800"/></p>
+
+However, this skewed the model predictions and significantly decreased model performance. 
+
+<p align="center"><img src="/output/models/sm_lr_results_7_bc_charges.png" width="800"/></p>
+
 
 #### Outlier Detection
 Cooks distance using statsmodels. 
