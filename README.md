@@ -2,7 +2,7 @@
 
 In this analysis, I explore the Kaggle [Medical Cost Dataset](https://www.kaggle.com/mirichoi0218/insurance). I'll go through the major steps in Machine Learning to build and evaluate regression models to predict total cost of medical care based on demographic data.
 
-Theoretically, a model like this could be used by insurance companies to predict the total medical cost of an individual, which they could base their premiums on. However, this dataset is likely artificial. According to the Kaggle poster, it comes from the book 'Machine Learning with R' by Brett Lantz and is in the public domain. I could not find more information on the origin of the dataset, but based on my EDA and its behavior in a linear model, it is almost certainly artificial data. Nevertheless, the process I go through is still valid and can be applied to real-world data. 
+Theoretically, a model like this could be used by insurance companies to predict the total medical cost of an individual, which they could base their premiums on. According to the Kaggle poster, it comes from the book 'Machine Learning with R' by Brett Lantz and is in the public domain. I could not find more information on the origin of the dataset, but based on my EDA and its behavior in a linear model, it is almost certainly artificial data. Nevertheless, the process I go through is still valid and can be applied to real-world data. 
 
 
 # EDA
@@ -54,7 +54,7 @@ Thus, the increase in correlation between children and charges is likely due to 
 
 
 ## Relationship Between Categorical Variables
-I'm including ordinal variable 'children' in this analysis. After researching how to measure association between ordinal and categorical variables, I found that it is not a straightforward task. There are multiple complicated methods, including calculating 'Freeman's Theta' which I was unable to find the formula for. So I will treat 'children' as a categorical variable for this part of the analysis. The associations were very weak, so I included a plot comparing two variables that had zero association according to Cramér's V. It does, indeed, look like there is no association. In researching the source of this medical cost data, it may be synthetic, which would explain the almost perfect distribution of observations between different categories.
+I'm including ordinal variable 'children' in this analysis. After researching how to measure association between ordinal and categorical variables, I found that it is not a straightforward task. There are multiple complicated methods, including calculating 'Freeman's Theta' which I was unable to find the formula for. So I will treat 'children' as a categorical variable for this part of the analysis. The associations were very weak, so I included a plot comparing two variables that had zero association according to Cramér's V. It does, indeed, look like there is no association. In researching the source of this medical cost data, it is likely synthetic, which would explain the almost perfect distribution of observations between different categories.
 
 (Credit to Shaked Zychlinski for explaining categorical correlation in [his article](https://towardsdatascience.com/the-search-for-categorical-correlation-a1cf7f1888c9))
 
@@ -140,7 +140,7 @@ No new insights were gained by subgrouping this relationship.
 
 <p align="center"><img src="/output/models/coeff_new_feat_vert_3.png" width="500"/></p>
 
-Several of the features did not have much fluctuation in their coefficients. I took most of them out. I left two in (and separated the features into 3 graphs) in order to appreciate the scale of the change of the other feature coefficients. When [bmi >= 30] feature was added, the 'bmi' feature's coefficient decreased significantly. When the [bmi\*smoker] feature was added, [bmi]'s coefficient continued to decrease. When the [smoker\*obese] feature as added, the [smoker_yes] feature decreased dramatically (note the scales). In addition, the new features [bmi >= 30] and [bmi\*smoker] decreased as well, with [bmi >= 30]'s coefficient reaching close to 0! This means [smoker\*obese] was a much better predicitor of charges.. Lastly, when [age^2] was added, the [age] feature coefficient decreased to about 0.
+Several of the features did not have much fluctuation in their coefficients so I removed them from the plots. I left two in (and separated the features into 3 graphs) in order to appreciate the scale of the change of the other feature coefficients. When [bmi >= 30] feature was added, the 'bmi' feature's coefficient decreased significantly. When the [bmi\*smoker] feature was added, [bmi]'s coefficient continued to decrease. When the [smoker\*obese] feature as added, the [smoker_yes] feature decreased dramatically (note the scales). In addition, the new features [bmi >= 30] and [bmi\*smoker] decreased as well, with [bmi >= 30]'s coefficient reaching close to 0! This means [smoker\*obese] was a much better predicitor of charges.. Lastly, when [age^2] was added, the [age] feature coefficient decreased to about 0.
 
 ### Summary of Model Performance with Each New Feature
 
@@ -155,7 +155,10 @@ VIF table below shows that multicollinearity between numerical variables is not 
 <p align="center"><img src="/output/models/vif_table.png" width="300"/></p>
 
 ### Assumption #3: Multivariate normality (residuals of the model are normally distributed)
+It seems this assumption is generally less relevant for machine learning than it is for classical statistics. The p-values of your model coefficients depend on this assumption. So if you are using your model to make inferences about the data, this assumption needs to be explored. However, if you are primarily concerned with your predictions (as is normally true for machine learning), this assumption is not important. Furthermore, according to [this source](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac), even if you are trying to make inferences, if your dataset is "large enough and is not too far from normality then, by the Central Limit Theorem, our assumption of normality is not that important, and any inference from the model will still be valid." For the sake of learning, I will explore this assumption. 
+
 As shown below, the residuals in my model are not normally distributed. 
+
 <p align="center"><img src="/output/models/resid_dist.png" width="800"/></p>
 
 ### Outlier Detection
@@ -186,22 +189,22 @@ So far there is nothing I found that could categorize or explain the outliers ot
 
 <p align="center"><img src="/output/models/sm_lr_results_5_no_outliers.png" width="900"/></p>
 
-I ploted the changes in model performance metrics with this model. Again, the results aren't surprising. The max error (max_e) decreases dramatically. R-squared/adjusted increases dramatically. Still no calculated heteroscedasticity. Interestingly, not only the the rmse, mae, and median asbolute errors decrease, but the difference between them decreased as well. This is a testament to the fact that they have varying sensitivities to large residuals, which have now been removed. I didn't replot the changes in model coefficients as they didn't change much. Most notably, the 'age' coefficient increased from ~-250 to ~0. 
+I plotted the changes in model performance metrics with this model. Again, the results aren't surprising. The max error (max_e) decreases dramatically. R-squared/adjusted increases dramatically. Still no calculated heteroscedasticity. Interestingly, not only did the the rmse, mae, and median asbolute errors decrease, but the difference between them decreased as well. This is a testament to the fact that they have varying sensitivities to large residuals, which have now been removed. I didn't replot the changes in model coefficients as they didn't change much. Most notably, the 'age' coefficient increased from ~-250 to ~0. 
 
 <p align="center"><img src="/output/models/performance_no_outliers.png" width="800"/></p>
 
-Since there are still a few outliers, I decided to perform Cook's test again. Since it measures the degree to which your predicted values change when a given datapoint is removed, it's possible that calculating it again will identify more datapoints as outliers. Which is what happened. 
+Since there are still a few outliers, I decided to perform Cook's test again. Since it measures the degree to which your predicted values change when a given datapoint is removed, it's possible that calculating it again will identify more datapoints as outliers, which is what happened. 
 
 <p align="center">
   <img src="/output/models/cooks_dist_plot_2.png" width="350"/>
   <img src="/output/models/outliers_pred_vs_resid_2.png" width="350"/>
 </p>
 
-New models results below. I achieved a perfect model! Of course, this is after removing 119 outliers which represents 8.9% of the data. In addition, this dataset is from a textbook so I'm sure it has been generated artificially to demonstrate the points I have been making. Real world data would not behave this perfectly, but the process I went through is still applicable.  
+New models results below. I achieved a perfect model! Of course, this is after removing 119 outliers, which represent 8.9% of the data. In addition, this dataset is from a textbook so I'm sure it has been generated artificially to demonstrate the points I have been making. Real world data would not behave this perfectly, but the process I went through is still applicable.  
 
 <p align="center"><img src="/output/models/sm_lr_results_6_no_outliers_2.png" width="800"/></p>
 
-I did not include updated coefficients or model performance plots, but I can summarize here. The coefficients remained almost exactly the same. This can be explained with the influence plots below. As you can see, the datapoints with the highest Cook's distances (represented by the biggest circles) have the least leverage. And leverage "refers to the extent to which the coefficients in the regression model would change if a particular observation was removed from the dataset" ([source](https://www.statology.org/residuals-vs-leverage-plot/)). The model performance can be summarized with an R-squared of 1.0. Interestingly, as you can see above, the BP and White's Test p-values decreased significantly, which would normally indicate heteroscedasticity. I could do a deep dive into the formula behind those tests, but I would assume with a perfect model and residuals on the order of 10^-11, that the metrics don't really apply.
+I did not include updated coefficients or model performance plots, but I can summarize here. The coefficients remained almost exactly the same. This can be explained with the influence plots below. As you can see, the datapoints with the highest Cook's distances (represented by the biggest circles) have the least leverage. And leverage "refers to the extent to which the coefficients in the regression model would change if a particular observation was removed from the dataset" ([source](https://www.statology.org/residuals-vs-leverage-plot/)). The model performance can be summarized with an R-squared of 1.0. Interestingly, as you can see above, the BP and White's Test p-values decreased significantly, which would normally indicate heteroscedasticity. I could do a deep dive into the formula behind those tests, but I would assume with a perfect model and residuals on the order of 10^-11, that the metrics aren't useful.
 
 <p align="center">
   <img src="/output/models/influence_plot_1.png" width="350"/>
@@ -214,4 +217,4 @@ I did not include updated coefficients or model performance plots, but I can sum
 Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
 
 ## Potential Future Exploration
-- 
+- Remove uneccesary features ([Adjusted R-squared?](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac)), feature importance
