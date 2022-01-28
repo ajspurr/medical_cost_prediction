@@ -23,7 +23,7 @@ I compared this distribution to 99 continuous distributions in the SciPy package
 
 <p align="center"><img src="/output/eda/test_dist/ks_sorted_qqhist0_invgamma.png" width="800"/></p>
 
-This still doesn't look like a great fit. In fact, distributions like Johnson SB and gamma looked like a better fit on their Q-Q plots (all output in \output\eda\test_dist). Based on the EDA below, I found that I could separate out the different modes using the features 'smoker' and newly-created 'BMI >= 30'. Those distributions look closer to normal, unimodal, and with less skew. 
+This still doesn't look like a great fit. In fact, distributions like Johnson SB and gamma looked like a better fit on their [Q-Q plots](/output/eda/test_dist). Based on the EDA below, I found that I could separate out the different modes using the features 'smoker' and newly-created 'BMI >= 30'. Those distributions look closer to normal/unimodal and have less skew. 
 
 ### Explore Categorical Variables
 Summary of categorical variables. 'BMI >= 30' was added retroactively after finding its importance in the original EDA (in relation to smoking status).
