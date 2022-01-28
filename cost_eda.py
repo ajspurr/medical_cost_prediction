@@ -126,6 +126,12 @@ dataset['bmi_>=_30'] = dataset['bmi_>=_30'].map(bmi_dict)
 categorical_cols.append('bmi_>=_30')
 cat_ord_cols.append('bmi_>=_30')
 
+# Create formatted columns dictionary in helper module
+custom_dict = {}
+custom_dict['bmi'] = 'BMI'
+custom_dict['bmi_>=_30'] = 'BMI >= 30'
+dh.create_formatted_cols_dict(dataset.columns, custom_dict)
+
 # ====================================================================================================================
 # Visualize data
 # ====================================================================================================================
@@ -134,47 +140,9 @@ cat_ord_cols.append('bmi_>=_30')
 # Functions and global variable creation
 # =======================================================================================
 
-# Standardize image saving parameters
-def save_image(filename, dir=eda_output_dir, dpi=300, bbox_inches='tight'):
-    plt.savefig(dir/filename, dpi=dpi, bbox_inches=bbox_inches)
-    print("\nSaved image to '" + str(dir/filename) +"'\n")
-
-# Create dictionary of formatted column names  to be used for
-# figure labels (title() capitalizes every word in a string)
-formatted_cols = {}
-for col in dataset.columns:
-    formatted_cols[col] = col.replace('_', ' ').title()
-formatted_cols['bmi'] = 'BMI'
-formatted_cols['bmi_>=_30'] = 'BMI >= 30'
-
 # Function returning the formatted version of column name
 def format_col(col_name):
-    return formatted_cols[col_name]
-
-# Create 2d array of given size, used for figures with gridspec
-def create_2d_array(num_rows, num_cols):
-    matrix = []
-    for r in range(0, num_rows):
-        matrix.append([0 for c in range(0, num_cols)])
-    return matrix
-
-# Initialize figure, grid spec, axes variables
-def initialize_fig_gs_ax(num_rows, num_cols, figsize=(16, 8)):
-    # Create figure, gridspec, and 2d array of axes/subplots with given number of rows and columns
-    fig = plt.figure(constrained_layout=True, figsize=figsize)
-    ax_array = create_2d_array(num_rows, num_cols)
-    gs = fig.add_gridspec(num_rows, num_cols)
-
-    # Map each subplot/axis to gridspec location
-    for r in range(len(ax_array)):
-        for c in range(len(ax_array[r])):
-            ax_array[r][c] = fig.add_subplot(gs[r,c])
-
-    # Flatten 2d array of axis objects to iterate through easier
-    ax_array_flat = np.array(ax_array).flatten()
-    
-    return fig, gs, ax_array_flat
-
+    return dh.format_col(col_name)
 
 # =======================================================================================
 # Categorical variables
@@ -195,7 +163,7 @@ for col in cat_ord_cols:
 # Combine into one figure
 # =============================
 # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=5, figsize=(12, 4))
+fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=5, figsize=(12, 4))
 
 # Loop through categorical variables, plotting each in the figure
 i = 0
@@ -250,7 +218,7 @@ for col in cat_ord_cols:
 # Combine categorical variable relationships with target into one figure
 # =============================
 # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=2, num_cols=5, figsize=(18, 8))
+fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=2, num_cols=5, figsize=(18, 8))
 
 # Loop through categorical variables, plotting each in the figure
 i = 0
@@ -313,7 +281,7 @@ for cat_var1 in cat_ord_cols:
             plt.show()
             
 # Combine all violin plots info one figure
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=3, num_cols=4, figsize=(16, 8))
+fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=3, num_cols=4, figsize=(16, 8))
 i = 0
 for cat_var1 in cat_ord_cols:
     for cat_var2 in cat_col_2_val:
@@ -329,37 +297,7 @@ fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text over
 #save_image(save_filename)
 plt.show()            
 
-# =============================
-# Further exploration bimodal distribution of smokers
-# =============================
-smokers_data = dataset[dataset['smoker']=='yes']
 
-# Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
-
-# Distribution of Charges in Smokers
-axis1 = ax_array_flat[0]
-sns.kdeplot(data=smokers_data, x='charges', shade=True, ax=axis1)
-axis1.set_title('Distribution of Charges in Smokers', fontsize=16, y=1.04)
-axis1.set_xlabel('Charges')
-
-# Distribution of Charges in Smokers by BMI
-axis2 = ax_array_flat[1]
-sns.kdeplot(data=smokers_data[smokers_data['bmi_>=_30'] == 'no'], x='charges', 
-            shade=True, alpha=1, label='BMI < 30', ax=axis2)
-sns.kdeplot(data=smokers_data[smokers_data['bmi_>=_30'] == 'yes'], x='charges', 
-            shade=True, alpha=0.5, label='BMI >= 30', ax=axis2)
-axis2.legend() 
-axis2.set_title('Distribution of Charges in Smokers (by BMI)', fontsize=16, y=1.04)
-axis2.set_xlabel('Charges')
-axis2.set_ylabel('')
-
-# Finalize figure formatting and export
-#fig.suptitle('Exploration Bimodal Distribution of Charges in Smokers', fontsize=24)
-fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'smoker_dist_by_bmi'
-#save_image(save_filename)
-plt.show()
 
 
 # =======================================================================================
@@ -483,7 +421,7 @@ top_10_counts_df.to_csv(dist_output_dir / 'top_10_dist_counts.csv')
 # given distribution
 # https://oak.ucc.nau.edu/rh83/Statistics/ks1/
 ks_stat_cutoff = 1.36 / np.sqrt(len(dataset['charges'])) # = (1.36 / sqrt(1338)) = 0.0372
-ks_good_fit_dists = complete_results_df[complete_results_df['ks_stat'] < ks_stat_cutoff]
+ks_good_fit_dists = complete_results_df[complete_results_df['ks_stat'] < ks_stat_cutoff] #invgamma was 0.0370
 
 # According to sites below with 100 or more samples, the Cramer's von Mises test statistic cutoff for an alpha 
 # of 0.05 is 0.220
@@ -554,6 +492,50 @@ for i, dist_str in enumerate(loop_df.index):
 # Dictionary comprehension option
 # param_dict1 = {k:'{:0.2f}'.format(v) for k,v in zip(param_names1, params1)}
 
+# ==========================================================
+# Further exploration of nonsmokers and bimodal distribution of smokers
+# ==========================================================
+smokers_data = dataset[dataset['smoker']=='yes']
+nonsmokers_data = dataset[dataset['smoker']=='no']
+smoker_ob_data = smokers_data[smokers_data['bmi_>=_30']=='yes']
+smoker_nonob_data = smokers_data[smokers_data['bmi_>=_30']=='no']
+
+# == Nonsmokers == #
+sns.kdeplot(data=nonsmokers_data, x='charges', shade=True, alpha=1)
+plt.show()
+
+# Tried to explain positive skew by subgrouping by: bmi>=30, sex, region, children, model outliers (from cost_modeling.py)
+# None of them explained it
+
+# == Smokers == #
+# Create figure, gridspec, list of axes/subplots mapped to gridspec location
+fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
+
+# Distribution of Charges in Smokers
+axis1 = ax_array_flat[0]
+sns.kdeplot(data=smokers_data, x='charges', shade=True, ax=axis1)
+axis1.set_title('Distribution of Charges in Smokers', fontsize=16, y=1.04)
+axis1.set_xlabel('Charges')
+
+# Distribution of Charges in Smokers by BMI
+axis2 = ax_array_flat[1]
+sns.kdeplot(data=smoker_nonob_data, x='charges', 
+            shade=True, alpha=1, label='BMI < 30', ax=axis2)
+sns.kdeplot(data=smoker_ob_data, x='charges', 
+            shade=True, alpha=0.5, label='BMI >= 30', ax=axis2)
+axis2.legend() 
+axis2.set_title('Distribution of Charges in Smokers (by BMI)', fontsize=16, y=1.04)
+axis2.set_xlabel('Charges')
+axis2.set_ylabel('')
+
+# Finalize figure formatting and export
+#fig.suptitle('Exploration Bimodal Distribution of Charges in Smokers', fontsize=24)
+fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+#save_filename = 'smoker_dist_by_bmi'
+#save_image(save_filename)
+plt.show()
+
+
 # =======================================================================================
 # Numerical variables
 # =======================================================================================
@@ -623,7 +605,7 @@ for col in numerical_cols:
 # =============================
 
 # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = initialize_fig_gs_ax(num_rows=2, num_cols=3, figsize=(16, 8))
+fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=2, num_cols=3, figsize=(16, 8))
 
 # Calculate correlation coefficients
 pearsons = dataset.corr(method='pearson').round(2)
@@ -885,8 +867,8 @@ textbox_text = "Pearson's r = %0.3f" %new_pearson_nonsmokers_age_charge
 plt.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax.transAxes, 
          verticalalignment='top', horizontalalignment='right')
 plt.title("Age^2 vs. Charges in nonsmokers")
-save_filename = 'age_sq_vs_charges_nonsmokers'
-save_image(save_filename)
+#save_filename = 'age_sq_vs_charges_nonsmokers'
+#dh.save_image(save_filename, eda_output_dir)
 plt.show()
 
 # Plot smoker lmplot again
@@ -901,8 +883,8 @@ for legend_label in labels:
     else:
         legend_label.set_text("Yes (Pearson's %0.3f)" %new_pearson_obese_smoker_age_charge)
 plt.title("Age vs. Charges in smokers, grouped by BMI (30)")
-save_filename = 'age_sq_vs_charges_smokers_grp_bmi30'
-save_image(save_filename)
+#save_filename = 'age_sq_vs_charges_smokers_grp_bmi30'
+#dh.save_image(save_filename, eda_output_dir)
 plt.show()
 
 
@@ -1009,7 +991,7 @@ plt.show()
 # Calculate Cramér’s V (based on a nominal variation of Pearson’s Chi-Square Test) between two categorical featuers 'x' and 'y'
 def cramers_v(x, y):
     confusion_matrix = pd.crosstab(x,y)
-    chi2 = ss.chi2_contingency(confusion_matrix)[0]
+    chi2 = stats.chi2_contingency(confusion_matrix)[0]
     n = confusion_matrix.sum().sum()
     phi2 = chi2/n
     r,k = confusion_matrix.shape

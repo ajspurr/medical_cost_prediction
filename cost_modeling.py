@@ -554,8 +554,8 @@ bmi_dict = {False:'no', True:'yes'}
 new_X_1['bmi_>=_30'] = new_X_1['bmi_>=_30'].map(bmi_dict)
 
 # Add the new feature to the columns lists (necessary for preprocessing)
-categorical_cols.append('bmi_>=_30')
-cat_ord_cols.append('bmi_>=_30')
+#categorical_cols.append('bmi_>=_30')
+#cat_ord_cols.append('bmi_>=_30')
 
 # Preprocess with new feature
 new_X_1 = manual_preprocess_sm(new_X_1)
@@ -669,7 +669,7 @@ plt.hist(y, bins=50, density=True, label='charges', alpha=0.5)
 sns.kdeplot(x=sm_y_pred_4, shade=True)
 plt.hist(sm_y_pred_4, bins=50, density=True, label='pred charges', alpha=0.5)
 
-# Plot y and predicted y historgrams
+# Plot y and predicted y histograms
 plt.hist(y, bins=50, density=True, label='charges', alpha=0.5)
 plt.hist(sm_y_pred_4, bins=50, density=True, label='pred charges', alpha=0.5)
 plt.legend()
@@ -1064,6 +1064,8 @@ sm_results_df = pd.concat([sm_results_df, sm_lr_results_6], axis=1)
 
 # Coefficients with minimal change, performance shows perfect fit of model
 
+# Plot distribution of charges with outliers removed a second time
+sns.kdeplot(x=no_outliers_y_2, shade=True, alpha=0.5, label='nonoutlier data')
 
 # ==========================================================
 # Influence plots
