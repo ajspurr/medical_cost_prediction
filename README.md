@@ -15,7 +15,15 @@ Most of the features are self-explanatory, and the categories of each categorica
 - charges: individual medical costs billed by health insurance
 
 ### Explore Target (charges)
+The distribution is positively skewed and bimodal, although the second mode isn't huge. 
+
 <p align="center"><img src="/output/eda/hist_charges.png" width="400"/></p>
+
+I compared this distribution to 99 continuous distributions in the SciPy package using statistical goodness of fit (GOF) tests: Kolmogorov-Smirnov, Cramer-von Mises, and Anderson-Darling (when applicable). With a Kolmogorov-Smirnov, the null hypothesis (the data follow a specified distribution) is rejected if the test statistic is greater than the critical value obtained from a K-S table. According to [this table](https://oak.ucc.nau.edu/rh83/Statistics/ks1/) the critical value for n>40 is 1.36/sqrt(n), which in this case is 0.0372. Even though this distribution is bimodal, it did pass the Kolmogorov-Smirnov for an inverted gamma distribution, which produced a critical value of 0.0370. 
+
+<p align="center"><img src="/output/eda/test_dist/ks_sorted_qqhist0_invgamma.png" width="800"/></p>
+
+This still doesn't look like a great fit. In fact, distributions like Johnson SB and gamma looked like a better fit on their [Q-Q plots](/output/eda/test_dist). Based on the EDA below, I found that I could separate out the different modes using the features 'smoker' and newly-created 'BMI >= 30'. Those distributions look closer to normal/unimodal and have less skew. 
 
 ### Explore Categorical Variables
 Summary of categorical variables. 'BMI >= 30' was added retroactively after finding its importance in the original EDA (in relation to smoking status).
@@ -251,8 +259,8 @@ I did not include updated coefficients or model performance plots, but I can sum
 
 
 
-## Homoscedasticity
-Breusch-Pagan test (the default) detects linear forms of heteroscedasticity. White's test detects non-linear forms. ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf))
+## Assumption #4: Homoscedasticity
+To reiterate, in the plots above, 'BP' represents the p-value for the Breusch-Pagan Lagrange Multiplier Test for Heteroscedasticity and 'White' represents the p-value of White’s Lagrange Multiplier Test for Heteroscedasticity. Values less than 0.05 indicate presence of heteroscedasticity. The Breusch-Pagan test (the default) detects linear forms of heteroscedasticity, while White's test detects non-linear forms ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf)). If you look at the bottom-right plot in the "[Summary of Model Performance with Each New Feature](#summary-of-model-performance-with-each-new-feature)" section, you will see that once the [bmi\*smoker] feature is added, homoscedasticity is achieved. It remains after outliers are removed as well. 
 
 # Potential Future Exploration
 - Remove uneccesary features ([Adjusted R-squared?](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac)), feature importance
