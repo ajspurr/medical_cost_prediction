@@ -7,35 +7,25 @@ from scipy import stats
 import matplotlib.pyplot as plt
 from pathlib import PureWindowsPath, Path
 
-from sklearn.pipeline import Pipeline
-from sklearn.decomposition import PCA
-from sklearn.impute import SimpleImputer
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 
 import statsmodels.api as sm
-from statsmodels.tools.tools import add_constant
 from statsmodels.graphics.gofplots import qqplot
 from statsmodels.stats.diagnostic import het_white
 from statsmodels.stats.diagnostic import lilliefors
-from statsmodels.tools.eval_measures import meanabs
 from statsmodels.stats.diagnostic import het_breuschpagan
-from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.outliers_influence import OLSInfluence as influence
 
 from sklearn.linear_model import LinearRegression
-
-from sklearn.metrics import r2_score
-from sklearn.metrics import max_error
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import mean_absolute_error
-from sklearn.metrics import median_absolute_error
-
-from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_score, cross_validate
 
+# Make my own colormap
+from matplotlib import cm
+from matplotlib.colors import ListedColormap
+Set1 = cm.get_cmap('Set1', 8)
+tab10  = cm.get_cmap('tab10', 8)
+my_cmap = new_cmap3 = ListedColormap(np.vstack([tab10.colors[0:3],  Set1.colors[0]]))
 
 # Read in data
 project_dir = PureWindowsPath(r"D:\GitHubProjects\medical_cost_prediction\\")
@@ -56,12 +46,6 @@ import ds_helper as dh
 categorical_cols = [cname for cname in dataset.columns if dataset[cname].dtype == "object"]
 numerical_cols = [cname for cname in dataset.columns if not dataset[cname].dtype == "object"]
 
-# See if there are any 'numerical' columns that actually contain encoded categorical data
-num_uniques = dataset[numerical_cols].nunique()
-
-# Feature 'children' is discrete and contains whole numbers 0 to 5, inclusive
-dataset['children'].unique()
-
 # Create list of categorical variables with target and one without target
 num_cols_w_target = numerical_cols.copy()
 numerical_cols.remove('charges')
@@ -76,7 +60,7 @@ cont_cols.remove('children')
 cont_cols_w_target = cont_cols.copy()
 cont_cols_w_target.append('charges')
 
-# Create formatted columns dictionary in helper module
+# Create formatted columns dictionary in dh module
 custom_dict = {}
 custom_dict['bmi'] = 'BMI'
 custom_dict['bmi_>=_30'] = 'BMI >= 30'
@@ -88,36 +72,22 @@ dh.create_formatted_cols_dict(dataset.columns, custom_dict)
 # Function returning the formatted version of column name
 def format_col(col_name):
     return dh.format_col(col_name)
-    
-# ====================================================================================================================
-# Data preprocessing function via pipeline
-# ====================================================================================================================
-def create_pipeline(model_name, model):
-    # Preprocessing for numerical data (SimpleImputer default strategy='mean')
-    numerical_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer()), 
-        ('scale', StandardScaler())
-    ])
-    
-    # Preprocessing for categorical data
-    categorical_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='most_frequent')), 
-        ('onehot', OneHotEncoder(handle_unknown='ignore', drop='first', sparse=False))
-    ])
-    
-    # Bundle preprocessing for numerical and categorical data
-    preprocessor = ColumnTransformer(transformers=[
-            ('num', numerical_transformer, numerical_cols),
-            ('cat', categorical_transformer, categorical_cols)
-    ])
-    
-    # Bundle preprocessor and model
-    my_pipeline = Pipeline([
-        ('preprocessor', preprocessor),
-        (model_name, model)
-    ])
-    return my_pipeline
 
+# Takes dataframe of X values, uses them to create Series with categories:
+# 'obese smokers', 'nonobese smokers', 'obese nonsmokers', 'nonobese nonsmokers'
+# Returns a series of said categories which corresponds to 'X_df' parameter
+# https://datagy.io/pandas-conditional-column/
+def create_obese_smoker_category(X_df):
+    conditions = [
+        (X_df['bmi_>=_30_yes'] == 1) & (X_df['smoker_yes'] == 1),
+        (X_df['bmi_>=_30_yes'] == 0) & (X_df['smoker_yes'] == 1),
+        (X_df['bmi_>=_30_yes'] == 1) & (X_df['smoker_yes'] == 0),
+        (X_df['bmi_>=_30_yes'] == 0) & (X_df['smoker_yes'] == 0)
+    ]
+    
+    category_names = ['obese smokers', 'nonobese smokers', 'obese nonsmokers', 'nonobese nonsmokers']
+    return pd.Series(np.select(conditions, category_names))  
+  
 # ====================================================================================================================
 # Data preprocessing function without using pipeline
 # ====================================================================================================================
@@ -187,73 +157,6 @@ def manual_preprocess_sm(X):
     X_processed = sm.add_constant(X_processed)
     
     return X_processed
-
-# ====================================================================================================================
-# Model evaluation functions
-# ====================================================================================================================
-# Written for sklearn linear regression models, but only require y, y_pred, and X, so could be used for any model
-# Using the 'evaluate_model_sk()' and 'evaluate_model_sm()' on the SAME sm model yield almost identical results
-def evaluate_model_sk(y_valid, y_pred, X, round_results=3, print_results=False):      
-    metrics = {}
-    metrics['max_e'] = max_error(y_valid, y_pred).round(round_results)
-    metrics['mae'] = mean_absolute_error(y_valid, y_pred).round(round_results)
-    metrics['mse'] = mean_squared_error(y_valid, y_pred).round(round_results)
-    metrics['rmse'] = np.sqrt(metrics['mse']).round(round_results)
-    metrics['med_abs_e'] = median_absolute_error(y_valid, y_pred).round(round_results)
-    metrics['r2'] = r2_score(y_valid, y_pred).round(round_results)
-    metrics['r2_adj'] = 1 - ((1-metrics['r2'])*(len(y_valid)-1)/(len(y_valid)-X.shape[1]-1)).round(round_results)
-    
-    if print_results:
-        print('Max Error: ' + str(metrics['max_e']))
-        print('Mean Absolute Error: ' + str(metrics['mae']))
-        print('Mean Squared Error: ' + str(metrics['mse']))
-        print('Root Mean Squared Error: ' + str(metrics['rmse']))
-        print('Median Absolute Error: ' + str(metrics['med_abs_e']))
-        print('R-squared: ' + str(metrics['r2']))
-        print('R-squared (adj): ' + str(metrics['r2_adj']))
-    return metrics
-
-# Written for statsmodels model
-# Using the 'evaluate_model_sk()' and 'evaluate_model_sm()' on the same sm model yield almost identical results
-def evaluate_model_sm(y, y_pred, sm_lr_model, round_results=3, print_results=False):      
-    metrics = {}
-    metrics['max_e'] = np.round(max(sm_lr_model.resid), round_results)
-    metrics['mae'] = meanabs(y, y_pred).round(round_results)
-    metrics['mse'] = sm_lr_model.mse_resid.round(round_results) # this is the closet metric to mse. It was within 3% of both my calculation and sklearn's. 'mse_model' and 'mse_total' were 99% and 75% different
-    metrics['rmse'] = np.sqrt(metrics['mse']).round(round_results)
-    metrics['med_abs_e'] = np.median(abs(sm_lr_model.resid)).round(round_results)
-    metrics['r2'] = sm_lr_model.rsquared.round(round_results)
-    metrics['r2_adj'] = sm_lr_model.rsquared_adj.round(round_results)
-    
-    # Quantify Heteroscedasticity using Breusch-Pagan test and White test 
-    bp_test = het_breuschpagan(sm_lr_model.resid, sm_lr_model.model.exog)
-    white_test = het_white(sm_lr_model.resid, sm_lr_model.model.exog)
-    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
-    bp_test_results = dict(zip(labels, bp_test))
-    white_test_results = dict(zip(labels, white_test))
-    metrics['bp_lm_p'] = '{:0.3e}'.format(bp_test_results['LM-Test p-value'])
-    metrics['white_lm_p'] = '{:0.3e}'.format(white_test_results['LM-Test p-value'])
-    
-    if print_results:
-        print('Max Error: ' + str(metrics['max_e']))
-        print('Mean Absolute Error: ' + str(metrics['mae']))
-        print('Mean Squared Error: ' + str(metrics['mse']))
-        print('Root Mean Squared Error: ' + str(metrics['rmse']))
-        print('Median Absolute Error: ' + str(metrics['med_abs_e']))
-        print('R-squared: ' + str(metrics['r2']))
-        print('R-squared (adj): ' + str(metrics['r2_adj']))
-        print('Breusch-Pagan LM p-val: ' + metrics['bp_lm_p'])
-        print('White LM p-val: ' + metrics['white_lm_p'])
-    return metrics
-
-    
-def calulate_vif(data, numerical_cols):
-    # https://www.statology.org/multiple-linear-regression-assumptions/
-    # https://stackoverflow.com/questions/42658379/variance-inflation-factor-in-python
-    fxn_dataset = data[numerical_cols].copy()
-    fxn_dataset = add_constant(fxn_dataset)
-    vif = pd.Series([variance_inflation_factor(fxn_dataset.values, i) for i in range(fxn_dataset.shape[1])], index=fxn_dataset.columns)
-    return vif
 
 # =======================================================================================
 # Statsmodels functions
@@ -333,6 +236,145 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
     
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
     return het_metrics
+
+
+
+
+
+
+
+
+
+
+# Credits: 
+    # https://datavizpyr.com/add-legend-to-scatterplot-colored-by-a-variable-with-matplotlib-in-python/
+    # https://www.statology.org/matplotlib-scatterplot-legend/
+def sm_lr_model_results_subgrouped2(lr_model, X_data, y, y_pred, plot_title, grouping=None, cmap=None, save_img=False, filename_unique=None):
+    # Organize relevant data
+    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
+    y_pred_series = pd.Series(y_pred, name='y_pred')
+    y_series = pd.Series(y, name='y')
+    relevant_data = pd.concat([X_data[['bmi_>=_30_yes', 'smoker_yes']], y_series, y_pred_series, standardized_residuals, grouping], axis=1)
+    
+    # Quantify Heteroscedasticity using White test and Breusch-Pagan test
+    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
+    white_test = het_white(lr_model.resid, lr_model.model.exog)
+    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
+    bp_test_results = dict(zip(labels, bp_test))
+    white_test_results = dict(zip(labels, white_test))
+    bp_lm_p_value = '{:0.2e}'.format(bp_test_results['LM-Test p-value'])
+    white_lm_p_value = '{:0.2e}'.format(white_test_results['LM-Test p-value'])
+    
+    # Format text box with relevant metric of each plot
+    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
+    
+    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
+    
+    # Convert the grouping variable 'grouping' to a pandas.Categorical object so I can encode each 
+    # category to a number (grouping_as_cat.codes) and save the associated category names (grouping_as_cat.categories.tolist())
+    grouping_as_cat = grouping.astype('category').cat
+    
+    # =============================
+    # Plot studentized residuals vs. predicted values
+    # =============================
+    ax1 = ax_array_flat[0]
+    scatter = ax1.scatter(relevant_data['y_pred'], relevant_data['stand_resid'], c=grouping_as_cat.codes, cmap=cmap, alpha=0.5)
+    ax1.axhline(y=0, color='red', linestyle='--')
+    ax1.set_ylabel('Studentized Residuals')
+    ax1.set_xlabel('Predicted Values')
+    ax1.set_title('Scale-Location')
+    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
+    ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')  
+    
+    # =============================
+    # True Values vs. Predicted Values 
+    # =============================
+    ax2 = ax_array_flat[1]
+    scatter = ax2.scatter(relevant_data['y'], relevant_data['y_pred'], c=grouping_as_cat.codes, cmap=cmap, alpha=0.5)
+      
+    largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
+    smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
+    
+    plot_limits = [smallest_num - (0.02*largest_num), largest_num + (0.02*largest_num)]
+    ax2.set_xlim(plot_limits)
+    ax2.set_ylim(plot_limits)
+    ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
+    
+    #ax2.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
+    ax2.set_title('True Values vs. Predicted Values')
+    ax2.set_ylabel('Predicted Values')
+    ax2.set_xlabel('True Values')
+    ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup', 
+               handles=scatter.legend_elements()[0], labels=grouping_as_cat.categories.tolist())  
+    textbox_text = r'$R^2$: %0.3f' %lr_model.rsquared
+    ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right') 
+    
+    # Format and save figure
+    fig.suptitle('LR Model Performance (' + plot_title + ')', fontsize=24)
+    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+    if save_img:
+        save_filename = 'sm_lr_results_' + filename_unique
+        dh.save_image(save_filename, models_output_dir)
+    plt.show()
+
+    het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
+    return het_metrics
+
+
+
+def fit_lr_model_results_subgrouped2(fxn_X, fxn_y, plot_title, grouping=None, cmap=None, save_img=False, filename_unique=None):
+    # Fit model
+    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
+    
+    # Predict target
+    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
+    
+    # Plot results subgrouped, get heteroscedasticity metrics
+    het_results = sm_lr_model_results_subgrouped2(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, grouping=grouping, cmap=cmap, save_img=save_img, filename_unique=filename_unique)
+    
+    return fxn_lin_reg, fxn_y_pred, het_results
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Subgroup plots by smoking and obesity
 # Parameter lr_model must be a statsmodels linear regression model
@@ -481,11 +523,9 @@ def sm_results_to_df(summary):
 # Test for multicollinearity
 # =======================================================================================
 # Calculate VIF
-vif = calulate_vif(dataset, numerical_cols).to_frame()
+vif = dh.calulate_vif(dataset, numerical_cols).to_frame()
 
 # All very close to 1, no multicollinearity. (Greater than 5-10 indicates multicollinearity)
-# Row indeces normally not included in table image, so I inserted them as the first column
-vif.insert(0, 'Feature', vif.index)
 
 # Rename VIF columns
 vif.rename(columns={0:'VIF'}, inplace=True)
@@ -497,7 +537,7 @@ vif = np.round(vif, decimals=2)
 vif['VIF'] = vif['VIF'].map('{:,.2f}'.format)
 
 # Create table image
-dh.render_mpl_table(vif)
+dh.render_mpl_table(vif, index_col_name='Feature')
 #dh.save_image('vif_table', models_output_dir, dpi=600, bbox_inches='tight', pad_inches=0)
 plt.show()
 
@@ -542,7 +582,7 @@ het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=
 # Organize model performance metrics
 summary_df_0 = sm_results_to_df(sm_lin_reg_0.summary())
 coeff_0 = pd.Series(summary_df_0['coef'], name=model_name_0)
-sm_lr_results_0 = pd.Series(evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0), name=model_name_0)
+sm_lr_results_0 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0), name=model_name_0)
 
 # ==========================================================
 # Based on EDA, created dichotomous feature 'bmi_>=_30'
@@ -554,8 +594,8 @@ bmi_dict = {False:'no', True:'yes'}
 new_X_1['bmi_>=_30'] = new_X_1['bmi_>=_30'].map(bmi_dict)
 
 # Add the new feature to the columns lists (necessary for preprocessing)
-#categorical_cols.append('bmi_>=_30')
-#cat_ord_cols.append('bmi_>=_30')
+categorical_cols.append('bmi_>=_30')
+cat_ord_cols.append('bmi_>=_30')
 
 # Preprocess with new feature
 new_X_1 = manual_preprocess_sm(new_X_1)
@@ -573,11 +613,20 @@ sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X
 # Organize model performance metrics
 summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
 coeff_1 = pd.Series(summary_df_1['coef'], name=model_name_1)
-sm_lr_results_1 = pd.Series(evaluate_model_sm(y, sm_y_pred_1, sm_lin_reg_1), name=model_name_1)
+sm_lr_results_1 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_1, sm_lin_reg_1), name=model_name_1)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_0, coeff_1], axis=1)
 sm_results_df = pd.concat([sm_lr_results_0, sm_lr_results_1], axis=1)
+
+
+
+
+
+ob_smoke_series = create_obese_smoker_category(new_X_1)
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped2(new_X_1, y, title_1, grouping=ob_smoke_series, cmap=my_cmap, save_img=False, filename_unique=file_name_1)
+
+cmap='gist_rainbow'
 
 
 # ==========================================================
@@ -598,13 +647,28 @@ sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X
 # Organize model performance metrics
 summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
 coeff_2 = pd.Series(summary_df_2['coef'], name=model_name_2)
-sm_lr_results_2 = pd.Series(evaluate_model_sm(y, sm_y_pred_2, sm_lin_reg_2), name=model_name_2)
+sm_lr_results_2 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_2, sm_lin_reg_2), name=model_name_2)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_2], axis=1)
 sm_results_df = pd.concat([sm_results_df, sm_lr_results_2], axis=1)
 
 # Tried removing original 'bmi' feature, slightly worsened model performance
+
+
+
+# TRY WITH NEW FUNCTION
+
+
+    
+
+
+
+test_series = create_obese_smoker_category(new_X_2)
+
+sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped2(new_X_2, y, title_2, grouping=test_series, save_img=False, filename_unique=file_name_2)
+
+
 
 # ==========================================================
 # Age vs. Charges
@@ -623,7 +687,7 @@ sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X
 # Organize model performance metrics
 summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
 coeff_3 = pd.Series(summary_df_3['coef'], name=model_name_3)
-sm_lr_results_3 = pd.Series(evaluate_model_sm(y, sm_y_pred_3, sm_lin_reg_3), name=model_name_3)
+sm_lr_results_3 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_3, sm_lin_reg_3), name=model_name_3)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_3], axis=1)
@@ -650,7 +714,7 @@ sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X
 # Organize model performance metrics
 summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
 coeff_4 = pd.Series(summary_df_4['coef'], name=model_name_4)
-sm_lr_results_4 = pd.Series(evaluate_model_sm(y, sm_y_pred_4, sm_lin_reg_4), name=model_name_4)
+sm_lr_results_4 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_4, sm_lin_reg_4), name=model_name_4)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_4], axis=1)
@@ -872,26 +936,27 @@ plt.legend()
 # Scatterplots of numerical variables
 # =============================
 # Age vs. charges
-sns.lmplot(x='age', y='charges', hue="outlier", data=orig_data_w_outlier, ci=None, line_kws={'alpha':0}, legend=False) # LM plot just makes it easier to color by outlier
+#sns.lmplot(x='age', y='charges', hue="outlier", data=orig_data_w_outlier, ci=None, line_kws={'alpha':0}, legend=False) # LM plot just makes it easier to color by outlier
+sns.lmplot(x='age', y='charges', hue="outlier", data=orig_data_w_outlier, ci=None, fit_reg=False, legend=False) # LM plot just makes it easier to color by outlier
 plt.title("Age vs. Charges")
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title="Cook's Outlier")
 #dh.save_image('outliers_age_v_charges', models_output_dir)
 
 # Nonsmoker age vs. charges
 nonsmoker_outlier_df = orig_data_w_outlier[orig_data_w_outlier['smoker']=='no']
-sns.lmplot(x='age', y='charges', hue="outlier", data=nonsmoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False) # LM plot just makes it easier to color by outlier
+sns.lmplot(x='age', y='charges', hue="outlier", data=nonsmoker_outlier_df, ci=None, fit_reg=False, legend=False) # LM plot just makes it easier to color by outlier
 plt.title("Age vs. Charges in nonsmokers")
 #dh.save_image('outliers_age_v_charges_nonsmoker', models_output_dir)
 
 # Obese smoker age vs. charges
 ob_smoker_outlier_df = orig_data_w_outlier[(orig_data_w_outlier['smoker']=='yes') & (orig_data_w_outlier['bmi_>=_30']=='yes')]
-sns.lmplot(x='age', y='charges', hue="outlier", data=ob_smoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False)
+sns.lmplot(x='age', y='charges', hue="outlier", data=ob_smoker_outlier_df, ci=None, fit_reg=False, legend=False)
 plt.title("Age vs. Charges in obese smokers")
 #dh.save_image('outliers_age_v_charges_ob_smoker', models_output_dir)
 
 # Nonobese smoker age vs. charges
 nonob_smoker_outlier_df = orig_data_w_outlier[(orig_data_w_outlier['smoker']=='yes') & (orig_data_w_outlier['bmi_>=_30']=='no')]
-sns.lmplot(x='age', y='charges', hue="outlier", data=nonob_smoker_outlier_df, ci=None, line_kws={'alpha':0}, legend=False)
+sns.lmplot(x='age', y='charges', hue="outlier", data=nonob_smoker_outlier_df, ci=None, fit_reg=False, legend=False)
 plt.title("Age vs. Charges in obese smokers")
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title="Cook's Outlier")
 #dh.save_image('outliers_age_v_charges_nonob_smoker', models_output_dir)
@@ -899,11 +964,11 @@ plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title="C
 # In the next two graphs, the outliers are scattered around, there is no obvious grouping
 # Smoker bmi vs. charges
 smoker_outlier_df = orig_data_w_outlier[orig_data_w_outlier['smoker'] >= 'yes']
-sns.lmplot(x='bmi', y='charges', hue="outlier", data=smoker_outlier_df)#, ci=None, line_kws={'alpha':0})
+sns.lmplot(x='bmi', y='charges', hue="outlier", data=smoker_outlier_df)#, ci=None, fit_reg=False)
 plt.plot()
 
 # Children vs. charges
-sns.lmplot(x='children', y='charges', hue="outlier", data=orig_data_w_outlier)#, ci=None, line_kws={'alpha':0})
+sns.lmplot(x='children', y='charges', hue="outlier", data=orig_data_w_outlier)#, ci=None, fit_reg=False)
 plt.plot()
 
 # =============================
@@ -981,7 +1046,7 @@ sm_lin_reg_5, sm_y_pred_5, het_results_5 = fit_lr_model_results_subgrouped(no_ou
 # Organize model performance metrics
 summary_df_5 = sm_results_to_df(sm_lin_reg_5.summary())
 coeff_5 = pd.Series(summary_df_5['coef'], name=model_name_5)
-sm_lr_results_5 = pd.Series(evaluate_model_sm(no_outliers_y, sm_y_pred_5, sm_lin_reg_5), name=model_name_5)
+sm_lr_results_5 = pd.Series(dh.evaluate_model_sm(no_outliers_y, sm_y_pred_5, sm_lin_reg_5), name=model_name_5)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_5], axis=1)
@@ -1056,7 +1121,7 @@ sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results_subgrouped(no_ou
 # Organize model performance metrics
 summary_df_6 = sm_results_to_df(sm_lin_reg_6.summary())
 coeff_6 = pd.Series(summary_df_6['coef'], name=model_name_6)
-sm_lr_results_6 = pd.Series(evaluate_model_sm(no_outliers_y_2, sm_y_pred_6, sm_lin_reg_6), name=model_name_6)
+sm_lr_results_6 = pd.Series(dh.evaluate_model_sm(no_outliers_y_2, sm_y_pred_6, sm_lin_reg_6), name=model_name_6)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_6], axis=1)
