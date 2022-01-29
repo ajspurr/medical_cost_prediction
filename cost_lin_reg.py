@@ -25,7 +25,7 @@ from matplotlib import cm
 from matplotlib.colors import ListedColormap
 Set1 = cm.get_cmap('Set1', 8)
 tab10  = cm.get_cmap('tab10', 8)
-my_cmap = new_cmap3 = ListedColormap(np.vstack([tab10.colors[0:3],  Set1.colors[0]]))
+my_cmap = new_cmap3 = ListedColormap(np.vstack([tab10.colors[0:2],  Set1.colors[0], tab10.colors[2]]))
 
 # Read in data
 project_dir = PureWindowsPath(r"D:\GitHubProjects\medical_cost_prediction\\")
@@ -245,7 +245,7 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
 # Credits: 
     # https://datavizpyr.com/add-legend-to-scatterplot-colored-by-a-variable-with-matplotlib-in-python/
     # https://www.statology.org/matplotlib-scatterplot-legend/
-def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, grouping=None, cmap=None, save_img=False, filename_unique=None):
+def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, combine_plots=True, grouping=None, cmap=my_cmap, save_img=False, filename_unique=None):   
     # Organize relevant data
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
     y_pred_series = pd.Series(y_pred, name='y_pred')
@@ -261,33 +261,64 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, grou
     bp_lm_p_value = '{:0.2e}'.format(bp_test_results['LM-Test p-value'])
     white_lm_p_value = '{:0.2e}'.format(white_test_results['LM-Test p-value'])
     
-    # Format text box with relevant metric of each plot
-    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
-    
-    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
-    
     # Convert the grouping variable 'grouping' to a pandas.Categorical object so I can encode each 
     # category to a number (grouping_as_cat.codes) and save the associated category names (grouping_as_cat.categories.tolist())
-    grouping_as_cat = grouping.astype('category').cat
+    if grouping is not None:
+        grouping_as_cat = grouping.astype('category').cat
+        grouping_as_codes = grouping_as_cat.codes
+        grouping_categories = grouping_as_cat.categories.tolist()
+    else:
+        grouping_as_codes = None
+        grouping_categories = None
+        
+    # =============================
+    # Initialize plot formatting variables
+    # =============================
+    if combine_plots:
+        # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+        fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
+    
+    # Format text box with relevant metric of each plot
+    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
+
     
     # =============================
     # Plot studentized residuals vs. predicted values
     # =============================
-    ax1 = ax_array_flat[0]
-    scatter = ax1.scatter(relevant_data['y_pred'], relevant_data['stand_resid'], c=grouping_as_cat.codes, cmap=cmap, alpha=0.5)
-    ax1.axhline(y=0, color='red', linestyle='--')
+    if not combine_plots:
+        scatter1 = plt.scatter(relevant_data['y_pred'], relevant_data['stand_resid'], c=grouping_as_codes, cmap=cmap, alpha=0.5)
+        ax1 = plt.gca()
+    else:
+        ax1 = ax_array_flat[0]
+        ax1.scatter(relevant_data['y_pred'], relevant_data['stand_resid'], c=grouping_as_codes, cmap=cmap, alpha=0.5)
+    
+    #ax1 = ax_array_flat[0]
+    #scatter = ax1.scatter(relevant_data['y_pred'], relevant_data['stand_resid'], c=grouping_as_codes, cmap=cmap, alpha=0.5)
+    
+    ax1.axhline(y=0, color='darkblue', linestyle='--')
     ax1.set_ylabel('Studentized Residuals')
     ax1.set_xlabel('Predicted Values')
     ax1.set_title('Scale-Location')
     textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
     ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')  
+    if not combine_plots: 
+        if grouping is not None:
+            ax1.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup', 
+                       handles=scatter1.legend_elements()[0], labels=grouping_categories)  
+        plt.show()
     
     # =============================
     # True Values vs. Predicted Values 
     # =============================
-    ax2 = ax_array_flat[1]
-    scatter = ax2.scatter(relevant_data['y'], relevant_data['y_pred'], c=grouping_as_cat.codes, cmap=cmap, alpha=0.5)
+    if not combine_plots:
+        scatter2 = plt.scatter(relevant_data['y'], relevant_data['y_pred'], c=grouping_as_codes, cmap=cmap, alpha=0.5)
+        ax2 = plt.gca()
+    else:
+        ax2 = ax_array_flat[1]
+        scatter2 = ax2.scatter(relevant_data['y'], relevant_data['y_pred'], c=grouping_as_codes, cmap=cmap, alpha=0.5)
+    
+    #ax2 = ax_array_flat[1]
+    #scatter2 = ax2.scatter(relevant_data['y'], relevant_data['y_pred'], c=grouping_as_codes, cmap=cmap, alpha=0.5)
       
     largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
     smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
@@ -296,26 +327,82 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, grou
     ax2.set_xlim(plot_limits)
     ax2.set_ylim(plot_limits)
     ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
-    
     #ax2.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
+    
     ax2.set_title('True Values vs. Predicted Values')
     ax2.set_ylabel('Predicted Values')
     ax2.set_xlabel('True Values')
-    ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup', 
-               handles=scatter.legend_elements()[0], labels=grouping_as_cat.categories.tolist())  
+    if grouping is not None:
+        ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup', 
+                   handles=scatter2.legend_elements()[0], labels=grouping_categories)  
     textbox_text = r'$R^2$: %0.3f' %lr_model.rsquared
     ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right') 
+    if not combine_plots: plt.show()
     
+    # =============================
     # Format and save figure
-    fig.suptitle('LR Model Performance (' + plot_title + ')', fontsize=24)
-    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-    if save_img:
-        save_filename = 'sm_lr_results_' + filename_unique
-        dh.save_image(save_filename, models_output_dir)
-    plt.show()
+    # =============================
+    if combine_plots:
+        fig.suptitle('LR Model Performance (' + plot_title + ')', fontsize=24)
+        fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+        if save_img:
+            save_filename = 'sm_lr_results_' + filename_unique
+            dh.save_image(save_filename, models_output_dir)
+        plt.show()
 
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
+    
     return het_metrics
+
+
+
+
+
+
+
+
+
+
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, title_1, combine_plots=True, save_img=False, filename_unique=file_name_1)
+
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, title_1, combine_plots=False, save_img=False, filename_unique=file_name_1)
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped2(new_X_1, y, title_1, combine_plots=True, save_img=False, filename_unique=file_name_1)
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped2(new_X_1, y, title_1, combine_plots=False, subgroup=True, save_img=False, filename_unique=file_name_1)
+
+
+# Combine statsmodels linear regression model creation, fitting, and returning results    
+def fit_lr_model_results_subgrouped2(fxn_X, fxn_y, plot_title, combine_plots=True, subgroup=False, cmap=my_cmap, save_img=False, filename_unique=None):
+    # Fit model
+    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
+    
+    # Predict target
+    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
+    
+    if subgroup:
+        # Create new category that combines both smoking and obesity (obese smoker, obese nonsmoker, etc.)
+        ob_smoke_series = create_obese_smoker_category(fxn_X)
+    
+        # Plot results subgrouped, get heteroscedasticity metrics
+        het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, combine_plots=combine_plots,
+                                                 grouping=ob_smoke_series, cmap=cmap, save_img=save_img, filename_unique=filename_unique)
+    else:
+        het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, combine_plots=combine_plots,
+                                                 cmap=cmap, save_img=save_img, filename_unique=filename_unique)
+        
+    return fxn_lin_reg, fxn_y_pred, het_results
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Combine statsmodels linear regression model creation, fitting, and returning results    
 def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, save_img=False, filename_unique=None):
@@ -331,7 +418,7 @@ def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, save_img=
     return fxn_lin_reg, fxn_y_pred, het_results
 
 # Combine statsmodels linear regression model creation, fitting, and returning results    
-def fit_lr_model_results_subgrouped(fxn_X, fxn_y, plot_title, cmap=my_cmap, save_img=False, filename_unique=None):
+def fit_lr_model_results_subgrouped(fxn_X, fxn_y, plot_title, combine_plots=True, cmap=my_cmap, save_img=False, filename_unique=None):
     # Fit model
     fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
     
@@ -342,7 +429,8 @@ def fit_lr_model_results_subgrouped(fxn_X, fxn_y, plot_title, cmap=my_cmap, save
     ob_smoke_series = create_obese_smoker_category(fxn_X)
     
     # Plot results subgrouped, get heteroscedasticity metrics
-    het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, grouping=ob_smoke_series, cmap=cmap, save_img=save_img, filename_unique=filename_unique)
+    het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, combine_plots=combine_plots, 
+                                                 grouping=ob_smoke_series, cmap=cmap, save_img=save_img, filename_unique=filename_unique)
     
     return fxn_lin_reg, fxn_y_pred, het_results
 
