@@ -237,19 +237,15 @@ def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='',
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
     return het_metrics
 
-
-
-
-
-
-
-
-
-
+# Subgroup plots by smoking and obesity
+# Parameter lr_model must be a statsmodels linear regression model
+# Parameter plot_title will be added below the actual title in parentheses
+# Parameter filename_unique to be added to the end of the filename if saved
+# Returns heteroscedasticity metrics 'het_metrics'
 # Credits: 
     # https://datavizpyr.com/add-legend-to-scatterplot-colored-by-a-variable-with-matplotlib-in-python/
     # https://www.statology.org/matplotlib-scatterplot-legend/
-def sm_lr_model_results_subgrouped2(lr_model, X_data, y, y_pred, plot_title, grouping=None, cmap=None, save_img=False, filename_unique=None):
+def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, grouping=None, cmap=None, save_img=False, filename_unique=None):
     # Organize relevant data
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
     y_pred_series = pd.Series(y_pred, name='y_pred')
@@ -321,146 +317,6 @@ def sm_lr_model_results_subgrouped2(lr_model, X_data, y, y_pred, plot_title, gro
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
     return het_metrics
 
-
-
-def fit_lr_model_results_subgrouped2(fxn_X, fxn_y, plot_title, grouping=None, cmap=None, save_img=False, filename_unique=None):
-    # Fit model
-    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
-    
-    # Predict target
-    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
-    
-    # Plot results subgrouped, get heteroscedasticity metrics
-    het_results = sm_lr_model_results_subgrouped2(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, grouping=grouping, cmap=cmap, save_img=save_img, filename_unique=filename_unique)
-    
-    return fxn_lin_reg, fxn_y_pred, het_results
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Subgroup plots by smoking and obesity
-# Parameter lr_model must be a statsmodels linear regression model
-# Parameter plot_title will be added below the actual title in parentheses
-# Parameter filename_unique to be added to the end of the filename if saved
-# Returns heteroscedasticity metrics 'het_metrics'
-def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, save_img=False, filename_unique=None):
-    # Organize relevant data
-    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
-    #standardized_residuals = pd.DataFrame(lr_model.resid, columns=['stand_resid']) # to plot absolute residuals rather than studentized
-    y_pred_series = pd.Series(y_pred, name='y_pred')
-    y_series = pd.Series(y, name='y')
-    relevant_data = pd.concat([X_data[['bmi_>=_30_yes', 'smoker_yes']], y_series, y_pred_series, standardized_residuals], axis=1)
-
-    smoker_data = relevant_data[relevant_data['smoker_yes']==1]
-    nonsmoker_data = relevant_data[relevant_data['smoker_yes']==0]
-    smoker_obese_data = smoker_data[smoker_data['bmi_>=_30_yes']==1]
-    smoker_nonobese_data = smoker_data[smoker_data['bmi_>=_30_yes']==0]
-    nonsmoker_obese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30_yes']==1]
-    nonsmoker_nonobese_data = nonsmoker_data[nonsmoker_data['bmi_>=_30_yes']==0]
-    
-    # Quantify Heteroscedasticity using White test and Breusch-Pagan test
-    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
-    white_test = het_white(lr_model.resid, lr_model.model.exog)
-    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
-    bp_test_results = dict(zip(labels, bp_test))
-    white_test_results = dict(zip(labels, white_test))
-    bp_lm_p_value = '{:0.2e}'.format(bp_test_results['LM-Test p-value'])
-    white_lm_p_value = '{:0.2e}'.format(white_test_results['LM-Test p-value'])
-    
-    # Format text box with relevant metric of each plot
-    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
-    
-    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(12, 5))
-        
-    # =============================
-    # Plot studentized residuals vs. predicted values
-    # =============================
-    ax1 = ax_array_flat[0]
-    ax1.scatter(smoker_obese_data['y_pred'], smoker_obese_data['stand_resid'], alpha=0.5, label='obese smokers')
-    ax1.scatter(smoker_nonobese_data['y_pred'], smoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese smokers')
-    ax1.scatter(nonsmoker_obese_data['y_pred'], nonsmoker_obese_data['stand_resid'], alpha=0.5, label='obese nonsmokers')
-    ax1.scatter(nonsmoker_nonobese_data['y_pred'], nonsmoker_nonobese_data['stand_resid'], alpha=0.5, label='nonobese nonsmokers')
-    ax1.axhline(y=0, color='red', linestyle='--')
-    ax1.set_ylabel('Studentized Residuals')
-    ax1.set_xlabel('Predicted Values')
-    ax1.set_title('Scale-Location')
-    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
-    ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')  
-    
-    # =============================
-    # True Values vs. Predicted Values 
-    # =============================
-    ax2 = ax_array_flat[1]
-    ax2.scatter(smoker_obese_data['y'], smoker_obese_data['y_pred'], alpha=0.5, label='obese smokers')
-    ax2.scatter(smoker_nonobese_data['y'], smoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese smokers')
-    ax2.scatter(nonsmoker_obese_data['y'], nonsmoker_obese_data['y_pred'], alpha=0.5, label='obese nonsmokers')
-    ax2.scatter(nonsmoker_nonobese_data['y'], nonsmoker_nonobese_data['y_pred'], alpha=0.5, label='nonobese nonsmokers')
-    largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
-    smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
-    
-    plot_limits = [smallest_num - (0.02*largest_num), largest_num + (0.02*largest_num)]
-    ax2.set_xlim(plot_limits)
-    ax2.set_ylim(plot_limits)
-    ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
-    
-    #ax2.plot([smallest_num, largest_num], [smallest_num, largest_num], color='darkblue', linestyle='--')
-    ax2.set_title('True Values vs. Predicted Values')
-    ax2.set_ylabel('Predicted Values')
-    ax2.set_xlabel('True Values')
-    ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup')
-    textbox_text = r'$R^2$: %0.3f' %lr_model.rsquared
-    ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right') 
-    
-    # Format and save figure
-    fig.suptitle('LR Model Performance (' + plot_title + ')', fontsize=24)
-    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-    if save_img:
-        save_filename = 'sm_lr_results_' + filename_unique
-        dh.save_image(save_filename, models_output_dir)
-    plt.show()
-
-    het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
-    return het_metrics
-
 # Combine statsmodels linear regression model creation, fitting, and returning results    
 def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, save_img=False, filename_unique=None):
     # Fit model
@@ -475,15 +331,18 @@ def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, save_img=
     return fxn_lin_reg, fxn_y_pred, het_results
 
 # Combine statsmodels linear regression model creation, fitting, and returning results    
-def fit_lr_model_results_subgrouped(fxn_X, fxn_y, plot_title, save_img=False, filename_unique=None):
+def fit_lr_model_results_subgrouped(fxn_X, fxn_y, plot_title, cmap=my_cmap, save_img=False, filename_unique=None):
     # Fit model
     fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
     
     # Predict target
     fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
     
+    # Create new category that combines both smoking and obesity (obese smoker, obese nonsmoker, etc.)
+    ob_smoke_series = create_obese_smoker_category(fxn_X)
+    
     # Plot results subgrouped, get heteroscedasticity metrics
-    het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, save_img=save_img, filename_unique=filename_unique)
+    het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, grouping=ob_smoke_series, cmap=cmap, save_img=save_img, filename_unique=filename_unique)
     
     return fxn_lin_reg, fxn_y_pred, het_results
 
@@ -610,6 +469,7 @@ sm_lin_reg_1_0, sm_y_pred_1_0, het_results_1_0 = fit_lr_model_results(new_X_1, y
 file_name_1 = '1_bmi_30_feature_grouped'
 sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, title_1, save_img=False, filename_unique=file_name_1)
 
+
 # Organize model performance metrics
 summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
 coeff_1 = pd.Series(summary_df_1['coef'], name=model_name_1)
@@ -618,15 +478,6 @@ sm_lr_results_1 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_1, sm_lin_reg_1), 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_0, coeff_1], axis=1)
 sm_results_df = pd.concat([sm_lr_results_0, sm_lr_results_1], axis=1)
-
-
-
-
-
-ob_smoke_series = create_obese_smoker_category(new_X_1)
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped2(new_X_1, y, title_1, grouping=ob_smoke_series, cmap=my_cmap, save_img=False, filename_unique=file_name_1)
-
-cmap='gist_rainbow'
 
 
 # ==========================================================
@@ -654,21 +505,6 @@ coeff_df = pd.concat([coeff_df, coeff_2], axis=1)
 sm_results_df = pd.concat([sm_results_df, sm_lr_results_2], axis=1)
 
 # Tried removing original 'bmi' feature, slightly worsened model performance
-
-
-
-# TRY WITH NEW FUNCTION
-
-
-    
-
-
-
-test_series = create_obese_smoker_category(new_X_2)
-
-sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped2(new_X_2, y, title_2, grouping=test_series, save_img=False, filename_unique=file_name_2)
-
-
 
 # ==========================================================
 # Age vs. Charges
