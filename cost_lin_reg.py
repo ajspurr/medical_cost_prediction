@@ -91,44 +91,6 @@ def create_obese_smoker_category(X_df):
 # ====================================================================================================================
 # Data preprocessing function without using pipeline
 # ====================================================================================================================
-def manual_preprocess(X_train, X_valid):
-    # =============================
-    # Numerical preprocessing
-    # =============================
-    X_train_num = X_train[numerical_cols]
-    X_valid_num = X_valid[numerical_cols]
-    
-    # Imputation (Not relevant in this dataset, but keeping for future application)
-    #num_imputer = SimpleImputer(strategy='mean')
-    #imputed_X_train_num = pd.DataFrame(num_imputer.fit_transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
-    #imputed_X_valid_num = pd.DataFrame(num_imputer.transform(X_valid_num), columns=X_valid_num.columns, index=X_valid_num.index)
-    
-    # Scaling
-    ss = StandardScaler()
-    scaled_X_train_num = pd.DataFrame(ss.fit_transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
-    scaled_X_valid_num = pd.DataFrame(ss.transform(X_valid_num), columns=X_valid_num.columns, index=X_valid_num.index)
-    
-    # =============================
-    # Categorical preprocessing
-    # =============================
-    X_train_cat = X_train[categorical_cols]
-    X_valid_cat = X_valid[categorical_cols]
-    
-    # Imputation (Not relevant in this dataset, but keeping for future application)
-    #cat_imputer = SimpleImputer(strategy='most_frequent')
-    #imputed_X_train_cat = pd.DataFrame(cat_imputer.fit_transform(X_train_cat), columns=X_train_cat.columns, index=X_train_cat.index)
-    #imputed_X_valid_cat = pd.DataFrame(cat_imputer.transform(X_valid_cat), columns=X_valid_cat.columns, index=X_valid_cat.index)
-    
-    # One-hot encoding
-    OH_encoder = OneHotEncoder(handle_unknown='ignore', drop='first', sparse=False)
-    OH_cols_train = pd.DataFrame(OH_encoder.fit_transform(X_train_cat), index=X_train_cat.index, columns=OH_encoder.get_feature_names_out())
-    OH_cols_valid = pd.DataFrame(OH_encoder.transform(X_valid_cat), index=X_valid_cat.index, columns=OH_encoder.get_feature_names_out())
-    
-    # Add preprocessed categorical columns back to preprocessed numerical columns
-    X_train_processed = pd.concat([scaled_X_train_num, OH_cols_train], axis=1)
-    X_valid_processed = pd.concat([scaled_X_valid_num, OH_cols_valid], axis=1)
-    
-    return X_train_processed, X_valid_processed
 
 # Preprocessing of all indepedent variable data together (no train/test split) for use with statmodels (sm) data analysis
 def manual_preprocess_sm(X):
@@ -161,98 +123,54 @@ def manual_preprocess_sm(X):
 # =======================================================================================
 # Statsmodels functions
 # =======================================================================================
-# Plot standardized residuals vs. predicted values and true values vs. predicted values
-# Parameter filename_unique to be added to the end of the filename if saved
-# Parameter lr_model must be a statsmodels linear regression model
-# Can only save image if combining plots
-# Returns heteroscedasticity metrics 'het_metrics'
-def sm_lr_model_results(lr_model, y, y_pred, combine_plots=False, plot_title='', save_img=False, filename_unique=None): 
-    # Format text box for relevant metric of each plot
-    box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
-    
-    if combine_plots:
-        # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-        fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 5))
-    
-    # =============================
-    # Plot studentized residuals vs. predicted values
-    # =============================
-    standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal)
-    
-    # Calculate heteroscedasticity metrics
-    bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
-    white_test = het_white(lr_model.resid, lr_model.model.exog)
-    labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
-    bp_test_results = dict(zip(labels, bp_test)) 
-    white_test_results = dict(zip(labels, white_test))
-    bp_lm_p_value = '{:0.2e}'.format(bp_test_results['LM-Test p-value'])
-    white_lm_p_value = '{:0.2e}'.format(white_test_results['LM-Test p-value'])
-    
-    if not combine_plots:
-        plt.scatter(y_pred, standardized_residuals)
-        ax1 = plt.gca()
-    else:
-        ax1 = ax_array_flat[0]
-        ax1.scatter(y_pred, standardized_residuals) 
-        
-    ax1.axhline(y=0, color='darkblue', linestyle='--')
-    ax1.set_ylabel('Studentized Residuals')
-    ax1.set_xlabel('Predicted Values')
-    ax1.set_title('Scale-Location')
-    textbox_text = f'BP: {bp_lm_p_value} \n White: {white_lm_p_value}' 
-    ax1.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right')   
-    if not combine_plots: plt.show()
 
-    # =============================
-    # Plot True Values vs. Predicted Values
-    # =============================
-    if not combine_plots:
-        plt.scatter(y, y_pred)
-        ax2 = plt.gca()
-    else:
-        ax2 = ax_array_flat[1]
-        ax2.scatter(y, y_pred)
-        
-    largest_num = max(max(y), max(y_pred))
-    smallest_num = min(min(y), min(y_pred))
-    plot_limits = [smallest_num - (0.02*largest_num), largest_num + (0.02*largest_num)]
-    ax2.set_xlim(plot_limits)
-    ax2.set_ylim(plot_limits)
-    ax2.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax2.transAxes)
-    ax2.set_title('True Values vs. Predicted Values')
-    ax2.set_ylabel('Predicted Values')
-    ax2.set_xlabel('True Values')
-    textbox_text = r'$R^2$: %0.3f' %lr_model.rsquared
-    ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right',)    
-    if not combine_plots: plt.show()
+def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, combine_plots=True, 
+                                   grouping=None, cmap=my_cmap, save_img=False, filename_unique=None):      
+    """
+    Create Scale-Location Plot (studentized residuals vs. predicted values) and true values vs. predicted values plot
     
-    if combine_plots:
-        fig.suptitle('LR Model Performance (' + plot_title + ')', fontsize=24)
-        fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-        if save_img:
-            save_filename = 'sm_lr_results_' + filename_unique
-            dh.save_image(save_filename, models_output_dir)
-        plt.show()
-    
-    het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
-    return het_metrics
+    Credits:
+    https://datavizpyr.com/add-legend-to-scatterplot-colored-by-a-variable-with-matplotlib-in-python/
+    https://www.statology.org/matplotlib-scatterplot-legend/
 
-# Subgroup plots by smoking and obesity
-# Parameter lr_model must be a statsmodels linear regression model
-# Parameter plot_title will be added below the actual title in parentheses
-# Parameter filename_unique to be added to the end of the filename if saved
-# Returns heteroscedasticity metrics 'het_metrics'
-# Credits: 
-    # https://datavizpyr.com/add-legend-to-scatterplot-colored-by-a-variable-with-matplotlib-in-python/
-    # https://www.statology.org/matplotlib-scatterplot-legend/
-def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, combine_plots=True, grouping=None, cmap=my_cmap, save_img=False, filename_unique=None):   
+    Parameters
+    ----------
+    lr_model : statsmodels.regression.linear_model.OLS
+        statsmodels OLS model used.
+    X_data : Pandas DataFrame
+        Features and their values.
+    y : array_like (1-D)
+        Series of y-values (target) from original dataset.
+    y_pred : array_like (1-D)
+        Series of predicted y-values.
+    plot_title : string
+        String to be added to figure title (if combining plots).
+    combine_plots : boolean, optional
+        Whether or not to combine the two plots created. The default is True.
+    grouping : array_like (1-D), optional
+        If scatterplots are to be colored by a certain subcategory, this is the series with labels for each sample. The default is None.
+    cmap : matplotlib.colors.Colormap, optional
+        Colormap to be used if grouping plots. The default is my_cmap.
+    save_img : boolean, optional
+        Whether or not to save the image (can only save if combining). The default is False.
+    filename_unique : string, optional
+        Unique string to be added to 'sm_lr_results_' as the saved image file name. The default is None.
+
+    Returns
+    -------
+    het_metrics : Dictionary of dictionaries
+        Dictionary of dictionaries containing the heteroscedasticity metrics for both Breusch-Pagan test and White test.
+
+    """
+    
     # Organize relevant data
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
     y_pred_series = pd.Series(y_pred, name='y_pred')
     y_series = pd.Series(y, name='y')
-    relevant_data = pd.concat([X_data[['bmi_>=_30_yes', 'smoker_yes']], y_series, y_pred_series, standardized_residuals, grouping], axis=1)
-    
-    # Quantify Heteroscedasticity using White test and Breusch-Pagan test
+    #relevant_data = pd.concat([X_data[['bmi_>=_30_yes', 'smoker_yes']], y_series, y_pred_series, standardized_residuals, grouping], axis=1)
+    relevant_data = pd.concat([y_series, y_pred_series, standardized_residuals, grouping], axis=1)
+        
+    # Quantify Heteroscedasticity using Breusch-Pagan test and White test
     bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
     white_test = het_white(lr_model.resid, lr_model.model.exog)
     labels = ['LM Statistic', 'LM-Test p-value', 'F-Statistic', 'F-Test p-value']
@@ -281,7 +199,7 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, comb
     # Format text box with relevant metric of each plot
     box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
 
-    
+
     # =============================
     # Plot studentized residuals vs. predicted values
     # =============================
@@ -291,9 +209,6 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, comb
     else:
         ax1 = ax_array_flat[0]
         ax1.scatter(relevant_data['y_pred'], relevant_data['stand_resid'], c=grouping_as_codes, cmap=cmap, alpha=0.5)
-    
-    #ax1 = ax_array_flat[0]
-    #scatter = ax1.scatter(relevant_data['y_pred'], relevant_data['stand_resid'], c=grouping_as_codes, cmap=cmap, alpha=0.5)
     
     ax1.axhline(y=0, color='darkblue', linestyle='--')
     ax1.set_ylabel('Studentized Residuals')
@@ -316,9 +231,6 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, comb
     else:
         ax2 = ax_array_flat[1]
         scatter2 = ax2.scatter(relevant_data['y'], relevant_data['y_pred'], c=grouping_as_codes, cmap=cmap, alpha=0.5)
-    
-    #ax2 = ax_array_flat[1]
-    #scatter2 = ax2.scatter(relevant_data['y'], relevant_data['y_pred'], c=grouping_as_codes, cmap=cmap, alpha=0.5)
       
     largest_num = max(max(relevant_data['y']), max(relevant_data['y_pred']))
     smallest_num = min(min(relevant_data['y']), min(relevant_data['y_pred']))
@@ -355,23 +267,8 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, comb
     return het_metrics
 
 
-
-
-
-
-
-
-
-
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, title_1, combine_plots=True, save_img=False, filename_unique=file_name_1)
-
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, title_1, combine_plots=False, save_img=False, filename_unique=file_name_1)
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped2(new_X_1, y, title_1, combine_plots=True, save_img=False, filename_unique=file_name_1)
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped2(new_X_1, y, title_1, combine_plots=False, subgroup=True, save_img=False, filename_unique=file_name_1)
-
-
 # Combine statsmodels linear regression model creation, fitting, and returning results    
-def fit_lr_model_results_subgrouped2(fxn_X, fxn_y, plot_title, combine_plots=True, subgroup=False, cmap=my_cmap, save_img=False, filename_unique=None):
+def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, subgroup=False, cmap=my_cmap, save_img=False, filename_unique=None):
     # Fit model
     fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
     
@@ -381,58 +278,17 @@ def fit_lr_model_results_subgrouped2(fxn_X, fxn_y, plot_title, combine_plots=Tru
     if subgroup:
         # Create new category that combines both smoking and obesity (obese smoker, obese nonsmoker, etc.)
         ob_smoke_series = create_obese_smoker_category(fxn_X)
-    
+           
         # Plot results subgrouped, get heteroscedasticity metrics
         het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, combine_plots=combine_plots,
                                                  grouping=ob_smoke_series, cmap=cmap, save_img=save_img, filename_unique=filename_unique)
+    
     else:
         het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, combine_plots=combine_plots,
                                                  cmap=cmap, save_img=save_img, filename_unique=filename_unique)
         
     return fxn_lin_reg, fxn_y_pred, het_results
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Combine statsmodels linear regression model creation, fitting, and returning results    
-def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, save_img=False, filename_unique=None):
-    # Fit model
-    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
-    
-    # Predict target
-    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
-    
-    # Plot results, get heteroscedasticity metrics
-    het_results = sm_lr_model_results(fxn_lin_reg, fxn_y, fxn_y_pred, combine_plots=combine_plots, plot_title=plot_title, save_img=save_img, filename_unique=filename_unique)
-  
-    return fxn_lin_reg, fxn_y_pred, het_results
-
-# Combine statsmodels linear regression model creation, fitting, and returning results    
-def fit_lr_model_results_subgrouped(fxn_X, fxn_y, plot_title, combine_plots=True, cmap=my_cmap, save_img=False, filename_unique=None):
-    # Fit model
-    fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
-    
-    # Predict target
-    fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
-    
-    # Create new category that combines both smoking and obesity (obese smoker, obese nonsmoker, etc.)
-    ob_smoke_series = create_obese_smoker_category(fxn_X)
-    
-    # Plot results subgrouped, get heteroscedasticity metrics
-    het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, combine_plots=combine_plots, 
-                                                 grouping=ob_smoke_series, cmap=cmap, save_img=save_img, filename_unique=filename_unique)
-    
-    return fxn_lin_reg, fxn_y_pred, het_results
 
 # Convert statsmodels summary() output to pandas DataFrame
 def sm_results_to_df(summary):
@@ -514,22 +370,17 @@ X = dataset.drop(['charges'], axis=1)
 # This is to test for linear model assumptions in entire data set, will not perform train/test split
 sm_processed_X = manual_preprocess_sm(X)
 
-# Fit linear regression model
-sm_lin_reg_0 = sm.OLS(y, sm_processed_X).fit()
-
-# Make predictions
-sm_y_pred_0 = sm_lin_reg_0.predict(sm_processed_X)
-
-# Plot model
+# Fit and plot model
 title_0 = 'Original'
 model_name_0 = 'original'
 file_name_0 = '0_' + model_name_0
-het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=False, filename_unique=file_name_0)
+#het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=False, filename_unique=file_name_0)
+sm_lin_reg_0, sm_y_pred_0, het_results_0 = fit_lr_model_results(sm_processed_X, y,  plot_title=title_0, subgroup=False, save_img=False, filename_unique=file_name_0)
 
 # Organize model performance metrics
 summary_df_0 = sm_results_to_df(sm_lin_reg_0.summary())
 coeff_0 = pd.Series(summary_df_0['coef'], name=model_name_0)
-sm_lr_results_0 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0), name=model_name_0)
+sm_lr_results_0 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_0, sm_lin_reg_0, het_results_0), name=model_name_0)
 
 # ==========================================================
 # Based on EDA, created dichotomous feature 'bmi_>=_30'
@@ -551,12 +402,11 @@ new_X_1 = manual_preprocess_sm(new_X_1)
 title_1 = 'w [bmi>=30] feature'
 model_name_1 = '[bmi_>=_30]'
 file_name_1_0 = '1_bmi_30_feature'
-sm_lin_reg_1_0, sm_y_pred_1_0, het_results_1_0 = fit_lr_model_results(new_X_1, y, title_1, combine_plots=True, save_img=False, filename_unique=file_name_1_0)
+sm_lin_reg_1_0, sm_y_pred_1_0, het_results_1_0 = fit_lr_model_results(new_X_1, y, title_1, save_img=False, filename_unique=file_name_1_0)
 
 # Plot model with subgrouping
 file_name_1 = '1_bmi_30_feature_grouped'
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results_subgrouped(new_X_1, y, title_1, save_img=False, filename_unique=file_name_1)
-
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results(new_X_1, y, title_1, subgroup=True, save_img=False, filename_unique=file_name_1)
 
 # Organize model performance metrics
 summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
@@ -581,7 +431,7 @@ new_X_2['bmi*smoker'] = new_X_2['smoker_yes'] * new_X_2['bmi']
 title_2 = 'w [bmi*smoker] feature'
 model_name_2 = '[bmi*smoker]'
 file_name_2 = '2_smoke_bmi_feature'
-sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results_subgrouped(new_X_2, y, title_2, save_img=False, filename_unique=file_name_2)
+sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results(new_X_2, y, title_2, subgroup=True, save_img=False, filename_unique=file_name_2)
 
 # Organize model performance metrics
 summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
@@ -606,7 +456,7 @@ new_X_3['smoker*obese'] = new_X_3['smoker_yes'] * new_X_3['bmi_>=_30_yes']
 title_3 = 'w [smoker*obese] feature'
 model_name_3 = '[smoker*obese]'
 file_name_3 = '3_smoke_ob_feature'
-sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results_subgrouped(new_X_3, y, title_3, save_img=False, filename_unique=file_name_3)
+sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results(new_X_3, y, title_3, subgroup=True, save_img=False, filename_unique=file_name_3)
 
 # Organize model performance metrics
 summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
@@ -633,7 +483,7 @@ new_X_4['age^2'] = scaled_sq_ages
 title_4 = 'w [age^2] feature'
 model_name_4 = '[age^2]'
 file_name_4 = '4_age_sq_feature'
-sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results_subgrouped(new_X_4, y, title_4, save_img=False, filename_unique=file_name_4)
+sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results(new_X_4, y, title_4, subgroup=True, save_img=False, filename_unique=file_name_4)
 
 # Organize model performance metrics
 summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
@@ -661,17 +511,19 @@ plt.hist(sm_y_pred_4, bins=50, density=True, label='pred charges', alpha=0.5)
 plt.hist(y, bins=50, density=True, label='charges', alpha=0.5)
 plt.hist(sm_y_pred_4, bins=50, density=True, label='pred charges', alpha=0.5)
 plt.legend()
+
 # =======================================================================================
 # Compare coefficients before and after new features
 # =======================================================================================
-# =============================
-# Drop variables whose coefficients don't change much
-# =============================
-# Variables that don't change much: children, sex_male, all regions, const.
+
 # All features
 coeff_df_new = coeff_df.apply(pd.to_numeric)
 
-# Drop variables
+# =============================
+# Drop variables whose coefficients don't change much
+# =============================
+
+# Drop variables that don't change much: children, sex_male, all regions, const.
 drop_var = ['region_northwest', 'region_southeast', 'region_southwest', 'const']
 coeff_df_new = coeff_df_new.drop(drop_var, axis=0)
 
@@ -682,96 +534,29 @@ coeff_df_new = coeff_df_new.replace(np.nan, 0)
 orig_features_df = coeff_df_new.iloc[0:5]
 new_features_df = coeff_df_new.iloc[5:len(coeff_df_new.index)]
 
-# Plot combined
-fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=3, num_cols=1, figsize=(9, 13))
-
+# Separate smoker variable out from orig_features_df
 smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
-ax1 = ax_array_flat[0]
-for feature in smoker_df.index:
-    ax1.plot(smoker_df.columns, smoker_df.loc[feature].to_list(), label=feature, linewidth=3)
-ax1.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
-plt.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
-ax1.set_ylabel('Coefficient', fontsize=16)
-ax1.grid()
-
 orig_features_no_smoker = orig_features_df.drop(['smoker_yes'], axis=0)
-ax2 = ax_array_flat[1]
-for feature in orig_features_no_smoker.index:
-    ax2.plot(orig_features_no_smoker.columns, orig_features_no_smoker.loc[feature].to_list(), label=feature, linewidth=3)
-ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
-plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
-ax2.set_ylabel('Coefficient', fontsize=16)
-ax2.grid()
 
-ax3 = ax_array_flat[2]
-for feature in new_features_df.index:
-    ax3.plot(new_features_df.columns, new_features_df.loc[feature].to_list(), label=feature, linewidth=3)
-ax3.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Feature')
-plt.setp(ax3.get_xticklabels(), rotation=20, horizontalalignment='right')
-ax3.set_xlabel('Additional Features', fontsize=16)
-ax3.set_ylabel('Coefficient', fontsize=16)
-ax3.grid()
-
-fig.suptitle('Feature coeff w/ each additional feature', fontsize=24)
-fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'coeff_vert_5_no_outliers_2'
-#dh.save_image(save_filename, models_output_dir)
-plt.show()
-
+# Plot coefficients
+dh.plot_coefficient_df(smoker_df, orig_features_no_smoker, new_features_df)
 
 # =======================================================================================
 # Compare performance before and after new features
 # =======================================================================================
 
+# Convert values to numeric
 sm_results_df = sm_results_df.apply(pd.to_numeric)
 
-# Separate out metrics by scale
+# Separate out metrics by scale of their values
 all__error_mets = sm_results_df.loc[['max_e', 'rmse', 'mae', 'med_abs_e']]
 max_e_df = sm_results_df.loc['max_e'].to_frame().T
 error_metrics = sm_results_df.loc[['rmse', 'mae', 'med_abs_e']]
 r_metrics = sm_results_df.loc[['r2', 'r2_adj']]
 het_stats = sm_results_df.loc[['bp_lm_p', 'white_lm_p']]
 
-# Plot combined
-fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=2, num_cols=2, figsize=(12, 7))
-
-ax1 = ax_array_flat[0]
-df_to_plot = max_e_df
-for metric in df_to_plot.index:
-    ax1.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
-ax1.legend(loc='upper right', borderaxespad=0.5, title='Metric')
-plt.setp(ax1.get_xticklabels(), rotation=20, horizontalalignment='right')
-ax1.grid()
-
-ax2 = ax_array_flat[1]
-df_to_plot = error_metrics
-for metric in df_to_plot.index:
-    ax2.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
-ax2.legend(loc='upper right', borderaxespad=0.5, title='Metric')
-plt.setp(ax2.get_xticklabels(), rotation=20, horizontalalignment='right')
-ax2.grid()
-
-ax3 = ax_array_flat[2]
-df_to_plot = r_metrics
-for metric in df_to_plot.index:
-    ax3.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
-ax3.legend(loc='upper left', borderaxespad=0.5, title='Metric')
-plt.setp(ax3.get_xticklabels(), rotation=20, horizontalalignment='right')
-ax3.grid()
-
-ax4 = ax_array_flat[3]
-df_to_plot = het_stats
-for metric in df_to_plot.index:
-    ax4.plot(df_to_plot.columns, df_to_plot.loc[metric].to_list(), label=metric, linewidth=3)
-ax4.legend(loc='upper left', borderaxespad=0.5, title='Metric')
-plt.setp(ax4.get_xticklabels(), rotation=20, horizontalalignment='right')
-ax4.grid()
-
-fig.suptitle('LR Performance w/ each additional feature', fontsize=24)
-fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-#save_filename = 'performance_no_outliers_2'
-#dh.save_image(save_filename, models_output_dir)
-plt.show()
+# Plot model performance metrics
+dh.plot_model_metrics_df(max_e_df, error_metrics, r_metrics, het_stats)
 
 # =======================================================================================
 # Outlier Analysis
@@ -957,6 +742,10 @@ save_filename = 'perc_subcat_by_outlier'
 merge_newX_y = pd.concat([new_X_4, y, outlier_df['outlier']], axis=1)
 no_outliers_df = merge_newX_y[merge_newX_y['outlier']=='no']
 
+# Reset the index of the no_outliers_df DataFrame to allow for easier combination
+# with other series in future functions
+no_outliers_df.reset_index(drop=True, inplace=True)
+
 # Separate target from predictors
 no_outliers_y = no_outliers_df['charges']
 no_outliers_X = no_outliers_df.drop(['charges', 'outlier'], axis=1)
@@ -965,7 +754,8 @@ no_outliers_X = no_outliers_df.drop(['charges', 'outlier'], axis=1)
 title_5 = 'removed outliers'
 model_name_5 = 'no_out'
 file_name_5 = '5_no_outliers'
-sm_lin_reg_5, sm_y_pred_5, het_results_5 = fit_lr_model_results_subgrouped(no_outliers_X, no_outliers_y, title_5, save_img=False, filename_unique=file_name_5)
+sm_lin_reg_5, sm_y_pred_5, het_results_5 = fit_lr_model_results(no_outliers_X, no_outliers_y, title_5, subgroup=True, save_img=False, filename_unique=file_name_5)
+
 
 # Organize model performance metrics
 summary_df_5 = sm_results_to_df(sm_lin_reg_5.summary())
@@ -1032,6 +822,10 @@ plt.show()
 merge_newX_y_2 = pd.concat([no_outliers_X, no_outliers_y, outlier_df_5['outlier']], axis=1)
 no_outliers_df_2 = merge_newX_y_2[merge_newX_y_2['outlier']=='no']
 
+# Reset the index of the no_outliers_df DataFrame to allow for easier combination
+# with other series in future functions
+no_outliers_df_2.reset_index(drop=True, inplace=True)
+
 # Separate target from predictors
 no_outliers_y_2 = no_outliers_df_2['charges']
 no_outliers_X_2 = no_outliers_df_2.drop(['charges', 'outlier'], axis=1)
@@ -1040,7 +834,7 @@ no_outliers_X_2 = no_outliers_df_2.drop(['charges', 'outlier'], axis=1)
 title_6 = 'removed outliers x2'
 model_name_6 = 'no_out_2'
 file_name_6 = '6_no_outliers_2'
-sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results_subgrouped(no_outliers_X_2, no_outliers_y_2, title_6, save_img=False, filename_unique=file_name_6)
+sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results(no_outliers_X_2, no_outliers_y_2, title_6, subgroup=True, save_img=False, filename_unique=file_name_6)
 
 # Organize model performance metrics
 summary_df_6 = sm_results_to_df(sm_lin_reg_6.summary())
@@ -1337,7 +1131,7 @@ dh.save_image('charges_boxcox', models_output_dir, dpi=300, bbox_inches='tight',
 title_7 = 'box-cox charges'
 model_name_7 = 'normalized [charges]'
 file_name_7 = '7_bc_charges'
-sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results_subgrouped(new_X_7, y_bc, title_7, save_img=True, filename_unique=file_name_7)
+sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results(new_X_7, y_bc, title_7, subgroup=True, save_img=True, filename_unique=file_name_7)
 
 # Function combining normality tests and interpreting results
 normal_results7, normal_interpret7, nml_interpret_txt7 = dh.normality_tests(sm_lin_reg_7.resid_pearson)
@@ -1359,48 +1153,7 @@ plt.legend()
 # =============================
 
 
-# ====================================================================================================================
-# Back to sklearn models
-# ====================================================================================================================
 
-# ====================================================================================================================
-# Split and preprocess data
-# ====================================================================================================================
-# Separate target from predictors
-y = dataset['charges']
-X = dataset.drop(['charges'], axis=1)
-
-# Divide data into training and validation subsets
-X_train, X_valid, y_train, y_valid = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
-
-# Preprocess data
-X_train_processed, X_valid_processed = manual_preprocess(X_train, X_valid)
-
-# ====================================================================================================================
-# Initial modeling with sklearn Multiple Linear Regression
-# ====================================================================================================================
-
-# Fit linear regression model
-lin_reg = LinearRegression()
-fit = lin_reg.fit(X_train_processed, y_train)
-
-# Make predictions
-y_pred = lin_reg.predict(X_valid_processed)
-
-# Evaluate model
-lr_eval = evaluate_model_sk(y_valid, y_pred, 'lin_reg', 'LR')
-
-# =======================================================================================
-# Test multiple linear regression model assumptions
-# =======================================================================================
-
-
-
-# =============================
-# Other stuff
-# =============================
-lin_reg.coef_
-lin_reg.intercept_
 
 
 
