@@ -472,12 +472,8 @@ for i, dist_str in enumerate(loop_df.index):
     # '>' right-justifies, makes space for 3 digits
     print("{:>3} / {:<3}: {}".format(i+1, num_dists, dist_str))
     
-    # Get distribution parameters. Separate out 'loc', 'scale' and the shape parameters as that is how they are passed
-    # to scipy distribution functions
+    # Get distribution parameters
     params = loop_df.loc[dist_str]['param']
-    # loc = params[-2]
-    # scale = params[-1]
-    # shape_params = params[:-2]
     
     # Get GOF ranks to include in plots
     rank_values = complete_results_df.loc[dist_str][rank_column_names].tolist()
@@ -487,57 +483,20 @@ for i, dist_str in enumerate(loop_df.index):
     # Filename if plot is saved
     img_filename = f'ks_sorted_qqhist{i}_{dist_str}'
     
-    # Plot
-    # dh.compare_dist_plots (dist_str, loc, scale, shape_params, dataset['charges'], 'Charges', rank_str, bins=40,
-    #                     save_img=False, img_filename=img_filename, save_dir=dist_output_dir)
-
+    # Create SciPy distribution object based on dist_str
     dist_object = getattr(stats, dist_str)
+    
+    # Textbox in plot to include both shape parameters and GOF ranks
     textbox_text = 'Shape Params:\n' + dh.create_fit_param_str(dist_object, params) + '\n\nGOF Ranks: \n' + rank_str
-
+    
+    # Plot
     figure_title = f"Charges vs. {dist_str} distribution"
     dh.plot_qq_hist_dist_combined(my_data=dataset['charges'], my_data_str='Charges', dist_obj=dist_object, dist_str=dist_str,
                                    fit_params=params, bins=40, textbox_str=textbox_text, fig_title=figure_title, title_fontsize = 22, 
                                    figsize=(11, 5), save_img=False, img_filename=None, save_dir=None)
     
-    
-    
-
 # Dictionary comprehension option
 # param_dict1 = {k:'{:0.2f}'.format(v) for k,v in zip(param_names1, params1)}
-
-
-
-
-dist_str = 'gamma'
-dist_object = getattr(stats, dist_str)
-params = loop_df.loc[dist_str]['param']
-loc = params[-2]
-scale = params[-1]
-shape_params = params[:-2]
-
-rank_values = complete_results_df.loc[dist_str][rank_column_names].tolist()
-rank_list = ['{}: {:0.0f}'.format(k,v) for k,v in zip(rank_column_names, rank_values)]
-rank_str = '\n'.join(str(line) for line in rank_list)
-
-img_filename = f'ks_sorted_qqhist{i}_{dist_str}'
-
-dh.compare_dist_plots (dist_str, loc, scale, shape_params, dataset['charges'], 'Charges', rank_str, bins=40,
-                    save_img=False, img_filename=img_filename, save_dir=dist_output_dir)
-
-
-import ds_helper as dh
-# Include shape parameters
-
-textbox_text = 'Shape Params:\n' + dh.create_fit_param_str(dist_object, params) + '\n\nGOF Ranks: \n' + rank_str
-
-figure_title = f"Charges vs. {dist_str} distribution"
-dh.plot_qq_hist_dist_combined(my_data=dataset['charges'], my_data_str='Charges', dist_obj=dist_object, dist_str=dist_str,
-                               fit_params=params, bins=40, textbox_str=textbox_text, fig_title=figure_title, title_fontsize = 22, 
-                               figsize=(11, 5), save_img=False, img_filename=None, save_dir=None)
-
-
-
-
 
 # ==========================================================
 # Further exploration of nonsmokers and bimodal distribution of smokers
