@@ -61,10 +61,8 @@ cont_cols_w_target = cont_cols.copy()
 cont_cols_w_target.append('charges')
 
 # Create formatted columns dictionary in dh module
-custom_dict = {}
-custom_dict['bmi'] = 'BMI'
-custom_dict['bmi_>=_30'] = 'BMI >= 30'
-dh.create_formatted_cols_dict(dataset.columns, custom_dict)
+dh.create_formatted_cols_dict(dataset.columns)
+dh.add_edit_formatted_col('bmi', 'BMI')
 
 # ====================================================================================================================
 # Visualization helper functions
@@ -394,6 +392,7 @@ new_X_1['bmi_>=_30'] = new_X_1['bmi_>=_30'].map(bmi_dict)
 # Add the new feature to the columns lists (necessary for preprocessing)
 categorical_cols.append('bmi_>=_30')
 cat_ord_cols.append('bmi_>=_30')
+dh.add_edit_formatted_col('bmi_>=_30', 'BMI >= 30')
 
 # Preprocess with new feature
 new_X_1 = manual_preprocess_sm(new_X_1)
@@ -411,7 +410,7 @@ sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results(new_X_1, y, titl
 # Organize model performance metrics
 summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
 coeff_1 = pd.Series(summary_df_1['coef'], name=model_name_1)
-sm_lr_results_1 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_1, sm_lin_reg_1), name=model_name_1)
+sm_lr_results_1 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_1, sm_lin_reg_1, het_results_1), name=model_name_1)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_0, coeff_1], axis=1)
@@ -436,7 +435,7 @@ sm_lin_reg_2, sm_y_pred_2, het_results_2 = fit_lr_model_results(new_X_2, y, titl
 # Organize model performance metrics
 summary_df_2 = sm_results_to_df(sm_lin_reg_2.summary())
 coeff_2 = pd.Series(summary_df_2['coef'], name=model_name_2)
-sm_lr_results_2 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_2, sm_lin_reg_2), name=model_name_2)
+sm_lr_results_2 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_2, sm_lin_reg_2, het_results_2), name=model_name_2)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_2], axis=1)
@@ -461,7 +460,7 @@ sm_lin_reg_3, sm_y_pred_3, het_results_3 = fit_lr_model_results(new_X_3, y, titl
 # Organize model performance metrics
 summary_df_3 = sm_results_to_df(sm_lin_reg_3.summary())
 coeff_3 = pd.Series(summary_df_3['coef'], name=model_name_3)
-sm_lr_results_3 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_3, sm_lin_reg_3), name=model_name_3)
+sm_lr_results_3 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_3, sm_lin_reg_3, het_results_3), name=model_name_3)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_3], axis=1)
@@ -488,7 +487,7 @@ sm_lin_reg_4, sm_y_pred_4, het_results_4 = fit_lr_model_results(new_X_4, y, titl
 # Organize model performance metrics
 summary_df_4 = sm_results_to_df(sm_lin_reg_4.summary())
 coeff_4 = pd.Series(summary_df_4['coef'], name=model_name_4)
-sm_lr_results_4 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_4, sm_lin_reg_4), name=model_name_4)
+sm_lr_results_4 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_4, sm_lin_reg_4, het_results_4), name=model_name_4)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_4], axis=1)
@@ -645,7 +644,6 @@ plt.legend()
 # Scatterplots of numerical variables
 # =============================
 # Age vs. charges
-#sns.lmplot(x='age', y='charges', hue="outlier", data=orig_data_w_outlier, ci=None, line_kws={'alpha':0}, legend=False) # LM plot just makes it easier to color by outlier
 sns.lmplot(x='age', y='charges', hue="outlier", data=orig_data_w_outlier, ci=None, fit_reg=False, legend=False) # LM plot just makes it easier to color by outlier
 plt.title("Age vs. Charges")
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title="Cook's Outlier")
@@ -653,7 +651,7 @@ plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, title="C
 
 # Nonsmoker age vs. charges
 nonsmoker_outlier_df = orig_data_w_outlier[orig_data_w_outlier['smoker']=='no']
-sns.lmplot(x='age', y='charges', hue="outlier", data=nonsmoker_outlier_df, ci=None, fit_reg=False, legend=False) # LM plot just makes it easier to color by outlier
+sns.lmplot(x='age', y='charges', hue="outlier", data=nonsmoker_outlier_df, ci=None, fit_reg=False, legend=False) 
 plt.title("Age vs. Charges in nonsmokers")
 #dh.save_image('outliers_age_v_charges_nonsmoker', models_output_dir)
 
@@ -703,8 +701,7 @@ for col in cat_ord_cols:
     i+=1
 fig.suptitle('Percent Outliers in Each Subcategory', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-save_filename = 'perc_outlier_subcat'
-#dh.save_image(save_filename, models_output_dir)
+#dh.save_image('perc_outlier_subcat', models_output_dir)
 
 # Subcategory of 4 children has 15% outliers whereas basically all other subcategories range between 5-8%
 # You can also see in 'Categorical Variable Relationships with Target' figure that samples with 4 kids 
@@ -756,11 +753,10 @@ model_name_5 = 'no_out'
 file_name_5 = '5_no_outliers'
 sm_lin_reg_5, sm_y_pred_5, het_results_5 = fit_lr_model_results(no_outliers_X, no_outliers_y, title_5, subgroup=True, save_img=False, filename_unique=file_name_5)
 
-
 # Organize model performance metrics
 summary_df_5 = sm_results_to_df(sm_lin_reg_5.summary())
 coeff_5 = pd.Series(summary_df_5['coef'], name=model_name_5)
-sm_lr_results_5 = pd.Series(dh.evaluate_model_sm(no_outliers_y, sm_y_pred_5, sm_lin_reg_5), name=model_name_5)
+sm_lr_results_5 = pd.Series(dh.evaluate_model_sm(no_outliers_y, sm_y_pred_5, sm_lin_reg_5, het_results_5), name=model_name_5)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_5], axis=1)
@@ -839,7 +835,7 @@ sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results(no_outliers_X_2,
 # Organize model performance metrics
 summary_df_6 = sm_results_to_df(sm_lin_reg_6.summary())
 coeff_6 = pd.Series(summary_df_6['coef'], name=model_name_6)
-sm_lr_results_6 = pd.Series(dh.evaluate_model_sm(no_outliers_y_2, sm_y_pred_6, sm_lin_reg_6), name=model_name_6)
+sm_lr_results_6 = pd.Series(dh.evaluate_model_sm(no_outliers_y_2, sm_y_pred_6, sm_lin_reg_6, het_results_6), name=model_name_6)
 
 # Keep track of model performance for comparison later
 coeff_df = pd.concat([coeff_df, coeff_6], axis=1)
@@ -940,7 +936,7 @@ def my_qq(data, my_data_str='Residuals', dist_obj=stats.norm, fit_params=None, d
 
 # Plots a scipy distribution vs. histogram of my_data
 def hist_vs_dist_plot(my_data, my_data_str='Residuals', dist_obj=stats.norm, fit_params=None, dist_str='Normal Dist', 
-                      bins=200, ax=None, test_interp_str=None, save_img=False, img_filename=None):    
+                      bins=200, ax=None, textbox_str=None, save_img=False, img_filename=None):    
     
     if not fit_params:
         # Fit my data to dist_obj and get fit parameters
@@ -968,10 +964,10 @@ def hist_vs_dist_plot(my_data, my_data_str='Residuals', dist_obj=stats.norm, fit
     ax.set_title(f'{my_data_str} vs. {dist_str}', y=1.05)
     ax.set_xlabel(f'{my_data_str}')
     
-    if test_interp_str:
+    if textbox_str:
         # Add normality test interpretation text
         box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
-        ax.text(1.05, 0.99, test_interp_str, bbox=box_style, transform=ax.transAxes, verticalalignment='top', horizontalalignment='left') 
+        ax.text(1.05, 0.99, textbox_str, bbox=box_style, transform=ax.transAxes, verticalalignment='top', horizontalalignment='left') 
     
     
     ax.legend()
@@ -981,7 +977,7 @@ def hist_vs_dist_plot(my_data, my_data_str='Residuals', dist_obj=stats.norm, fit
 
 # Plot both qq and hist vs. dist plots in same figure
 def plot_qq_hist_dist_combined(my_data, my_data_str='Residuals', dist_obj=stats.norm, dist_str='Normal Dist', 
-                               bins=50, test_interp_str=None, fig_title=None, title_fontsize = 24, figsize=(10, 5), save_img=False, img_filename=None):
+                               bins=50, textbox_str=None, fig_title=None, title_fontsize = 24, figsize=(10, 5), save_img=False, img_filename=None):
     
     # Create figure, gridspec, list of axes/subplots mapped to gridspec location
     fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=figsize)
@@ -995,7 +991,7 @@ def plot_qq_hist_dist_combined(my_data, my_data_str='Residuals', dist_obj=stats.
     
     # Plot hist vs. dist, add to figure
     hist_vs_dist_plot(my_data, my_data_str=my_data_str, dist_obj=dist_obj, fit_params=fit_params, 
-                      dist_str=dist_str, bins=bins, ax=ax_array_flat[1], test_interp_str=test_interp_str)
+                      dist_str=dist_str, bins=bins, ax=ax_array_flat[1], textbox_str=textbox_str)
     
     # Figure title
     if fig_title:
@@ -1056,13 +1052,12 @@ normal_results4, normal_interpret4, nml_interpret_txt4 = dh.normality_tests(resi
 
 # Q-Q plot and Residual Histogram vs. Normal
 qqhist_filename_1 = 'qqhist1_orig'
-plot_qq_hist_dist_combined(resid4, fig_title='Residual Distribution', test_interp_str=nml_interpret_txt4, 
-                           save_img=False, img_filename=qqhist_filename_1)
+dh.plot_qq_hist_dist_combined(resid4, fig_title='Residual Distribution', textbox_str=nml_interpret_txt4, 
+                           save_img=False, img_filename=qqhist_filename_1, save_dir=models_output_dir)
 
 # Plot y and predicted y histograms
 plt.hist(y, bins=50, density=True, label='charges', alpha=0.5)
 plt.hist(sm_y_pred_4, bins=50, density=True, label='pred charges', alpha=0.5)
-plt.hist(resid4, bins=50, density=True, label='resid', alpha=0.5)
 plt.legend()
 
 # ==========================================================
@@ -1077,8 +1072,8 @@ normal_results5, normal_interpret5, nml_interpret_txt5 = dh.normality_tests(resi
 
 # Q-Q plot and Residual Histogram vs. Normal
 qqhist_filename_3 = 'qqhist3_outlier_1'
-plot_qq_hist_dist_combined(resid5, fig_title='Residual Dist After Outlier Removal',  test_interp_str=nml_interpret_txt5, 
-                           save_img=False, img_filename=qqhist_filename_3)
+dh.plot_qq_hist_dist_combined(resid5, fig_title='Residual Dist After Outlier Removal',  textbox_str=nml_interpret_txt5, 
+                           save_img=False, img_filename=qqhist_filename_3, save_dir=models_output_dir)
 
 
 # ==========================================================
@@ -1093,8 +1088,8 @@ normal_results6, normal_interpret6, nml_interpret_txt6 = dh.normality_tests(resi
 
 # Q-Q plot and Residual Histogram vs. Normal
 qqhist_filename_4 = 'qqhist4_outlier_2'
-plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Removal x2', test_interp_str=nml_interpret_txt6,
-                           save_img=False, img_filename=qqhist_filename_4)
+dh.plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Removal x2', textbox_str=nml_interpret_txt6,
+                           save_img=False, img_filename=qqhist_filename_4, save_dir=models_output_dir)
 
 
 # ==========================================================
@@ -1125,7 +1120,7 @@ y_bc, lambd = stats.boxcox(y)
 sns.distplot(y_bc, bins=50)
 plt.title('Charges Box-Cox Transformed', fontsize=20, y=1.04)
 plt.xlabel('charges')
-dh.save_image('charges_boxcox', models_output_dir, dpi=300, bbox_inches='tight', pad_inches=0.1)
+#dh.save_image('charges_boxcox', models_output_dir, dpi=300, bbox_inches='tight', pad_inches=0.1)
 
 # Plot model
 title_7 = 'box-cox charges'
@@ -1138,8 +1133,8 @@ normal_results7, normal_interpret7, nml_interpret_txt7 = dh.normality_tests(sm_l
 
 # Q-Q plot and Residual Histogram vs. Normal
 qqhist_filename_2 = 'qqhist2_boxcox_y'
-plot_qq_hist_dist_combined(sm_lin_reg_7.resid_pearson, fig_title='Residual Dist After Normalizing Target', 
-                           test_interp_str=nml_interpret_txt7, save_img=False, img_filename=qqhist_filename_2)
+dh.plot_qq_hist_dist_combined(sm_lin_reg_7.resid_pearson, fig_title='Residual Dist After Normalizing Target', 
+                           textbox_str=nml_interpret_txt7, save_img=False, img_filename=qqhist_filename_2, save_dir=models_output_dir)
 
 # Plot y and predicted y histograms
 plt.hist(y_bc, bins=50, density=True, label='charges transformed', alpha=0.5)
