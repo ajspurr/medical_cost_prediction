@@ -538,8 +538,9 @@ drop_var = ['region_northwest', 'region_southeast', 'region_southwest', 'const']
 coeff_df_new = coeff_df_new.drop(drop_var, axis=0)
 
 # Separate new and old features
-orig_features_df = coeff_df_new.iloc[0:5]
-new_features_df = coeff_df_new.iloc[5:len(coeff_df_new.index)]
+num_orig_feat_left = 5
+orig_features_df = coeff_df_new.iloc[0:num_orig_feat_left]
+new_features_df = coeff_df_new.iloc[num_orig_feat_left:len(coeff_df_new.index)]
 
 # Separate smoker variable out from orig_features_df as its scale is much larger
 smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
@@ -621,17 +622,36 @@ orig_features_no_smoker = orig_features_df.drop(['smoker_yes'], axis=0)
 # Plot coefficients
 dh.plot_coefficient_df(smoker_df, orig_features_no_smoker, new_features_df)
 
-
 # =============================
-# Drop a few of the mostly-static coefficients
+# Drop coefficients of variables I just removed as they will all be zero anyway
 # =============================
-# Drop variables that don't change much: children, sex_male, all regions, const.
-drop_var = ['region_northwest', 'region_southeast', 'region_southwest', 'const']
+# Drop coefficients of variables I just removed as they will all be zero anyway
+drop_var = ['age', 'bmi', 'bmi_>=_30_yes']
 coeff_df_new = coeff_df_new.drop(drop_var, axis=0)
 
 # Separate new and old features
-orig_features_df = coeff_df_new.iloc[0:5]
-new_features_df = coeff_df_new.iloc[5:len(coeff_df_new.index)]
+num_orig_feat_left = 7
+orig_features_df = coeff_df_new.iloc[0:num_orig_feat_left]
+new_features_df = coeff_df_new.iloc[num_orig_feat_left:len(coeff_df_new.index)]
+
+# Separate smoker variable out from orig_features_df as its scale is much larger
+smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
+orig_features_no_smoker = orig_features_df.drop(['smoker_yes'], axis=0)
+
+# Plot coefficients
+dh.plot_coefficient_df(smoker_df, orig_features_no_smoker, new_features_df)
+
+# =============================
+# Now that I dropped old features, I can just remove the constant, and the scales will work out well
+# =============================
+# Drop variables that don't change much: children, sex_male, all regions, const.
+drop_var = ['const']
+coeff_df_new = coeff_df_new.drop(drop_var, axis=0)
+
+# Separate new and old features
+num_orig_feat_left = 6
+orig_features_df = coeff_df_new.iloc[0:num_orig_feat_left]
+new_features_df = coeff_df_new.iloc[num_orig_feat_left:len(coeff_df_new.index)]
 
 # Separate smoker variable out from orig_features_df as its scale is much larger
 smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
