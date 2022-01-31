@@ -81,25 +81,36 @@ I used Correlation Ratio to measure the association betwee numerical and categor
 
 # Model Building: Multiple Linear Regression
 
-In [LinearRegression.md](/LinearRegression.md), I go through each assumption of Multiple Linear Regression in great detail, tracking model performance with each change in make and plotting relevant relationships within the data. Below I list each assumption and how I tested for it. For multicollinearity, 
+In [LinearRegression.md](/LinearRegression.md), I go through each assumption of Multiple Linear Regression in great detail, tracking model performance with each change in make and plotting relevant relationships within the data. Below I summarize how I tested each assumption and the process I used if the assumption was not true.
 
-## Assumptions of Multiple Linear Regression
-1. No multicollinearity between predictor variables
-    - I used Variance Inflation Factor (VIF) and found no evidence of multicollinearity.
-2. Linear relationship between each predictor variable and target variable
-    - I went through each numerical variable, plotted its relationship with the target, subgrouped by multiple categories, etc., all to find linear relationships, transform non-linear relationships, and take into account subsections of the  data where no relationship is present. 
-    - Through this process, I created new features: [bmi\*smoker], [smoker\*obese], and [age^2], and removed their original features: bmi, age, and bmi>=30. 
-3. Multivariate normality - **residuals** of the model are normally distributed
-    - While I understand this is not as important in machine learning prediction models as it is in statistical inference models, I worked through this process for the sake of learning. 
-    - I performed multiple normality tests on the residuals of my models throughout the process: Shapiro-Wilk, D'Agostino's K-squared, Chi-Square, Jarque–Bera, Kolmogorov-Smirnov, Lilliefors, and Anderson-Darling. 
-    - The residuals were not normal before or after I added new features. 
-      - I attempted to fix this by transforming the non-normal target using Box-Cox, log transform, square-root transform, and cube-root transform. They all caused the residual distribution to appear more normal in Q-Q plots, but none affected the normality tests, and all of them significantly worsened model performance. 
-      - My second attempt to fix non-normal residuals was outlier removal. I used Cook's distance to identify outliers and after extensive exploration found no pattern to the outliers nor any relationship to any of the numerical or categorical variables, other than they were related to the visual outliers in the Age vs. Charges plots. 
-      - While I don't think this process or outcome is realistic, as this data is artificial, after removing outliers (8.9% of the data) I achieved a perfect model with an adjusted R-squared of 1. 
-4. Homoscedasticity
-    - I used the Breusch-Pagan Test and White Test for Heteroscedasticity throughout the process, visualizing it in Scale-Location plots (predicted values vs. studentized residuals)
-    - Heteroscedasticity was present in the initial model, but homoscedasticity was achieved after the second new feature was created. 
-5. Observations are independent, i.e. no autocorrelation (not relevant as this is not time series data)
+### Assumption #1: No Multicollinearity Between Predictor Variables
+- I used Variance Inflation Factor (VIF) and found no evidence of multicollinearity.
+### Assumption #2: Linear Relationship Between Predictors and Target Variable
+- I went through each numerical variable, plotted its relationship with the target, subgrouped by multiple categories, etc., all to find linear relationships, transform non-linear relationships, and take into account subsections of the  data where no relationship is present. 
+- Through this process, I created new features: [bmi\*smoker], [smoker\*obese], and [age^2], and removed their original features: bmi, age, and bmi>=30. 
+
+<p align="center"><img src="/output/models/sm_lr_results_0_original.png" width="600"/></p>
+<p align="center"><img src="/output/models/sm_lr_results_4_age_sq_feature.png" width="700"/></p>
+<p align="center"><img src="/output/models/performance_new_feat.png" width="600"/></p>
+
+### Assumption #3: Multivariate normality (residuals of the model are normally distributed)
+- While I understand this is not as important in machine learning prediction models as it is in statistical inference models, I worked through this process for the sake of learning. 
+- I performed multiple normality tests on the residuals of my models throughout the process: Shapiro-Wilk, D'Agostino's K-squared, Chi-Square, Jarque–Bera, Kolmogorov-Smirnov, Lilliefors, and Anderson-Darling. 
+- The residuals were not normal before or after I added new features. 
+  - I attempted to fix this by transforming the non-normal target using Box-Cox, log transform, square-root transform, and cube-root transform. They all caused the residual distribution to appear more normal in Q-Q plots, but none affected the normality tests, and all of them significantly worsened model performance. 
+  - My second attempt to fix non-normal residuals was outlier removal. I used Cook's distance to identify outliers and after extensive exploration found no pattern to the outliers nor any relationship to any of the numerical or categorical variables, other than they were related to the visual outliers in the Age vs. Charges plots. 
+  - While I don't think this process or outcome is realistic, as this data is artificial, after removing outliers (8.9% of the data) I achieved a perfect model with an adjusted R-squared of 1. 
+
+<p align="center"><img src="/output/models/qqhist1_orig.png" width="800"/></p>
+<p align="center"><img src="/output/models/outliers_age_v_charges_nonob_smoker.png" width="350"/></p>
+<p align="center"><img src="/output/models/qqhist4_outlier_2.png" width="800"/></p>
+<p align="center"><img src="/output/models/sm_lr_results_6_no_outliers_2.png" width="800"/></p>
+
+### Assumption #4: Homoscedasticity
+  - I used the Breusch-Pagan Test and White Test for Heteroscedasticity throughout the process, visualizing it in Scale-Location plots (predicted values vs. studentized residuals)
+  - Heteroscedasticity was present in the initial model, but homoscedasticity was achieved after the second new feature was created. 
+### Observations are independent, i.e. no autocorrelation 
+- Not relevant as this is not time series data.
 
 
 To test for these assumptions, I used package 'statsmodels' (as opposed to 'sklearn') to build a multiple linear regression model, as it offers a more robust set of statistical tests. I'd like to visualize the progression of the accuracy of the model as I correct any deviation from the above assumptions. So, I'll start by fitting all the data (no test/train split) to a multiple linear regression model: 
