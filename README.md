@@ -236,7 +236,7 @@ Outlier data subcategory composition not very different than rest of data.
 
 <p align="center"><img src="/output/models/perc_subcat_by_outlier.png" width="900"/></p>
 
-So far there is nothing I found that could categorize or explain the outliers other than the fact that they map well to the Charges vs. Age plot. If this were real-world data, at this point I would investigate how samples were selected and how the data was collected and input into the dataset. This would allow me to identify any systematic biases in sample selection or potential for data collection or data-entry mistakes. But with this artificial data, I will just remove the outliers so I can compare the model performance before and after. As you can seem below, this did not improve the distribution of the residuals much, but it grealy improved  model performance. 
+So far there is nothing I found that could categorize or explain the outliers other than the fact that they map well to the Charges vs. Age plot. If this were real-world data, at this point I would investigate how samples were selected and how the data was collected and input into the dataset. This would allow me to identify any systematic biases in sample selection or potential for data collection or data-entry mistakes. But with this artificial data, I will just remove the outliers so I can compare the model performance before and after. As you can seem below, this did not improve the distribution of the residuals much (in fact, this time it failed the Chi-Square Test for normality), but it grealy improved model performance. 
 
 <p align="center"><img src="/output/models/qqhist3_outlier_1.png" width="800"/></p>
 
