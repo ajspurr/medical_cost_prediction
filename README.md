@@ -78,7 +78,7 @@ I used Correlation Ratio to measure the association betwee numerical and categor
 
 # Model Building: Multiple Linear Regression
 
-In [LinearRegression.md](/LinearRegression.md), I go through each assumption of Multiple Linear Regression in great detail, tracking model performance with each change I make and plotting relevant relationships within the data. Below I summarize how I tested each assumption and the process I used if the assumption was not true.
+In [LinearRegression.md](/LinearRegression.md), I go through each assumption of Multiple Linear Regression in great detail, tracking model performance with each change I make and plotting relevant relationships within the data. It is a more of a classical statistics approach than a conventional machine learning approach. Below I summarize how I tested for each assumption and the process I used if the assumption was not true.
 
 ### Assumption #1: No Multicollinearity Between Predictor Variables
 - I used Variance Inflation Factor (VIF) and found no evidence of multicollinearity.
