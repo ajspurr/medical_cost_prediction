@@ -81,7 +81,7 @@ def create_obese_smoker_category(X_df):
     ]
     
     category_names = ['obese smokers', 'nonobese smokers', 'obese nonsmokers', 'nonobese nonsmokers']
-    return pd.Series(np.select(conditions, category_names))  
+    return pd.Series(np.select(conditions, category_names), name='grouping')  
   
 # ====================================================================================================================
 # Data preprocessing function without using pipeline
@@ -162,7 +162,11 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, comb
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
     y_pred_series = pd.Series(y_pred, name='y_pred')
     y_series = pd.Series(y, name='y')
-    relevant_data = pd.concat([y_series, y_pred_series, standardized_residuals, grouping], axis=1)
+    
+    # Changed join to 'inner' as the 'grouping' parameter may be larger than other variables like 'y_series'. 'grouping'
+    # may have been created before removing certain samples, like outliers. Join='inner' maps the grouping index to the 
+    # y_series index
+    relevant_data = pd.concat([y_series, y_pred_series, standardized_residuals, grouping], axis=1, join='inner')
         
     # Quantify Heteroscedasticity using Breusch-Pagan test and White test
     bp_test = het_breuschpagan(lr_model.resid, lr_model.model.exog)
@@ -176,6 +180,7 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, comb
     # Convert the grouping variable 'grouping' to a pandas.Categorical object so I can encode each 
     # category to a number (grouping_as_cat.codes) and save the associated category names (grouping_as_cat.categories.tolist())
     if grouping is not None:
+        grouping = relevant_data['grouping']
         grouping_as_cat = grouping.astype('category').cat
         grouping_as_codes = grouping_as_cat.codes
         grouping_categories = grouping_as_cat.categories.tolist()
@@ -401,7 +406,7 @@ sm_lin_reg_1_0, sm_y_pred_1_0, het_results_1_0 = fit_lr_model_results(new_X_1, y
 
 # Plot model with subgrouping
 file_name_1 = '1_bmi_30_feature_grouped'
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results(new_X_1, y, title_1, subgroup=False, save_img=False, filename_unique=file_name_1)
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results(new_X_1, y, title_1, subgroup=True, save_img=False, filename_unique=file_name_1)
 
 # Organize model performance metrics
 summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
@@ -658,7 +663,7 @@ smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
 orig_features_no_smoker = orig_features_df.drop(['smoker_yes'], axis=0)
 
 # Plot coefficients
-dh.plot_coefficient_df(smoker_df, orig_features_no_smoker, new_features_df)
+dh.plot_coefficient_df(smoker_df, orig_features_no_smoker, new_features_df, save_img=False, filename='coeff_vert_6_rem_old_var', save_dir=models_output_dir)
 
 # =======================================================================================
 # Compare performance before and after removing old features
@@ -675,8 +680,7 @@ r_metrics = sm_results_df.loc[['r2', 'r2_adj']]
 het_stats = sm_results_df.loc[['bp_lm_p', 'white_lm_p']]
 
 # Plot model performance metrics
-dh.plot_model_metrics_df(max_e_df, error_metrics, r_metrics, het_stats)
-
+dh.plot_model_metrics_df(max_e_df, error_metrics, r_metrics, het_stats, save_img=False, filename='performance_no_outliers', save_dir=models_output_dir)
 
 # =======================================================================================
 # Outlier Analysis
@@ -688,21 +692,22 @@ dh.plot_model_metrics_df(max_e_df, error_metrics, r_metrics, het_stats)
 # ==========================================================
 # Identify Outliers
 # ==========================================================
-inf = influence(sm_lin_reg_4)
+#inf = influence(sm_lin_reg_4)
+inf = influence(sm_lin_reg_4_2)
 (cooks, d) = inf.cooks_distance
-cooks_cutoff = 4 / (len(cooks) - (new_X_4.shape[1] - 1) - 1) # 0.00301
+cooks_cutoff = 4 / (len(cooks) - (new_X_4_2.shape[1] - 1) - 1) # 0.00301
 
-outlier_df = new_X_4.copy()
+outlier_df = new_X_4_2.copy()
 outlier_df['cooks'] = cooks
 outlier_df['outlier'] = outlier_df['cooks'] > cooks_cutoff
 outlier_dict = {False:'no', True:'yes'}
 outlier_df['outlier'] = outlier_df['outlier'].map(outlier_dict)
 
-num_outliers = outlier_df[outlier_df['outlier'] == 'yes'].shape[0] # 90
-perc_outliers = num_outliers / outlier_df.shape[0] # 0.0672
+num_outliers = outlier_df[outlier_df['outlier'] == 'yes'].shape[0] # 90 -> 85 after removing old variables
+perc_outliers = num_outliers / outlier_df.shape[0] # 0.0672 -> 0.0635 after removing old variables
 outlier_df['true_values'] = y
-outlier_df['y_pred'] = sm_y_pred_4
-outlier_df['stud_resid'] = sm_lin_reg_4.get_influence().resid_studentized_internal
+outlier_df['y_pred'] = sm_y_pred_4_2
+outlier_df['stud_resid'] = sm_lin_reg_4_2.get_influence().resid_studentized_internal
 
 # Visualize Cook's Distances
 plt.title("Cook's Distance Plot")
@@ -827,7 +832,7 @@ fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text over
 # Subcategory of 4 children has 15% outliers whereas basically all other subcategories range between 5-8%
 # You can also see in 'Categorical Variable Relationships with Target' figure that samples with 4 kids 
 # have a different distribution than the rest
-# However, that only represents 4 outlieres out of 90, so unsurprisingly, further exploration didn't lead anywhere
+# However, that only represents 4 outliers out of 85, so unsurprisingly, further exploration didn't lead anywhere
 
 
 # Inverse of the above graph
@@ -857,12 +862,13 @@ save_filename = 'perc_subcat_by_outlier'
 # ==========================================================
 # Remove outliers and compare models
 # ==========================================================
-merge_newX_y = pd.concat([new_X_4, y, outlier_df['outlier']], axis=1)
+merge_newX_y = pd.concat([new_X_4_2, y, outlier_df['outlier']], axis=1)
 no_outliers_df = merge_newX_y[merge_newX_y['outlier']=='no']
 
 # Reset the index of the no_outliers_df DataFrame to allow for easier combination
 # with other series in future functions
-no_outliers_df.reset_index(drop=True, inplace=True)
+# Don't need this anymore as I changed the pd.concat in sm_lr_model_results_subgrouped() to use an inner join
+# no_outliers_df.reset_index(drop=True, inplace=True)
 
 # Separate target from predictors
 no_outliers_y = no_outliers_df['charges']
@@ -872,7 +878,9 @@ no_outliers_X = no_outliers_df.drop(['charges', 'outlier'], axis=1)
 title_5 = 'removed outliers'
 model_name_5 = 'no_out'
 file_name_5 = '5_no_outliers'
-sm_lin_reg_5, sm_y_pred_5, het_results_5 = fit_lr_model_results(no_outliers_X, no_outliers_y, title_5, subgroup=True, save_img=False, filename_unique=file_name_5)
+sm_lin_reg_5, sm_y_pred_5, het_results_5 = fit_lr_model_results(no_outliers_X, no_outliers_y, title_5, 
+                                                                subgroup=True, ob_smoke_series=ob_smoke_series, 
+                                                                save_img=False, filename_unique=file_name_5)
 
 # Organize model performance metrics
 summary_df_5 = sm_results_to_df(sm_lin_reg_5.summary())
@@ -893,7 +901,7 @@ sm_results_df = pd.concat([sm_results_df, sm_lr_results_5], axis=1)
 # ==========================================================
 inf_5 = influence(sm_lin_reg_5)
 (cooks_5, d) = inf_5.cooks_distance
-cooks_cutoff_5 = 4 / (len(cooks_5) - (no_outliers_X.shape[1] - 1) - 1) # 0.00323
+cooks_cutoff_5 = 4 / (len(cooks_5) - (no_outliers_X.shape[1] - 1) - 1) # 0.00322
 
 outlier_df_5 = no_outliers_X.copy()
 outlier_df_5['cooks'] = cooks_5
@@ -901,19 +909,19 @@ outlier_df_5['outlier'] = outlier_df_5['cooks'] > cooks_cutoff_5
 outlier_dict = {False:'no', True:'yes'}
 outlier_df_5['outlier'] = outlier_df_5['outlier'].map(outlier_dict)
 
-num_outliers_5 = outlier_df_5[outlier_df_5['outlier'] == 'yes'].shape[0] # 29
-perc_outliers_5 = num_outliers_5 / outlier_df_5.shape[0] # 0.0232
+num_outliers_5 = outlier_df_5[outlier_df_5['outlier'] == 'yes'].shape[0] # 29 -> 34 after removing old variables (still 119 total)
+perc_outliers_5 = num_outliers_5 / outlier_df_5.shape[0] # 0.0232 -> 0.0271 after removing old variables
 outlier_df_5['true_values'] = y
 outlier_df_5['y_pred'] = sm_y_pred_5
 outlier_df_5['stud_resid'] = sm_lin_reg_5.get_influence().resid_studentized_internal
 
-# Visualiz Cook's Distances
+# Visualize Cook's Distances
 plt.title("Cook's Distance Plot (#2)")
 plt.stem(range(len(cooks_5)), cooks_5, markerfmt=",")
 plt.plot([0, len(cooks_5)], [cooks_cutoff_5, cooks_cutoff_5], color='darkblue', linestyle='--', label='4 / (N-k-1)')
 plt.xlabel("Observation")
 plt.ylabel("Cook's Distance")
-plt.legend(title="Cook's Distance Cutoff")
+plt.legend(title="Cook's Distance Cutoff", loc="upper left")
 #dh.save_image('cooks_dist_plot_2', models_output_dir)
 plt.show()
 
@@ -941,7 +949,7 @@ no_outliers_df_2 = merge_newX_y_2[merge_newX_y_2['outlier']=='no']
 
 # Reset the index of the no_outliers_df DataFrame to allow for easier combination
 # with other series in future functions
-no_outliers_df_2.reset_index(drop=True, inplace=True)
+#no_outliers_df_2.reset_index(drop=True, inplace=True)
 
 # Separate target from predictors
 no_outliers_y_2 = no_outliers_df_2['charges']
@@ -951,7 +959,9 @@ no_outliers_X_2 = no_outliers_df_2.drop(['charges', 'outlier'], axis=1)
 title_6 = 'removed outliers x2'
 model_name_6 = 'no_out_2'
 file_name_6 = '6_no_outliers_2'
-sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results(no_outliers_X_2, no_outliers_y_2, title_6, subgroup=True, save_img=False, filename_unique=file_name_6)
+sm_lin_reg_6, sm_y_pred_6, het_results_6 = fit_lr_model_results(no_outliers_X_2, no_outliers_y_2, title_6, 
+                                                                ob_smoke_series=ob_smoke_series, subgroup=True, 
+                                                                save_img=False, filename_unique=file_name_6)
 
 # Organize model performance metrics
 summary_df_6 = sm_results_to_df(sm_lin_reg_6.summary())
@@ -983,7 +993,7 @@ ax.set_xlabel('H Leverage')
 ax.set_ylabel('Studentized Residuals')
 ax.set_title('Influence Plot Before Removing Outliers')
 plt.tight_layout()
-dh.save_image('influence_plot_1', models_output_dir)
+#dh.save_image('influence_plot_1', models_output_dir)
 plt.show()
 
 # =============================
@@ -998,7 +1008,7 @@ ax.set_xlabel('H Leverage')
 ax.set_ylabel('Studentized Residuals')
 ax.set_title('Influence Plot After Removing Outliers (first time)')
 plt.tight_layout()
-dh.save_image('influence_plot_2', models_output_dir)
+#dh.save_image('influence_plot_2', models_output_dir)
 plt.show()
 
 # =============================
