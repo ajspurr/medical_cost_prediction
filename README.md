@@ -120,6 +120,6 @@ The Scale-Location plot (residuals vs. predicted target values) on the left is t
 ### Assumption #4: Homoscedasticity
   - I used the Breusch-Pagan Test and White Test for Heteroscedasticity throughout the process, visualizing it in Scale-Location plots (predicted values vs. studentized residuals)
   - Heteroscedasticity was present in the initial model, but homoscedasticity was achieved after the second new feature was created. 
-### Observations are independent, i.e. no autocorrelation 
+### Assumption #5: Observations are independent, i.e. no autocorrelation 
 - Not relevant as this is not time series data.
 
