@@ -17,9 +17,6 @@ from statsmodels.stats.diagnostic import lilliefors
 from statsmodels.stats.diagnostic import het_breuschpagan
 from statsmodels.stats.outliers_influence import OLSInfluence as influence
 
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-
 # Make my own colormap
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
@@ -1140,8 +1137,6 @@ dh.plot_qq_hist_dist_combined(sm_lin_reg_7.resid_pearson, fig_title='Residual Di
 plt.hist(y_bc, bins=50, density=True, label='charges transformed', alpha=0.5)
 plt.hist(sm_y_pred_7, bins=50, density=True, label='pred charges', alpha=0.5)
 plt.legend()
-
-
 
 # =============================
 # Other transformation of y
