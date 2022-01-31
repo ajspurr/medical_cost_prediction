@@ -266,10 +266,11 @@ I did not include updated coefficients or model performance plots, but I can sum
   <img src="/output/models/influence_plot_2.png" width="350"/>
 </p>
 
-
-
 ## Assumption #4: Homoscedasticity
 To reiterate, in the plots above, 'BP' represents the p-value for the Breusch-Pagan Lagrange Multiplier Test for Heteroscedasticity and 'White' represents the p-value of White’s Lagrange Multiplier Test for Heteroscedasticity. Values less than 0.05 indicate presence of heteroscedasticity. The Breusch-Pagan test (the default) detects linear forms of heteroscedasticity, while White's test detects non-linear forms ([source](https://www3.nd.edu/~rwilliam/stats2/l25.pdf)). If you look at the bottom-right plot in the "[Summary of Model Performance with Each New Feature](#summary-of-model-performance-with-each-new-feature)" section, you will see that once the [bmi\*smoker] feature is added, homoscedasticity is achieved. It remains after outliers are removed as well. 
 
 # Potential Future Exploration
-- Remove uneccesary features ([Adjusted R-squared?](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac)), feature importance
+- Remove uneccesary features, for now I will address this in the machine learning centric part of the project
+  - [Adjusted R-squared](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac)
+  - [Variable selection paper](https://onlinelibrary.wiley.com/doi/full/10.1002/bimj.201700067)
+  - [Identifying the Most Important Independent Variables in Regression Models](https://statisticsbyjim.com/regression/identifying-important-independent-variables/)
