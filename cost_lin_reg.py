@@ -1036,104 +1036,104 @@ plt.show()
 # A few helper functions
 # =============================
 
-# Q-Q plot (default is normal dist)
-def my_qq(data, my_data_str='Residuals', dist_obj=stats.norm, fit_params=None, dist_str='Normal Dist', 
-          ax=None, y=1, save_img=False, img_filename=None): 
+# # Q-Q plot (default is normal dist)
+# def my_qq(data, my_data_str='Residuals', dist_obj=stats.norm, fit_params=None, dist_str='Normal Dist', 
+#           ax=None, y=1, save_img=False, img_filename=None): 
     
-    if not fit_params:
-        # Fit my data to dist_obj and get fit parameters
-        fit_params = dist_obj.fit(data)
+#     if not fit_params:
+#         # Fit my data to dist_obj and get fit parameters
+#         fit_params = dist_obj.fit(data)
     
-    # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit()
-    loc = fit_params[-2]
-    scale = fit_params[-1]
-    shape_params = fit_params[:-2]
+#     # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit()
+#     loc = fit_params[-2]
+#     scale = fit_params[-1]
+#     shape_params = fit_params[:-2]
     
-    # Q-Q Plot
-    qqplot(data, line='45', fit=False, dist=dist_obj, loc=loc, scale=scale, distargs=shape_params, ax=ax)
+#     # Q-Q Plot
+#     qqplot(data, line='45', fit=False, dist=dist_obj, loc=loc, scale=scale, distargs=shape_params, ax=ax)
     
-    if not ax:
-        ax = plt.gca()
+#     if not ax:
+#         ax = plt.gca()
 
-    ax.set_xlabel('Theoretical Quantiles')
-    ax.set_ylabel('Sample Quantiles')
-    ax.set_title(f'Q-Q Plot {my_data_str} vs. {dist_str}', y=y)
+#     ax.set_xlabel('Theoretical Quantiles')
+#     ax.set_ylabel('Sample Quantiles')
+#     ax.set_title(f'Q-Q Plot {my_data_str} vs. {dist_str}', y=y)
     
-    if save_img:
-        dh.save_image(img_filename, models_output_dir)
+#     if save_img:
+#         dh.save_image(img_filename, models_output_dir)
 
-    if not ax:
-        plt.show()
+#     if not ax:
+#         plt.show()
 
-# Plots a scipy distribution vs. histogram of my_data
-def hist_vs_dist_plot(my_data, my_data_str='Residuals', dist_obj=stats.norm, fit_params=None, dist_str='Normal Dist', 
-                      bins=200, ax=None, textbox_str=None, save_img=False, img_filename=None):    
+# # Plots a scipy distribution vs. histogram of my_data
+# def hist_vs_dist_plot(my_data, my_data_str='Residuals', dist_obj=stats.norm, fit_params=None, dist_str='Normal Dist', 
+#                       bins=200, ax=None, textbox_str=None, save_img=False, img_filename=None):    
     
-    if not fit_params:
-        # Fit my data to dist_obj and get fit parameters
-        fit_params = dist_obj.fit(my_data)
+#     if not fit_params:
+#         # Fit my data to dist_obj and get fit parameters
+#         fit_params = dist_obj.fit(my_data)
     
-    # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit()
-    loc = fit_params[-2]
-    scale = fit_params[-1]
-    shape_params = fit_params[:-2]
+#     # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit()
+#     loc = fit_params[-2]
+#     scale = fit_params[-1]
+#     shape_params = fit_params[:-2]
     
-    # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit() above
-    rv = dist_obj(*shape_params, loc, scale)
+#     # Specify scipy distribution shape, location, and scale based on the parameters calculated from fit() above
+#     rv = dist_obj(*shape_params, loc, scale)
     
-    # Use the distribution to create x values for the plot
-    # ppf() is the inverse of cdf(). So if cdf(10) = 0.1, then ppf(0.1)=10
-    # ppf(0.1) is the x-value at which 10% of the values are less than or equal to it
-    x = np.linspace(rv.ppf(0.01), rv.ppf(0.99), 100)
+#     # Use the distribution to create x values for the plot
+#     # ppf() is the inverse of cdf(). So if cdf(10) = 0.1, then ppf(0.1)=10
+#     # ppf(0.1) is the x-value at which 10% of the values are less than or equal to it
+#     x = np.linspace(rv.ppf(0.01), rv.ppf(0.99), 100)
     
-    if not ax:
-        ax = plt.gca()
+#     if not ax:
+#         ax = plt.gca()
     
-    # Plot distribution on top of histogram of charges in order to compare
-    ax.hist(my_data, bins=bins, density=True, histtype='stepfilled', alpha=0.9, label=my_data_str)
-    ax.plot(x, rv.pdf(x), 'r-', lw=2.5, alpha=1, label=dist_str)
-    ax.set_title(f'{my_data_str} vs. {dist_str}', y=1.05)
-    ax.set_xlabel(f'{my_data_str}')
+#     # Plot distribution on top of histogram of charges in order to compare
+#     ax.hist(my_data, bins=bins, density=True, histtype='stepfilled', alpha=0.9, label=my_data_str)
+#     ax.plot(x, rv.pdf(x), 'r-', lw=2.5, alpha=1, label=dist_str)
+#     ax.set_title(f'{my_data_str} vs. {dist_str}', y=1.05)
+#     ax.set_xlabel(f'{my_data_str}')
     
-    if textbox_str:
-        # Add normality test interpretation text
-        box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
-        ax.text(1.05, 0.99, textbox_str, bbox=box_style, transform=ax.transAxes, verticalalignment='top', horizontalalignment='left') 
+#     if textbox_str:
+#         # Add normality test interpretation text
+#         box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
+#         ax.text(1.05, 0.99, textbox_str, bbox=box_style, transform=ax.transAxes, verticalalignment='top', horizontalalignment='left') 
     
     
-    ax.legend()
+#     ax.legend()
     
-    if save_img:
-        dh.save_image(img_filename, models_output_dir)
+#     if save_img:
+#         dh.save_image(img_filename, models_output_dir)
 
-# Plot both qq and hist vs. dist plots in same figure
-def plot_qq_hist_dist_combined(my_data, my_data_str='Residuals', dist_obj=stats.norm, dist_str='Normal Dist', 
-                               bins=50, textbox_str=None, fig_title=None, title_fontsize = 24, figsize=(10, 5), save_img=False, img_filename=None):
+# # Plot both qq and hist vs. dist plots in same figure
+# def plot_qq_hist_dist_combined(my_data, my_data_str='Residuals', dist_obj=stats.norm, dist_str='Normal Dist', 
+#                                bins=50, textbox_str=None, fig_title=None, title_fontsize = 24, figsize=(10, 5), save_img=False, img_filename=None):
     
-    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=figsize)
+#     # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+#     fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=figsize)
 
-    # Fit my data to dist_obj and get fit parameters
-    fit_params = dist_obj.fit(my_data)
+#     # Fit my data to dist_obj and get fit parameters
+#     fit_params = dist_obj.fit(my_data)
     
-    # Plot Q-Q, add to figure
-    my_qq(my_data, my_data_str=my_data_str, dist_obj=dist_obj, fit_params=fit_params, 
-          ax=ax_array_flat[0], y=1.05) # Increase title space to match hist_vs_dist_plot()
+#     # Plot Q-Q, add to figure
+#     my_qq(my_data, my_data_str=my_data_str, dist_obj=dist_obj, fit_params=fit_params, 
+#           ax=ax_array_flat[0], y=1.05) # Increase title space to match hist_vs_dist_plot()
     
-    # Plot hist vs. dist, add to figure
-    hist_vs_dist_plot(my_data, my_data_str=my_data_str, dist_obj=dist_obj, fit_params=fit_params, 
-                      dist_str=dist_str, bins=bins, ax=ax_array_flat[1], textbox_str=textbox_str)
+#     # Plot hist vs. dist, add to figure
+#     hist_vs_dist_plot(my_data, my_data_str=my_data_str, dist_obj=dist_obj, fit_params=fit_params, 
+#                       dist_str=dist_str, bins=bins, ax=ax_array_flat[1], textbox_str=textbox_str)
     
-    # Figure title
-    if fig_title:
-        fig.suptitle(fig_title, fontsize=title_fontsize)
-    else:
-        fig.suptitle(f'{my_data_str} vs. {dist_str}', fontsize=title_fontsize)
-    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+#     # Figure title
+#     if fig_title:
+#         fig.suptitle(fig_title, fontsize=title_fontsize)
+#     else:
+#         fig.suptitle(f'{my_data_str} vs. {dist_str}', fontsize=title_fontsize)
+#     fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
     
-    if save_img:
-        dh.save_image(img_filename, models_output_dir)
-    plt.show()
+#     if save_img:
+#         dh.save_image(img_filename, models_output_dir)
+#     plt.show()
 
 
 
@@ -1141,7 +1141,7 @@ def plot_qq_hist_dist_combined(my_data, my_data_str='Residuals', dist_obj=stats.
 # Test for normality before removing Cook's outliers
 # ==========================================================
 
-resid4 = sm_lin_reg_4.resid_pearson
+resid4 = sm_lin_reg_4_2.resid_pearson
 #resid4 = sm_lin_reg_4.resid
 #resid4 = sm_lin_reg_4.get_influence().resid_studentized_internal
 
@@ -1152,22 +1152,22 @@ resid4 = sm_lin_reg_4.resid_pearson
 
 # Shapiro-Wilk test for normality
 # not useful for big samples(>5000), since it tends to reject normality too often. Not an issue here
-sw_stat4, sw_pval4 = stats.shapiro(sm_lin_reg_4.resid_pearson)
+sw_stat4, sw_pval4 = stats.shapiro(resid4)
 
 # D’Agostino’s K-squared test
-dk_stat4, dk_pval4 = stats.normaltest(sm_lin_reg_4.resid_pearson)
+dk_stat4, dk_pval4 = stats.normaltest(resid4)
 
 # Anderson-Darling Normality Test
-ad_stat4, ad_critvals4, ad_siglevels4 = stats.anderson(sm_lin_reg_4.resid_pearson, dist='norm')
+ad_stat4, ad_critvals4, ad_siglevels4 = stats.anderson(resid4, dist='norm')
 
 # Chi-Square Normality Test
-cs_stat4, cs_pval4 = stats.chisquare(sm_lin_reg_4.resid_pearson)
+cs_stat4, cs_pval4 = stats.chisquare(resid4)
 
 # Jarque–Bera test for Normality
-js_stat4, js_pval4 = stats.jarque_bera(sm_lin_reg_4.resid_pearson)
+js_stat4, js_pval4 = stats.jarque_bera(resid4)
 
 # Kolmogorov-Smirnov test for Normality
-ks_stat4, ks_pval4 = stats.kstest(sm_lin_reg_4.resid_pearson, 'norm')
+ks_stat4, ks_pval4 = stats.kstest(resid4, 'norm')
 # According to KS-table, for alpha of 0.05 and with n > 40, we want the test-statistic to be 
 # less than 1.36/sqrt(n). This will give us 95% confidence that our data comes from the 
 # given distribution
@@ -1176,7 +1176,7 @@ ks_stat_cutoff = 1.36 / np.sqrt(len(dataset['charges'])) # = (1.36 / sqrt(1338))
 
 # Lilliefors Test for Normality 
 # Same as Kolmogorov-Smirnov?
-lt_stat4, lt_pval4 = lilliefors(sm_lin_reg_4.resid_pearson, dist='norm')
+lt_stat4, lt_pval4 = lilliefors(resid4, dist='norm')
 
 # Function combining above normaly tests and interpreting results
 normal_results4, normal_interpret4, nml_interpret_txt4 = dh.normality_tests(resid4)
