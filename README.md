@@ -76,9 +76,6 @@ I used Correlation Ratio to measure the association betwee numerical and categor
 
 <p align="center"><img src="/output/eda/corr_ratio_cat_num_variables.png" width="600"/></p>
 
-
-
-
 # Model Building: Multiple Linear Regression
 
 In [LinearRegression.md](/LinearRegression.md), I go through each assumption of Multiple Linear Regression in great detail, tracking model performance with each change I make and plotting relevant relationships within the data. Below I summarize how I tested each assumption and the process I used if the assumption was not true.
@@ -92,7 +89,7 @@ In [LinearRegression.md](/LinearRegression.md), I go through each assumption of 
 Original model performance: 
 <p align="center"><img src="/output/models/sm_lr_results_0_original.png" width="600"/></p>
 
-Scale-Location plot on the left is to visualize residuals vs. predicted target values. 'BP' and 'White' represent tests for heteroscedasticity. Values < 0.05 indicate presence of heteroscedasticity. Plot on the right is to visualize model performance. Data points near the diagonal line represent perfect predictions. 
+Scale-Location plot (residuals vs. predicted target values) on the left is to visualize heteroscedasticity. 'BP' and 'White' represent tests for heteroscedasticity. Values < 0.05 indicate presence of heteroscedasticity. The plot on the right is to visualize model performance. Data points near the diagonal line represent perfect predictions. 
 
 Model performance after adding the final new feature: 
 <p align="center"><img src="/output/models/sm_lr_results_4_age_sq_feature.png" width="700"/></p>
@@ -108,10 +105,17 @@ Summary of model performance after adding each new feature:
   - My second attempt to fix non-normal residuals was outlier removal. I used Cook's distance to identify outliers and after extensive exploration found no pattern to the outliers nor any relationship to any of the numerical or categorical variables, other than they were related to the visual outliers in the Age vs. Charges plots. 
   - While I don't think this process or outcome is realistic, as this data is artificial, after removing outliers (8.9% of the data) I achieved a perfect model with an adjusted R-squared of 1. 
 
-<p align="center"><img src="/output/models/qqhist1_orig.png" width="800"/></p>
+Residual distribution in model with all new features added:
+<p align="center"><img src="/output/models/qqhist1_orig.png" width="600"/></p>
+
+Visualization of Cook's outliers in the relationship between Age and Charges:
 <p align="center"><img src="/output/models/outliers_age_v_charges_nonob_smoker.png" width="350"/></p>
-<p align="center"><img src="/output/models/qqhist4_outlier_2.png" width="800"/></p>
-<p align="center"><img src="/output/models/sm_lr_results_6_no_outliers_2.png" width="800"/></p>
+
+Residual distribution after all Cook's outliers removed:
+<p align="center"><img src="/output/models/qqhist4_outlier_2.png" width="700"/></p>
+
+Model performance after all Cook's outliers removed:
+<p align="center"><img src="/output/models/sm_lr_results_6_no_outliers_2.png" width="700"/></p>
 
 ### Assumption #4: Homoscedasticity
   - I used the Breusch-Pagan Test and White Test for Heteroscedasticity throughout the process, visualizing it in Scale-Location plots (predicted values vs. studentized residuals)
