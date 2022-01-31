@@ -78,8 +78,8 @@ I used Correlation Ratio to measure the association betwee numerical and categor
 
 # Model Building: Multiple Linear Regression
 ## Assumptions of Multiple Linear Regression
-1. Linear relationship between each predictor variable and target variable
-2. No multicollinearity between predictor variables
+1. No multicollinearity between predictor variables
+2. Linear relationship between each predictor variable and target variable
 3. Multivariate normality - **residuals** of the model are normally distributed
 4. Homoscedasticity
 5. Observations are independent, i.e. no autocorrelation (not relevant as this is not time series data)
@@ -94,7 +94,13 @@ There are clear groupings of predicted values, which (surprise, surprise) relate
 
 <p align="center"><img src="/output/models/sm_lr_results_1_bmi_30_feature_grouped.png" width="900"/></p>
 
-## Assumption #1: Linear Relationship Between Predictors and Target Variable
+## Assumption #1: No Multicollinearity Between Predictor Variables
+VIF table below shows that multicollinearity between numerical variables is not present. A value of 1 indicates that there is no correlation with any other predictor variables. A value between 1 and 5 indicates mild correlation, generally not enough to require attention. A value between 5 and 10 indicates moderate correlation. A value of 10 or greather indicates severe correlation (a.k.a. multicollinearity), in which case the coefficient estimates and p-values in the regression output are likely unreliable. Even if none of the variable pairs are highly correlated (as has already been shown in the 'Relationship Between Numerical Variables' section above), multicollinearity can still be present as a given variable can be explained by two or more other variables.
+(References: [1](https://www.statology.org/how-to-calculate-vif-in-python/), [2](https://quantifyinghealth.com/correlation-collinearity-multicollinearity/))
+
+<p align="center"><img src="/output/models/vif_table.png" width="300"/></p>
+
+## Assumption #2: Linear Relationship Between Predictors and Target Variable
 ### BMI vs. Charges
 The linear relationship between BMI and charges is weak. But if you subgroup by smoking status, you can see that smokers' BMI have a strong linear relationship with charges (Pearson's of 0.8) while nonsmokers' BMI have basically no linear relationship with charges. As such, I will enginner a new feature: **[smoker\*bmi]**. This will remove the bmi of the nonsmokers, thus removing the data that does not have a linear relationship to the target. 
 <p align="center">
@@ -161,12 +167,6 @@ I did some research on how to determine which variables are most important in mu
 RMSE penalizes large errors the most. MAE does not penalize large errors as much. Median absolute error penalizes large errors the least. R-squared represents the percent of the variation of the target that is explained by it's relationship with the features. R-squared is a relative measure whereas RMSE and MAE are absolute measures. One drawback of R-squared is that by the nature of its calculation, it improves every time you add a new variable to the model. Adjusted R-squared corrects for this. ([Reference](https://towardsdatascience.com/evaluation-metrics-model-selection-in-linear-regression-73c7573208be))
 
 I did not include the F-statistic as its p-value was 0.00 for every model. The null hypothesis of the F-test is that a model with no independent variables (intercept-only) fits the data as well as my model. The alternative hypothesis states that my model fits the data better than an intercept-only model. If the F-test p-value is less than the significance level (let's say 0.05), then the sample data provide sufficient evidence to conclude that my regression model fits the data better than the intercept-only model. ([Reference](https://statisticsbyjim.com/regression/interpret-f-test-overall-significance-regression/))
-
-## Assumption #2: No Multicollinearity Between Predictor Variables
-VIF table below shows that multicollinearity between numerical variables is not present. A value of 1 indicates that there is no correlation with any other predictor variables. A value between 1 and 5 indicates mild correlation, generally not enough to require attention. A value between 5 and 10 indicates moderate correlation. A value of 10 or greather indicates severe correlation (a.k.a. multicollinearity), in which case the coefficient estimates and p-values in the regression output are likely unreliable. Even if none of the variable pairs are highly correlated (as has already been shown in the 'Relationship Between Numerical Variables' section above), multicollinearity can still be present as a given variable can be explained by two or more other variables.
-(References: [1](https://www.statology.org/how-to-calculate-vif-in-python/), [2](https://quantifyinghealth.com/correlation-collinearity-multicollinearity/))
-
-<p align="center"><img src="/output/models/vif_table.png" width="300"/></p>
 
 ## Assumption #3: Multivariate normality (residuals of the model are normally distributed)
 It seems this assumption is generally less relevant for machine learning than it is for classical statistics. The p-values of your model coefficients depend on this assumption. So if you are using your model to make inferences about the data, this assumption needs to be explored. However, if you are primarily concerned with your predictions (as is normally true for machine learning), this assumption is not important. Furthermore, according to [this source](https://www.decisiondata.blog/understanding-linear-regression-6db487377bac), even if you are trying to make inferences, if your dataset is "large enough and is not too far from normality then, by the Central Limit Theorem, our assumption of normality is not that important, and any inference from the model will still be valid." For the sake of learning, I will explore this assumption. 
