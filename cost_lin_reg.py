@@ -1223,8 +1223,8 @@ dh.plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Rem
                            save_img=False, img_filename=qqhist_filename_4, save_dir=models_output_dir)
 
 # ==========================================================
-# Try applying nonlinear transformations to variables rather than outlier removal
-# Independent variables are already close to normal or uniform distributions
+# I tried applying nonlinear transformations to variables rather than outlier removal
+# But independent variables are already close to normal or uniform distributions, so this didn't change much
 # ==========================================================
 
 # Plot distribution of nontransformed y
@@ -1241,7 +1241,7 @@ plt.legend()
 # Box-Cox transformation of y
 # =============================
 # New dataset
-new_X_7 = new_X_4.copy()
+new_X_7 = new_X_4_2.copy()
 
 # Boxcox 'charges'
 y_bc, lambd = stats.boxcox(y)
@@ -1256,7 +1256,9 @@ plt.xlabel('charges')
 title_7 = 'box-cox charges'
 model_name_7 = 'normalized [charges]'
 file_name_7 = '7_bc_charges'
-sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results(new_X_7, y_bc, title_7, subgroup=True, save_img=False, filename_unique=file_name_7)
+sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results(new_X_7, y_bc, title_7, subgroup=True, 
+                                                                ob_smoke_series=ob_smoke_series,
+                                                                save_img=False, filename_unique=file_name_7)
 
 # Function combining normality tests and interpreting results
 normal_results7, normal_interpret7, nml_interpret_txt7 = dh.normality_tests(sm_lin_reg_7.resid_pearson)
