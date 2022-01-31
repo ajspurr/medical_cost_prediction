@@ -162,7 +162,6 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, comb
     standardized_residuals = pd.DataFrame(lr_model.get_influence().resid_studentized_internal, columns=['stand_resid'])
     y_pred_series = pd.Series(y_pred, name='y_pred')
     y_series = pd.Series(y, name='y')
-    #relevant_data = pd.concat([X_data[['bmi_>=_30_yes', 'smoker_yes']], y_series, y_pred_series, standardized_residuals, grouping], axis=1)
     relevant_data = pd.concat([y_series, y_pred_series, standardized_residuals, grouping], axis=1)
         
     # Quantify Heteroscedasticity using Breusch-Pagan test and White test
@@ -242,7 +241,9 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, comb
     if grouping is not None:
         ax2.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0, title='Subgroup', 
                    handles=scatter2.legend_elements()[0], labels=grouping_categories)  
-    textbox_text = r'$R^2$: %0.3f' %lr_model.rsquared
+    r2_str = r'$R^2$: %0.3f' %lr_model.rsquared
+    r2_adj_str = r'Adj $R^2$: %0.3f' %lr_model.rsquared_adj
+    textbox_text = f"{r2_str}\n{r2_adj_str}"
     ax2.text(0.95, 0.92, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right') 
     if not combine_plots: plt.show()
     
@@ -260,7 +261,6 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, comb
     het_metrics = dict(zip(['BP', 'White'], [bp_test_results, white_test_results]))
     
     return het_metrics
-
 
 # Combine statsmodels linear regression model creation, fitting, and returning results    
 def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, subgroup=False, cmap=my_cmap, save_img=False, filename_unique=None):
@@ -283,7 +283,6 @@ def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, subgroup=
                                                  cmap=cmap, save_img=save_img, filename_unique=filename_unique)
         
     return fxn_lin_reg, fxn_y_pred, het_results
-
 
 # Convert statsmodels summary() output to pandas DataFrame
 def sm_results_to_df(summary):
@@ -369,7 +368,6 @@ sm_processed_X = manual_preprocess_sm(X)
 title_0 = 'Original'
 model_name_0 = 'original'
 file_name_0 = '0_' + model_name_0
-#het_metrics_0 = sm_lr_model_results(sm_lin_reg_0, y, sm_y_pred_0, combine_plots=True, plot_title=title_0, save_img=False, filename_unique=file_name_0)
 sm_lin_reg_0, sm_y_pred_0, het_results_0 = fit_lr_model_results(sm_processed_X, y,  plot_title=title_0, subgroup=False, save_img=False, filename_unique=file_name_0)
 
 # Organize model performance metrics
@@ -402,7 +400,7 @@ sm_lin_reg_1_0, sm_y_pred_1_0, het_results_1_0 = fit_lr_model_results(new_X_1, y
 
 # Plot model with subgrouping
 file_name_1 = '1_bmi_30_feature_grouped'
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results(new_X_1, y, title_1, subgroup=True, save_img=False, filename_unique=file_name_1)
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results(new_X_1, y, title_1, subgroup=False, save_img=True, filename_unique=file_name_1)
 
 # Organize model performance metrics
 summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
