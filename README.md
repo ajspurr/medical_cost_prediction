@@ -95,8 +95,11 @@ In [LinearRegression.md](/LinearRegression.md), I go through each assumption of 
     - The residuals were not normal before or after I added new features. 
       - I attempted to fix this by transforming the non-normal target using Box-Cox, log transform, square-root transform, and cube-root transform. They all caused the residual distribution to appear more normal in Q-Q plots, but none affected the normality tests, and all of them significantly worsened model performance. 
       - My second attempt to fix non-normal residuals was outlier removal. I used Cook's distance to identify outliers and after extensive exploration found no pattern to the outliers nor any relationship to any of the numerical or categorical variables, other than they were related to the visual outliers in the Age vs. Charges plots. 
-5. Homoscedasticity
-6. Observations are independent, i.e. no autocorrelation (not relevant as this is not time series data)
+      - While I don't think this process or outcome is realistic, as this data is artificial, after removing outliers (8.9% of the data) I achieved a perfect model with an adjusted R-squared of 1. 
+4. Homoscedasticity
+    - I used the Breusch-Pagan Test and White Test for Heteroscedasticity throughout the process, visualizing it in Scale-Location plots (predicted values vs. studentized residuals)
+    - Heteroscedasticity was present in the initial model, but homoscedasticity was achieved after the second new feature was created. 
+5. Observations are independent, i.e. no autocorrelation (not relevant as this is not time series data)
 
 
 To test for these assumptions, I used package 'statsmodels' (as opposed to 'sklearn') to build a multiple linear regression model, as it offers a more robust set of statistical tests. I'd like to visualize the progression of the accuracy of the model as I correct any deviation from the above assumptions. So, I'll start by fitting all the data (no test/train split) to a multiple linear regression model: 
