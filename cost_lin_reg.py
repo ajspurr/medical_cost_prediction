@@ -263,7 +263,7 @@ def sm_lr_model_results_subgrouped(lr_model, X_data, y, y_pred, plot_title, comb
     return het_metrics
 
 # Combine statsmodels linear regression model creation, fitting, and returning results    
-def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, subgroup=False, cmap=my_cmap, save_img=False, filename_unique=None):
+def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, subgroup=False, ob_smoke_series=None, cmap=my_cmap, save_img=False, filename_unique=None):
     # Fit model
     fxn_lin_reg = sm.OLS(fxn_y, fxn_X).fit()
     
@@ -271,8 +271,9 @@ def fit_lr_model_results(fxn_X, fxn_y, plot_title, combine_plots=True, subgroup=
     fxn_y_pred = fxn_lin_reg.predict(fxn_X) 
     
     if subgroup:
-        # Create new category that combines both smoking and obesity (obese smoker, obese nonsmoker, etc.)
-        ob_smoke_series = create_obese_smoker_category(fxn_X)
+        if ob_smoke_series is None:
+            # Create new category that combines both smoking and obesity (obese smoker, obese nonsmoker, etc.)
+            ob_smoke_series = create_obese_smoker_category(fxn_X)
            
         # Plot results subgrouped, get heteroscedasticity metrics
         het_results = sm_lr_model_results_subgrouped(fxn_lin_reg, fxn_X, fxn_y, fxn_y_pred, plot_title, combine_plots=combine_plots,
@@ -567,10 +568,94 @@ dh.plot_model_metrics_df(max_e_df, error_metrics, r_metrics, het_stats)
 
 
 # =======================================================================================
-# Removes features with minimal effect on model (coefficients close to zero)
+# Remove old features
+# =======================================================================================
+# Remove variables which have standardized coefficients close to zero AND were used to create one of the 
+# new features I created: bmi, age, bmi>=30. By definition, they are correlated to the new features 
+# [bmi*smoker], [smoker*obese], and [age^2] and should be removed for that reason anyway.
+
+# Create new category that combines both smoking and obesity (obese smoker, obese nonsmoker, etc.)
+# I do it before calling fit_lr_model_results() as I'm about to remove 'bmi_>=_30_yes' feature
+ob_smoke_series = create_obese_smoker_category(new_X_4)
+
+# Remove old variables
+remove_var = ['age', 'bmi', 'bmi_>=_30_yes']
+new_X_4_2 = new_X_4.drop(remove_var, axis=1)
+
+# Make sure  model still works
+title_4_2 = 'w/o old features'
+model_name_4_2 = 'rem_old_var'
+file_name_4_2 = '4_2_rem_old_features'
+sm_lin_reg_4_2, sm_y_pred_4_2, het_results_4_2 = fit_lr_model_results(new_X_4_2, y, title_4_2, subgroup=True, 
+                                                                      ob_smoke_series=ob_smoke_series, save_img=False, 
+                                                                      filename_unique=file_name_4_2)
+
+# Organize model performance metrics
+summary_df_4_2 = sm_results_to_df(sm_lin_reg_4_2.summary())
+coeff_4_2 = pd.Series(summary_df_4_2['coef'], name=model_name_4_2)
+sm_lr_results_4_2 = pd.Series(dh.evaluate_model_sm(y, sm_y_pred_4_2, sm_lin_reg_4_2, het_results_4_2), name=model_name_4_2)
+
+# Keep track of model performance for comparison later
+coeff_df = pd.concat([coeff_df, coeff_4_2], axis=1)
+sm_results_df = pd.concat([sm_results_df, sm_lr_results_4_2], axis=1)
+
+# ==========================================================
+# Compare coefficients before and after removing old features
+# ==========================================================
+
+# All features
+coeff_df_new = coeff_df.apply(pd.to_numeric)
+
+# Replace NaN with 0
+coeff_df_new = coeff_df_new.replace(np.nan, 0)
+
+# Separate new and old features
+num_orig_features = 9
+orig_features_df = coeff_df_new.iloc[0:num_orig_features]
+new_features_df = coeff_df_new.iloc[num_orig_features:len(coeff_df_new.index)]
+
+# Separate smoker variable out from orig_features_df as its scale is much larger
+smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
+orig_features_no_smoker = orig_features_df.drop(['smoker_yes'], axis=0)
+
+# Plot coefficients
+dh.plot_coefficient_df(smoker_df, orig_features_no_smoker, new_features_df)
+
+
+# =============================
+# Drop a few of the mostly-static coefficients
+# =============================
+# Drop variables that don't change much: children, sex_male, all regions, const.
+drop_var = ['region_northwest', 'region_southeast', 'region_southwest', 'const']
+coeff_df_new = coeff_df_new.drop(drop_var, axis=0)
+
+# Separate new and old features
+orig_features_df = coeff_df_new.iloc[0:5]
+new_features_df = coeff_df_new.iloc[5:len(coeff_df_new.index)]
+
+# Separate smoker variable out from orig_features_df as its scale is much larger
+smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
+orig_features_no_smoker = orig_features_df.drop(['smoker_yes'], axis=0)
+
+# Plot coefficients
+dh.plot_coefficient_df(smoker_df, orig_features_no_smoker, new_features_df)
+
+# =======================================================================================
+# Compare performance before and after removing old features
 # =======================================================================================
 
+# Convert values to numeric
+sm_results_df = sm_results_df.apply(pd.to_numeric)
 
+# Separate out metrics by scale of their values
+all__error_mets = sm_results_df.loc[['max_e', 'rmse', 'mae', 'med_abs_e']]
+max_e_df = sm_results_df.loc['max_e'].to_frame().T
+error_metrics = sm_results_df.loc[['rmse', 'mae', 'med_abs_e']]
+r_metrics = sm_results_df.loc[['r2', 'r2_adj']]
+het_stats = sm_results_df.loc[['bp_lm_p', 'white_lm_p']]
+
+# Plot model performance metrics
+dh.plot_model_metrics_df(max_e_df, error_metrics, r_metrics, het_stats)
 
 
 # =======================================================================================
@@ -1123,12 +1208,12 @@ plt.hist(y, bins=50, density=True, label='charges transformed', alpha=0.5)
 plt.hist(sm_y_pred_4, bins=50, density=True, label='pred charges', alpha=0.5)
 plt.legend()
 
-# New dataset
-new_X_7 = new_X_4.copy()
-
 # =============================
 # Box-Cox transformation of y
 # =============================
+# New dataset
+new_X_7 = new_X_4.copy()
+
 # Boxcox 'charges'
 y_bc, lambd = stats.boxcox(y)
 
@@ -1142,7 +1227,7 @@ plt.xlabel('charges')
 title_7 = 'box-cox charges'
 model_name_7 = 'normalized [charges]'
 file_name_7 = '7_bc_charges'
-sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results(new_X_7, y_bc, title_7, subgroup=True, save_img=True, filename_unique=file_name_7)
+sm_lin_reg_7, sm_y_pred_7, het_results_7 = fit_lr_model_results(new_X_7, y_bc, title_7, subgroup=True, save_img=False, filename_unique=file_name_7)
 
 # Function combining normality tests and interpreting results
 normal_results7, normal_interpret7, nml_interpret_txt7 = dh.normality_tests(sm_lin_reg_7.resid_pearson)
@@ -1161,7 +1246,7 @@ plt.legend()
 # Other transformation of y
 # =============================
 
-
+# Log transform?
 
 
 
