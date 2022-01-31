@@ -203,7 +203,7 @@ However, this skewed the model predictions and significantly decreased model per
 
 <p align="center"><img src="/output/models/sm_lr_results_7_bc_charges.png" width="800"/></p>
 
-If you look at the last Standardized Residuals vs. Predicted Values plot (when I added the age^2 feature), you can see the vast majority of predictions lie just under the 0-residual line with several outliers high above the line, clearly skewing the results. Once again, this is not real-world data and that pattern was likely created on purpose. I don't think transforming the dependent or indepdent variables will improve the model. Instead, investigating the outliers will likely yield better results. 
+If you look at the last Standardized Residuals vs. Predicted Values plot, in the [section where I added the age^2 feature](#new-feature-age2), you can see the vast majority of predictions lie just under the 0-residual line with several outliers high above the line, clearly skewing the results. Once again, this is not real-world data and that pattern was likely created on purpose. I don't think transforming the dependent or indepdent variables will improve the model, although I performed three transformations to the dependent variable for fun, which did not help: log, sqrt, and cube root. Investigating the outliers will likely yield better results. 
 
 #### Outlier Detection
 Cooks distance using statsmodels. 
