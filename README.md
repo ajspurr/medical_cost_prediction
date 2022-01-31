@@ -179,7 +179,7 @@ So what you can do is:
 - Explore and remove outliers
 
 #### Box-Cox Transformation of dependent variable 'charges'
-'Charges' certainly looks more normally distributed after performed a Box-Cox transformation.
+'Charges' certainly looks more normally distributed after performing a Box-Cox transformation.
 
 <p align="center">
   <img src="/output/eda/hist_charges.png" width="400"/>
