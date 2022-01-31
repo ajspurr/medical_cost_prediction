@@ -86,7 +86,7 @@ In [LinearRegression.md](/LinearRegression.md), I go through each assumption of 
 - I went through each numerical variable, plotted its relationship with the target, subgrouped by multiple categories, etc., all to find linear relationships, transform non-linear relationships, and take into account parts of the  data where no relationship is present. 
 - Through this process, I created new features: [bmi>=30], [bmi\*smoker], [smoker\*obese], and [age^2], and removed their original features: bmi and age. I ended up removing [bmi>=30] as well, since it was used to create [smoker\*obese].
 
-Original model performance: 
+Original model performance:
 <p align="center"><img src="/output/models/sm_lr_results_0_original.png" width="600"/></p>
 
 Scale-Location plot (residuals vs. predicted target values) on the left is to visualize heteroscedasticity. 'BP' and 'White' represent tests for heteroscedasticity. Values < 0.05 indicate presence of heteroscedasticity. The plot on the right is to visualize model performance. Data points near the diagonal line represent perfect predictions. 
