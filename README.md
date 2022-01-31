@@ -195,7 +195,7 @@ So what you can do is:
   <img src="/output/models/charges_boxcox.png" width="425"/>
 </p>
 
-Now the residuals look closer to normal distribution as well (although they don't technically pass the tests of normality). 
+Now the residuals look closer to normal distribution as well, but they still only pass the Chi-Square Test for normality. 
 
 <p align="center"><img src="/output/models/qqhist2_boxcox_y.png" width="800"/></p>
 
