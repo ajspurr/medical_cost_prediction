@@ -91,7 +91,7 @@ In [LinearRegression.md](/LinearRegression.md), I go through each assumption of 
 
 The Scale-Location plot (residuals vs. predicted target values) on the left is to visualize heteroscedasticity. 'BP' and 'White' represent tests for heteroscedasticity. Values < 0.05 indicate presence of heteroscedasticity. The plot on the right is to visualize model performance. Data points near the diagonal line represent perfect predictions. 
 
-**Model performance after adding the final new feature(age^2):**
+**Model performance after adding the final new feature (age^2):**
 <p align="center"><img src="/output/models/sm_lr_results_4_age_sq_feature.png" width="700"/></p>
 
 **Summary of model performance after adding each new feature:**
@@ -108,7 +108,7 @@ The Scale-Location plot (residuals vs. predicted target values) on the left is t
 **Residual distribution in model with all new features added:**
 <p align="center"><img src="/output/models/qqhist1_orig.png" width="600"/></p>
 
-**Visualization of Cook's outliers in the relationship between Age and Charges:**
+**One of the visualizations of Cook's outliers in the relationship between Age and Charges (this plot is in smokers only):**
 <p align="center"><img src="/output/models/outliers_age_v_charges_nonob_smoker.png" width="350"/></p>
 
 **Residual distribution after all of Cook's outliers were removed:**
