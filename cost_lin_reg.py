@@ -1266,29 +1266,74 @@ normal_results7, normal_interpret7, nml_interpret_txt7 = dh.normality_tests(sm_l
 # Q-Q plot and Residual Histogram vs. Normal
 qqhist_filename_2 = 'qqhist2_boxcox_y'
 dh.plot_qq_hist_dist_combined(sm_lin_reg_7.resid_pearson, fig_title='Residual Dist After Normalizing Target', 
-                           textbox_str=nml_interpret_txt7, save_img=False, img_filename=qqhist_filename_2, save_dir=models_output_dir)
+                           textbox_str=nml_interpret_txt7, save_img=False, img_filename=qqhist_filename_2, 
+                           save_dir=models_output_dir)
 
-# Plot y and predicted y histograms
-plt.hist(y_bc, bins=50, density=True, label='charges transformed', alpha=0.5)
-plt.hist(sm_y_pred_7, bins=50, density=True, label='pred charges', alpha=0.5)
-plt.legend()
+
 
 # =============================
 # Other transformation of y
 # =============================
 
-# Log transform?
+# Log, sqrt, cube root transform
+y_log = np.log(y)
+y_sqrt = np.sqrt(y)
+y_cbrt = np.cbrt(y)
+
+# Plot distribution of 'charges' transformed
+sns.distplot(y_log, bins=50)
+plt.title('Charges Log Transformed', fontsize=20, y=1.04)
+plt.xlabel('charges')
+
+sns.distplot(y_sqrt, bins=50)
+plt.title('Charges Square Root Transformed', fontsize=20, y=1.04)
+plt.xlabel('charges')
+
+sns.distplot(y_cbrt, bins=50)
+plt.title('Charges Cube Root Transformed', fontsize=20, y=1.04)
+plt.xlabel('charges')
+
+# Plot models
+title_8 = 'log charges'
+model_name_8 = 'log [charges]'
+file_name_8 = '8_log_charges'
+sm_lin_reg_8, sm_y_pred_8, het_results_8 = fit_lr_model_results(new_X_7, y_log, title_8, subgroup=True, 
+                                                                ob_smoke_series=ob_smoke_series,
+                                                                save_img=False, filename_unique=file_name_8)
+
+title_9 = 'sqrt charges'
+model_name_9 = 'sqrt [charges]'
+file_name_9 = '9_sqrt_charges'
+sm_lin_reg_9, sm_y_pred_9, het_results_9 = fit_lr_model_results(new_X_7, y_sqrt, title_9, subgroup=True, 
+                                                                ob_smoke_series=ob_smoke_series,
+                                                                save_img=False, filename_unique=file_name_9)
+
+title_91 = 'cbrt charges'
+model_name_91 = 'cbrt [charges]'
+file_name_91 = '91_cbrt_charges'
+sm_lin_reg_91, sm_y_pred_91, het_results_91 = fit_lr_model_results(new_X_7, y_cbrt, title_91, subgroup=True, 
+                                                                ob_smoke_series=ob_smoke_series,
+                                                                save_img=False, filename_unique=file_name_91)
 
 
 
+# Function combining normality tests and interpreting results
+normal_results8, normal_interpret8, nml_interpret_txt8 = dh.normality_tests(sm_lin_reg_8.resid_pearson)
+normal_results9, normal_interpret9, nml_interpret_txt9 = dh.normality_tests(sm_lin_reg_9.resid_pearson)
+normal_results91, normal_interpret91, nml_interpret_txt91 = dh.normality_tests(sm_lin_reg_91.resid_pearson)
 
+# Q-Q plot and Residual Histogram vs. Normal
+qqhist_filename_3 = 'qqhist3_log_y'
+dh.plot_qq_hist_dist_combined(sm_lin_reg_8.resid_pearson, fig_title='Residual Dist After Log-Transform Target', 
+                           textbox_str=nml_interpret_txt8, save_img=False, img_filename=qqhist_filename_3, 
+                           save_dir=models_output_dir)
 
+qqhist_filename_4 = 'qqhist4_sqrt_y'
+dh.plot_qq_hist_dist_combined(sm_lin_reg_9.resid_pearson, fig_title='Residual Dist After Sqrt-Transform Target', 
+                           textbox_str=nml_interpret_txt9, save_img=False, img_filename=qqhist_filename_4, 
+                           save_dir=models_output_dir)
 
-
-
-
-
-
-
-
-
+qqhist_filename_5 = 'qqhist5_cbrt_y'
+dh.plot_qq_hist_dist_combined(sm_lin_reg_91.resid_pearson, fig_title='Residual Dist After Cbrt-Transform Target', 
+                           textbox_str=nml_interpret_txt91, save_img=False, img_filename=qqhist_filename_5, 
+                           save_dir=models_output_dir)
