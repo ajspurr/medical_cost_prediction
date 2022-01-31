@@ -400,7 +400,7 @@ sm_lin_reg_1_0, sm_y_pred_1_0, het_results_1_0 = fit_lr_model_results(new_X_1, y
 
 # Plot model with subgrouping
 file_name_1 = '1_bmi_30_feature_grouped'
-sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results(new_X_1, y, title_1, subgroup=False, save_img=True, filename_unique=file_name_1)
+sm_lin_reg_1, sm_y_pred_1, het_results_1 = fit_lr_model_results(new_X_1, y, title_1, subgroup=False, save_img=False, filename_unique=file_name_1)
 
 # Organize model performance metrics
 summary_df_1 = sm_results_to_df(sm_lin_reg_1.summary())
@@ -513,22 +513,34 @@ plt.legend()
 # All features
 coeff_df_new = coeff_df.apply(pd.to_numeric)
 
-# =============================
-# Drop variables whose coefficients don't change much
-# =============================
+# Replace NaN with 0
+coeff_df_new = coeff_df_new.replace(np.nan, 0)
 
+# Separate new and old features
+num_orig_features = 9
+orig_features_df = coeff_df_new.iloc[0:num_orig_features]
+new_features_df = coeff_df_new.iloc[num_orig_features:len(coeff_df_new.index)]
+
+# Separate smoker variable out from orig_features_df as its scale is much larger
+smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
+orig_features_no_smoker = orig_features_df.drop(['smoker_yes'], axis=0)
+
+# Plot coefficients
+dh.plot_coefficient_df(smoker_df, orig_features_no_smoker, new_features_df)
+
+
+# =============================
+# Drop a few of the mostly-static coefficients
+# =============================
 # Drop variables that don't change much: children, sex_male, all regions, const.
 drop_var = ['region_northwest', 'region_southeast', 'region_southwest', 'const']
 coeff_df_new = coeff_df_new.drop(drop_var, axis=0)
-
-# Replace NaN with 0
-coeff_df_new = coeff_df_new.replace(np.nan, 0)
 
 # Separate new and old features
 orig_features_df = coeff_df_new.iloc[0:5]
 new_features_df = coeff_df_new.iloc[5:len(coeff_df_new.index)]
 
-# Separate smoker variable out from orig_features_df
+# Separate smoker variable out from orig_features_df as its scale is much larger
 smoker_df = orig_features_df.loc['smoker_yes'].to_frame().T
 orig_features_no_smoker = orig_features_df.drop(['smoker_yes'], axis=0)
 
@@ -551,6 +563,15 @@ het_stats = sm_results_df.loc[['bp_lm_p', 'white_lm_p']]
 
 # Plot model performance metrics
 dh.plot_model_metrics_df(max_e_df, error_metrics, r_metrics, het_stats)
+
+
+
+# =======================================================================================
+# Removes features with minimal effect on model (coefficients close to zero)
+# =======================================================================================
+
+
+
 
 # =======================================================================================
 # Outlier Analysis
