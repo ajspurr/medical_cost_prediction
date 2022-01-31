@@ -1222,7 +1222,6 @@ qqhist_filename_4 = 'qqhist4_outlier_2'
 dh.plot_qq_hist_dist_combined(resid6, fig_title='Residual Dist After Outlier Removal x2', textbox_str=nml_interpret_txt6,
                            save_img=False, img_filename=qqhist_filename_4, save_dir=models_output_dir)
 
-
 # ==========================================================
 # Try applying nonlinear transformations to variables rather than outlier removal
 # Independent variables are already close to normal or uniform distributions
