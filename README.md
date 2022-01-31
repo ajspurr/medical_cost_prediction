@@ -253,7 +253,7 @@ Since there are still a few outliers, I decided to perform Cook's test again. Si
   <img src="/output/models/outliers_pred_vs_resid_2.png" width="350"/>
 </p>
 
-New model results below. The residuals look much more normal and even passed three tests for normality: D'Agostino's K-squared, Chi-Square, and Jarque–Bera. I also achieved a perfect model! Of course, this is after removing 119 outliers, which represent 8.9% of the data. In addition, this dataset is from a textbook so I'm sure it has been generated artificially to demonstrate the points I have been making. Real world data would not behave this perfectly, but the process I went through is still applicable.  
+New model results below. The residuals look much more normal although they did not pass any tests for normality (interestingly, when I originally kept in the old features, this step did pass three tests for normality: D'Agostino's K-squared, Chi-Square, and Jarque–Bera). I also achieved a perfect model! Of course, this is after removing 119 outliers, which represent 8.9% of the data. In addition, this dataset is from a textbook so I'm sure it has been generated artificially to demonstrate the points I have been making. Real world data would not behave this perfectly, but the process I went through is still applicable.  
 
 <p align="center"><img src="/output/models/qqhist4_outlier_2.png" width="800"/></p>
 
