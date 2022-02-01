@@ -128,7 +128,7 @@ However, this skewed the model predictions and significantly decreased model per
 If you look at the last Standardized Residuals vs. Predicted Values plot, in the [section where I added the age^2 feature](#new-feature-age2), you can see the vast majority of predictions lie just under the 0-residual line with several outliers high above the line, clearly skewing the results. Once again, this is not real-world data and that pattern was likely created on purpose. I don't think transforming the dependent or indepdent variables will improve the model, although I performed three transformations to the dependent variable for fun, which did not help: log, sqrt, and cube root. Investigating the outliers will likely yield better results. 
 
 #### Outlier Detection
-Cooks distance using statsmodels. 
+I used Cook's distance (in statsmodels package) for outlier detection. Cook's distance can be caluclated for each data point and summarizes how much all the values in the regression model change when the given data point is removed. "The measurement is a combination of each observation’s leverage and residual values; the higher the leverage and residuals, the higher the Cook’s distance" ([ref](https://www.statisticshowto.com/cooks-distance/)) 
 
 <p align="center"><img src="/output/models/cooks_dist_plot.png" width="600"/></p>
 
