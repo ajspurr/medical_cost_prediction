@@ -12,10 +12,11 @@ Theoretically, a model like this could be used by insurance companies to predict
 **Resources:** Reference links embedded in appropriate sections
 
 # EDA
-- Full code: [cost_eda.py](/cost_eda.py)
-- My helper module: [ds_helper.py](https://github.com/ajspurr/my_ds_modules/blob/main/ds_helper.py)
-- All figures: [medical_cost_prediction/output/eda](/output/eda)
-
+Full code: [cost_eda.py](/cost_eda.py)</br>
+My helper module: [ds_helper.py](https://github.com/ajspurr/my_ds_modules/blob/main/ds_helper.py)</br>
+All figures: [medical_cost_prediction/output/eda](/output/eda)
+</br>
+</br>
 <p align="center"><img src="/output/eda/data_overview.png" width="600"/></p>
 <p align="center"><img src="/output/eda/feature_summary.png" width="900"/></p>
 
@@ -86,10 +87,10 @@ I used Correlation Ratio to measure the association betwee numerical and categor
 <p align="center"><img src="/output/eda/corr_ratio_cat_num_variables.png" width="600"/></p>
 
 # Model Building: Multiple Linear Regression
-- Full code: [cost_lin_reg.py](/cost_lin_reg.py)
-- My helper module: [ds_helper.py](https://github.com/ajspurr/my_ds_modules/blob/main/ds_helper.py)
-- All figures: [medical_cost_prediction/output/models](/output/models)
-
+Full code: [cost_lin_reg.py](/cost_lin_reg.py)</br>
+My helper module: [ds_helper.py](https://github.com/ajspurr/my_ds_modules/blob/main/ds_helper.py)</br>
+All figures: [medical_cost_prediction/output/models](/output/models)</br>
+</br>
 In [LinearRegression.md](/LinearRegression.md), I go through each assumption of Multiple Linear Regression in great detail, tracking model performance with each change I make and plotting relevant relationships within the data. It is a more of a classical statistics approach than a conventional machine learning approach. Below I summarize how I tested for each assumption and the process I used if the assumption was not true.
 
 ### Assumption #1: No Multicollinearity Between Predictor Variables
