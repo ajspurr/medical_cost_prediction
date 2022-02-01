@@ -4,8 +4,17 @@ In this analysis, I explore the Kaggle [Medical Cost Dataset](https://www.kaggle
 
 Theoretically, a model like this could be used by insurance companies to predict the total medical cost of an individual, which they could base their premiums on. According to the Kaggle poster, it comes from the book 'Machine Learning with R' by Brett Lantz and is in the public domain. I could not find more information on the origin of the dataset, but based on my EDA and its behavior in a linear model, it is almost certainly artificial data. Nevertheless, the process I go through is still valid and can be applied to real-world data. 
 
+## Programming Language and Resource Details
+**Python Version:** 3.8.12
+
+**Packages:** pandas, numpy, sklearn, statsmodels, scipy, matplotlib, seaborn
+
+**Resources:** Reference links embedded in appropriate sections
 
 # EDA
+Full code: 
+- [cost_eda.py](/cost_eda.py) <br> All figures: [medical_cost_prediction/output/eda](/output/eda)
+- Uses module I wrote and uploaded: [ds_helper.py](https://github.com/ajspurr/my_ds_modules/blob/main/ds_helper.py)
 
 <p align="center"><img src="/output/eda/data_overview.png" width="600"/></p>
 <p align="center"><img src="/output/eda/feature_summary.png" width="900"/></p>
