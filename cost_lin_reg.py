@@ -11,7 +11,6 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 
 import statsmodels.api as sm
-from statsmodels.graphics.gofplots import qqplot
 from statsmodels.stats.diagnostic import het_white
 from statsmodels.stats.diagnostic import lilliefors
 from statsmodels.stats.diagnostic import het_breuschpagan
@@ -51,12 +50,6 @@ numerical_cols.remove('charges')
 cat_ord_cols = categorical_cols.copy()
 cat_ord_cols.append('children')
 
-# Create list of continuous variables with target and one without target
-cont_cols = numerical_cols.copy()
-cont_cols.remove('children')
-cont_cols_w_target = cont_cols.copy()
-cont_cols_w_target.append('charges')
-
 # Create formatted columns dictionary in dh module
 dh.create_formatted_cols_dict(dataset.columns)
 dh.add_edit_formatted_col('bmi', 'BMI')
@@ -87,7 +80,7 @@ def create_obese_smoker_category(X_df):
 # Data preprocessing function without using pipeline
 # ====================================================================================================================
 
-# Preprocessing of all indepedent variable data together (no train/test split) for use with statmodels (sm) data analysis
+# Preprocessing of all independent variable data together (no train/test split) for use with statmodels (sm) data analysis
 def manual_preprocess_sm(X):
     # =============================
     # Numerical preprocessing

@@ -112,13 +112,6 @@ numerical_cols.remove('charges')
 cat_ord_cols = categorical_cols.copy()
 cat_ord_cols.append('children')
 
-# Create list of continuous variables with target and one without target
-cont_cols = numerical_cols.copy()
-cont_cols.remove('children')
-cont_cols_w_target = cont_cols.copy()
-cont_cols_w_target.append('charges')
-
-
 # =======================================================================================
 # Feature engineering
 # =======================================================================================
@@ -135,11 +128,10 @@ dataset['bmi_>=_30'] = dataset['bmi_>=_30'].map(bmi_dict)
 categorical_cols.append('bmi_>=_30')
 cat_ord_cols.append('bmi_>=_30')
 
-# Create formatted columns dictionary in helper module
-custom_dict = {}
-custom_dict['bmi'] = 'BMI'
-custom_dict['bmi_>=_30'] = 'BMI >= 30'
-dh.create_formatted_cols_dict(dataset.columns, custom_dict)
+# Create formatted columns dictionary in dh module
+dh.create_formatted_cols_dict(dataset.columns)
+dh.add_edit_formatted_col('bmi', 'BMI')
+dh.add_edit_formatted_col('bmi_>=_30', 'BMI >= 30')
 
 # ====================================================================================================================
 # Visualize data
