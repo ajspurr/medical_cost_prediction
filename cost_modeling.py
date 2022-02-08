@@ -8,17 +8,15 @@ import matplotlib.pyplot as plt
 from pathlib import PureWindowsPath, Path
 
 from sklearn.pipeline import Pipeline
-from sklearn.pipeline import FeatureUnion
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
+from sklearn.pipeline import FeatureUnion
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 
 import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import OLSInfluence as influence
-
-from sklearn.base import BaseEstimator, TransformerMixin
 
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import LinearRegression
@@ -31,6 +29,7 @@ from sklearn.metrics import median_absolute_error
 
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import cross_val_score, cross_validate
 
 # Make my own colormap
@@ -60,7 +59,7 @@ import ds_helper as dh
 # ====================================================================================================================
 
 # Made into function for debugging
-def reset_column_categories_create_format_dict(fxn_X):
+def create_column_categories(fxn_X):
     """
     Updates global variables categorical_cols and numerical_cols to include names of categorical data and 
     numerical data, respectively.
@@ -75,25 +74,16 @@ def reset_column_categories_create_format_dict(fxn_X):
     None.
 
     """
-    global categorical_cols
-    global numerical_cols
     
     # Separate categorical and numerical features
-    categorical_cols = [cname for cname in fxn_X.columns if fxn_X[cname].dtype == "object"]
     numerical_cols = [cname for cname in fxn_X.columns if not fxn_X[cname].dtype == "object"]
+    categorical_cols = [cname for cname in fxn_X.columns if fxn_X[cname].dtype == "object"]
     
-    print_num_cat_cols()
-    
-    # Create formatted columns dictionary in dh module
-    dh.create_formatted_cols_dict(dataset.columns)
-    dh.add_edit_formatted_col('bmi', 'BMI')
-
-def print_num_cat_cols():
-    global categorical_cols
-    global numerical_cols
     print(f"Numerical Columns: {numerical_cols}")
     print(f"Categorical Columns: {categorical_cols}")
     
+    return numerical_cols, categorical_cols
+        
     
 def add_feature(name, data, feature_type, fxn_dataset):
     if feature_type == 'c':
@@ -208,12 +198,12 @@ class MultiplyTransformer(BaseEstimator, TransformerMixin):
     """
     
     def __init__(self):
-        print('\n>>>>>init() called\n')
-        self.means = None
-        self.std = None
+        #print('\n>>>>>init() called\n')
+        return
+
     
     def fit(self, X, y=None):
-        print('\n>>>>>fit() called\n')
+        #print('\n>>>>>fit() called\n')
         
         # Scaling for 'bmi'
         self.ss = StandardScaler()
@@ -225,7 +215,7 @@ class MultiplyTransformer(BaseEstimator, TransformerMixin):
         return self
     
     def transform(self, X, y=None):
-        print('\n>>>>>transform() called\n')
+        #print('\n>>>>>transform() called\n')
        
         # Copy so as not to affect original data
         X_copy = X.copy()
@@ -240,12 +230,12 @@ class MultiplyTransformer(BaseEstimator, TransformerMixin):
         # Multiply 'bmi' and 'smoker' columns
         X_copy['bmi*smoker'] = X_copy['bmi'] * X_copy['smoker_1']
 
-        print('\n>>>>>transform() finished\n')
+        #print('\n>>>>>transform() finished\n')
         return X_copy
 
 
 # Uses MultiplyTransformer, which takes 'bmi' and 'smoker' and transforms both of them and creates bmi*smoker feature
-def create_pipeline_bmi_smoker(model_name, model): 
+def create_pipeline_bmi_smoker(model_name, model, num_cols, cat_cols): 
     # Use FeatureUnion preprocessing for 'bmi' and 'smoker' and creates 'bmi*smoker' feature
     union = FeatureUnion([('bmi_smoker', MultiplyTransformer())])
     
@@ -264,8 +254,8 @@ def create_pipeline_bmi_smoker(model_name, model):
     # Bundle preprocessing for union, numerical and categorical data
     preprocessor = ColumnTransformer(transformers=[
             ('dif', union, ['bmi', 'smoker']),
-            ('num', numerical_transformer, numerical_cols),
-            ('cat', categorical_transformer, categorical_cols)
+            ('num', numerical_transformer, num_cols),
+            ('cat', categorical_transformer, cat_cols)
     ])
     
     # Bundle preprocessor and model
@@ -275,6 +265,7 @@ def create_pipeline_bmi_smoker(model_name, model):
     ])
 
     return my_pipeline
+
 
 # Original pipeline creation. No feature engineering
 def create_pipeline(model_name, model, num_cols, cat_cols):
@@ -308,7 +299,7 @@ def create_pipeline(model_name, model, num_cols, cat_cols):
 # ====================================================================================================================
 # Data preprocessing function without using pipeline
 # ====================================================================================================================
-def manual_preprocess(X_train, X_valid):
+def manual_preprocess(X_train, X_valid, numerical_cols, categorical_cols):
     # =============================
     # Numerical preprocessing
     # =============================
@@ -347,7 +338,7 @@ def manual_preprocess(X_train, X_valid):
     
     return X_train_processed, X_valid_processed
 
-def manual_preprocess_bmi_smoker(X_train, X_valid):
+def manual_preprocess_bmi_smoker(X_train, X_valid, numerical_cols, categorical_cols):
     
     X_train_num = X_train[numerical_cols]
     X_valid_num = X_valid[numerical_cols]
@@ -431,7 +422,11 @@ def manual_preprocess_sm(X, num_cols, cat_cols):
 # =======================================================================================
 # Dataset with new features I created in cost_lin_reg.py and with their source features removed
 # =======================================================================================
+# Create formatted columns dictionary in dh module
+dh.create_formatted_cols_dict(dataset.columns)
+dh.add_edit_formatted_col('bmi', 'BMI')
 
+# Copy dataset to leave original unaffected
 new_features_data = dataset.copy()
 
 # Separate target from predictors
@@ -441,29 +436,17 @@ X = new_features_data.drop(['charges'], axis=1)
 # Create most of the features before preprocessing
 
 # Create ['age^2'] feature
-# age_sq = np.power(X['age'], 2)
-# add_feature('age^2', age_sq, 'n', X)
-# remove_feature('age', 'n', X)
 X['age'] = np.power(X['age'], 2)
 X.rename(columns={'age':'age^2'}, inplace=True)
 
 # Create feature ['bmi_>=_30'] (maybe temporarily) to create the ob_smoke_series using create_obese_smoker_category()
 # and to use for obese*smoker feature later
-# bmi_30 = X['bmi'] >= 30
-# obese_dict = {False:0, True:1}
-# bmi_30 = bmi_30.map(obese_dict)
-# add_feature('bmi_>=_30', bmi_30, 'c', X)
-# ob_smoke_series = create_obese_smoker_category_4(X)
 X['bmi_>=_30'] = X['bmi'] >= 30
 obese_dict = {False:0, True:1}
 X['bmi_>=_30'] = X['bmi_>=_30'].map(obese_dict)
 ob_smoke_series = create_obese_smoker_category_4(X)
 
 # Create ['smoker*obese'] feature
-# smoker_dict = {'no':0, 'yes':1}
-# X['smoker'] = X['smoker'].map(smoker_dict)
-# smoke_obese = X['smoker'] * X['bmi_>=_30']
-# add_feature('smoker*obese', smoke_obese, 'c', X)
 smoker_dict = {'no':0, 'yes':1}
 X['smoker'] = X['smoker'].map(smoker_dict)
 X['smoker*obese'] = X['smoker'] * X['bmi_>=_30']
@@ -487,26 +470,24 @@ y = new_features_data['charges']
 # For now I'll keep the 'bmi >= 30' feature
 X_pipe_test = X.copy() 
 
-# MAKE SURE LIST OF CATEGORICAL AND NUMERICAL COLUMNS IS UPDATED BEFORE USING PREPROCESSING FUNCTION
-reset_column_categories_create_format_dict(X)
+# Make sure list of categorical and numerical columns is updated before using preprocessing function
+num_cols, cat_cols = create_column_categories(X_pipe_test)
 remove_from_numerical_cols = ['smoker', 'bmi_>=_30', 'smoker*obese']
-numerical_cols = [col for col in numerical_cols if col not in remove_from_numerical_cols]
-categorical_cols.extend(remove_from_numerical_cols)
-print_num_cat_cols()
+num_cols = [col for col in num_cols if col not in remove_from_numerical_cols]
+cat_cols.extend(remove_from_numerical_cols)
 
 # Train/valid split
 X_train, X_valid, y_train, y_valid = train_test_split(X_pipe_test, y, train_size=0.8, test_size=0.2, random_state=15)
 
 # Manual preprocess
-X_train_processed, X_valid_processed = manual_preprocess_bmi_smoker(X_train, X_valid)
+X_train_processed, X_valid_processed = manual_preprocess_bmi_smoker(X_train, X_valid, num_cols, cat_cols)
 
 # Remove bmi and smoker from numerical and cateorical columns lists for custom pipeline preprocessing
-numerical_cols.remove('bmi')
-categorical_cols.remove('smoker')
-print_num_cat_cols()
+num_cols_pipeline = [col for col in num_cols if col!='bmi']
+cat_cols_pipeline = [col for col in cat_cols if col != 'smoker']
 
 # Create pipeline with custom transform to create ['bmi*smoker'] feature
-my_pipeline = create_pipeline_bmi_smoker('LR', LinearRegression())
+my_pipeline = create_pipeline_bmi_smoker('LR', LinearRegression(), num_cols_pipeline, cat_cols_pipeline)
 results = my_pipeline.fit(X_train, y_train)
 y_pred = my_pipeline.predict(X_valid)
 
@@ -566,7 +547,7 @@ inf = influence(lin_reg_1)
 (cooks, d) = inf.cooks_distance
 cooks_cutoff = 4 / (len(cooks) - (X.shape[1] - 1) - 1)
 
-outlier_df = X.copy()
+outlier_df = pd.DataFrame()
 outlier_df['cooks'] = cooks
 outlier_df['outlier'] = outlier_df['cooks'] > cooks_cutoff
 outlier_dict = {False:'no', True:'yes'}
@@ -654,7 +635,7 @@ inf = influence(lin_reg_2)
 (cooks, d) = inf.cooks_distance
 cooks_cutoff = 4 / (len(cooks) - (X.shape[1] - 1) - 1)
 
-outlier_df = no_out_2_X.copy()
+outlier_df = pd.DataFrame()
 outlier_df['cooks'] = cooks
 outlier_df['outlier'] = outlier_df['cooks'] > cooks_cutoff
 outlier_dict = {False:'no', True:'yes'}
@@ -740,11 +721,6 @@ fno_X = first_no_outliers_data.drop(['charges'], axis=1)
 sno_y = second_no_outliers_data['charges']
 sno_X = second_no_outliers_data.drop(['charges'], axis=1)
 
-# MAKE SURE LIST OF CATEGORICAL AND NUMERICAL COLUMNS IS UPDATED BEFORE USING PREPROCESSING FUNCTION
-# 'bmi' and 'smoker' shouldn't be included in the lists
-print_num_cat_cols()
-#reset_column_categories_create_format_dict()
-
 # ====================================================================================================================
 # Linear Regression
 # ====================================================================================================================
@@ -753,37 +729,35 @@ print_num_cat_cols()
 lr_results_list = []
 
 # No new features
-num_cols = ['age', 'bmi', 'children']
-cat_cols = ['sex', 'smoker', 'region']
+num_cols_orig = ['age', 'bmi', 'children']
+cat_cols_orig = ['sex', 'smoker', 'region']
 
 lin_reg0 = LinearRegression()
-lr_pipeline0 = create_pipeline('LR', lin_reg0, num_cols, cat_cols)
+lr_pipeline0 = create_pipeline('LR', lin_reg0, num_cols_orig, cat_cols_orig)
 lr_scores0 = cross_validate(lr_pipeline0, X_orig, y_orig, cv=10, scoring=scoring_list)
 lr_results_list.append(average_cv_scores(lr_scores0))
 
 
 # New features with no outliers removed
 lin_reg1 = LinearRegression()
-lr_pipeline1 = create_pipeline_bmi_smoker('LR', lin_reg1)
+lr_pipeline1 = create_pipeline_bmi_smoker('LR', lin_reg1, num_cols, cat_cols)
 lr_scores1 = cross_validate(lr_pipeline1, X, y, cv=10, scoring=scoring_list)
 lr_results_list.append(average_cv_scores(lr_scores1))
 
 # First outliers removed
 lin_reg2 = LinearRegression()
-lr_pipeline2 = create_pipeline_bmi_smoker('LR', lin_reg2)
+lr_pipeline2 = create_pipeline_bmi_smoker('LR', lin_reg2, num_cols, cat_cols)
 lr_scores2 = cross_validate(lr_pipeline2, fno_X, fno_y, cv=10, scoring=scoring_list)
 lr_results_list.append(average_cv_scores(lr_scores2))
 
 # Second outliers removed
 lin_reg3 = LinearRegression()
-lr_pipeline3 = create_pipeline_bmi_smoker('LR', lin_reg3)
+lr_pipeline3 = create_pipeline_bmi_smoker('LR', lin_reg3, num_cols, cat_cols)
 lr_scores3 = cross_validate(lr_pipeline3, sno_X, sno_y, cv=10, scoring=scoring_list)
 lr_results_list.append(average_cv_scores(lr_scores3))
 
-# Keep track of performance
+# Keep track of cross_val performance
 lr_results_df = pd.DataFrame(lr_results_list, index=['orig', 'new_feat', 'no_out1', 'no_out2']).T
-
-
 
 
 # ====================================================================================================================
@@ -796,11 +770,11 @@ rr_model_name = 'RR'
 # =======================================================================================
 # No new features
 # =======================================================================================
-num_cols = ['age', 'bmi', 'children']
-cat_cols = ['sex', 'smoker', 'region']
+num_cols_orig = ['age', 'bmi', 'children']
+cat_cols_orig = ['sex', 'smoker', 'region']
 
 rid_reg0 = Ridge(alpha=1.0, random_state=15)
-rr_pipeline0 = create_pipeline(rr_model_name, rid_reg0, num_cols, cat_cols)
+rr_pipeline0 = create_pipeline(rr_model_name, rid_reg0, num_cols_orig, cat_cols_orig)
 rr_scores0 = cross_validate(rr_pipeline0, X_orig, y_orig, cv=10, scoring=scoring_list)
 rr_results_list.append(average_cv_scores(rr_scores0))
 
@@ -814,14 +788,14 @@ rid_reg0.get_params()
 rr_parameters = {rr_model_name + '__alpha': range(0, 10, 1)}
 
 # Specify other GridSearchCV parameters
-scoring = ['r2', 'neg_root_mean_squared_error', 'neg_mean_absolute_error', 'neg_median_absolute_error', 'max_error']
 refit = 'r2'
 n_jobs = 10
 cv = 10
 verbose = 5
 
 # Create GridSearchCV object
-grid_search = GridSearchCV(estimator=rr_pipeline0, param_grid=rr_parameters, scoring=scoring, refit=refit, n_jobs=n_jobs, cv=cv, verbose=verbose)
+grid_search = GridSearchCV(estimator=rr_pipeline0, param_grid=rr_parameters, scoring=scoring_list, 
+                           refit=refit, n_jobs=n_jobs, cv=cv, verbose=verbose)
 
 # Test/train split
 X_train, X_valid, y_train, y_valid = train_test_split(X_orig, y_orig, train_size=0.8, test_size=0.2, random_state=15)
@@ -844,6 +818,7 @@ relevant_gs_results_df = gs_results_df[['param_RR__alpha', 'mean_test_r2', 'rank
                                         'mean_test_max_error',
                                         'rank_test_max_error']]
 
+# Rename columns
 relevant_gs_results_df = relevant_gs_results_df.rename(columns={'param_RR__alpha':'alpha',
                                                                 'mean_test_r2':'r2', 'rank_test_r2':'r2_rank', 
                                                                 'mean_test_neg_root_mean_squared_error':'rmse',
@@ -856,21 +831,21 @@ relevant_gs_results_df = relevant_gs_results_df.rename(columns={'param_RR__alpha
                                                                 'rank_test_max_error':'me_rank'})
 
 
-
 # Graph performance metrics with each hyperparameter
 list_metric_cols = ['r2', 'rmse', 'mae', 'med_ae', 'me']
-
-for metric in list_metric_cols:
-    plt.plot(relevant_gs_results_df['alpha'], relevant_gs_results_df[metric], marker='o', markersize=4)
-    plt.title(metric)
-    plt.grid()
-    plt.show()
 
 # plt.xlabel() and plt.ylabel() not working, this code outputs a list of callable functions in plt and 
 # does not include them for some reason
 object_methods = [method_name for method_name in dir(plt) if callable(getattr(plt, method_name))]
 
+for metric in list_metric_cols:
+    plt.plot(relevant_gs_results_df['alpha'], relevant_gs_results_df[metric], marker='o', markersize=4)
+    plt.ylabel(metric)
+    plt.xlabel('alpha')
+    plt.grid()
+    plt.show()
 
+# Looks like I got pretty close at maximizing r2
 
 
 
