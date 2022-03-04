@@ -2,24 +2,19 @@ import sys
 import numpy as np
 import pandas as pd
 from os import chdir
-import seaborn as sns 
-from scipy import stats
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from pathlib import PureWindowsPath, Path
 
 from sklearn.pipeline import Pipeline
-from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import FeatureUnion
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 
-import statsmodels.api as sm
-from statsmodels.stats.outliers_influence import OLSInfluence as influence
-
 from sklearn.linear_model import Ridge
+from sklearn.linear_model import Lasso
 from sklearn.linear_model import LinearRegression
 
 from sklearn.metrics import r2_score
@@ -32,7 +27,7 @@ from sklearn.metrics import mean_absolute_percentage_error
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.model_selection import cross_val_score, cross_validate
+from sklearn.model_selection import cross_validate
 
 # Make my own colormap
 from matplotlib import cm
@@ -532,15 +527,32 @@ def cv_results(fxn_pipeline, X, y, score_abbv_dict, index_neg, cv=10, return_est
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
     
     # Cross-validation
-    rr_scores = cross_validate(fxn_pipeline, X_train, y_train, scoring=list(score_abbv_dict.keys()), cv=cv, return_estimator=return_estimator)
+    cv_scores = cross_validate(fxn_pipeline, X_train, y_train, scoring=list(score_abbv_dict.keys()), cv=cv, return_estimator=return_estimator)
     
-    # Cross-validation performance metrics (means)
-    avg_cv_scores_df = average_cv_scores(rr_scores, score_abbv_dict, index_neg)
+    # Cross-validation performance scores (means)
+    avg_cv_scores_df = average_cv_scores(cv_scores, score_abbv_dict, index_neg)
     
     # Use CV model on test data
-    cv_test_scores_df = test_data_metrics_means(rr_scores['estimator'], X_test, y_test)
+    cv_test_scores_df = test_data_metrics_means(cv_scores['estimator'], X_test, y_test)
     
     return avg_cv_scores_df, cv_test_scores_df
+
+
+# Takes parameters and performs hyperparamter tuning using GridSearchCV. 
+# Returns best hyperparameter, mean cv results of best estimator, and results when best estimator applied to remaining test data
+def perform_grid_search(pipeline, X_train, y_train, scoring_list, param_grid, plot_title, cv=10, refit='r2', verbose=5, n_jobs=-1):    
+    # Create GridSearchCV object
+    grid_search = GridSearchCV(estimator=pipeline, param_grid=param_grid, scoring=scoring_list, 
+                               refit=refit, n_jobs=n_jobs, cv=cv, verbose=verbose)
+       
+    # Hyperparameter tuning using GridSearchCV
+    grid_search.fit(X_train, y_train)
+    
+    # Access GridSearch results
+    gs_results = grid_search.cv_results_
+    
+    return grid_search, gs_results
+
 
 # Takes parameters and performs hyperparamter tuning using GridSearchCV. 
 # Returns best hyperparameter, mean cv results of best estimator, and results when best estimator applied to remaining test data
@@ -644,19 +656,21 @@ index_neg = [1, 2, 3, 4, 5]
 # ====================================================================================================================
 # Linear Regression
 # ====================================================================================================================
+
 # Keep track of performance
 cv_results_df = pd.DataFrame()
 test_results_df = pd.DataFrame()
+
 lr_model_name = 'LR'
 
 # =============================
-# No new features
+# Original features
 # =============================
 # Create Linear Regression model and pipeline
 lr_pipeline0 = create_pipeline(lr_model_name, LinearRegression(), num_cols_orig, cat_cols_orig)
 
 # Perform cross-validation and store results in df
-#lr_cv_results_df['orig'], lr_test_results_df['orig'] = cv_results(lr_pipeline0, X_orig, y_orig, scoring_list)
+
 cv_results_df['lr_orig'], test_results_df['lr_orig'] = cv_results(lr_pipeline0, X_orig, y_orig, score_abbv_dict, index_neg)
 
 
@@ -681,16 +695,16 @@ cv_results_df['lr_new_feat'], test_results_df['lr_new_feat'] = cv_results(lr_pip
 # ====================================================================================================================
 # Ridge Regression
 # ====================================================================================================================
-# Keep track of performance
-rr_cv_results_df = pd.DataFrame()
-rr_cv_test_results_df = pd.DataFrame()
-rr_gs_results_df = pd.DataFrame()
-rr_gs_test_results_df = pd.DataFrame()
+
 rr_model_name = 'RR'
 
 # =======================================================================================
-# No new features
+# Original features
 # =======================================================================================
+# ==========================================================
+# CV results, no hyperparameter tuning
+# ==========================================================
+
 # Create Ridge Regression model and pipeline
 rr_pipeline0 = create_pipeline(rr_model_name, Ridge(alpha=1.0, random_state=15), num_cols_orig, cat_cols_orig)
 
@@ -700,84 +714,331 @@ cv_results_df['rr_orig_cv'], test_results_df['rr_orig_cv'] = cv_results(rr_pipel
 # ==========================================================
 # Hyperparameter tuning
 # ==========================================================
+# GridSearch parameters
+refit = 'r2'
+cv = 10
+verbose=5
+n_jobs=-1
+
 # Create model and pipeline
 rid_reg_gs0 = Ridge(alpha=1.0, random_state=15)
 rr_pipeline_gs0 = create_pipeline(rr_model_name, rid_reg_gs0, num_cols_orig, cat_cols_orig)
 
+# Test/train split
+X_train, X_test, y_train, y_test = train_test_split(X_orig, y_orig, train_size=0.8, test_size=0.2, random_state=15)
+
 # Determine hyperparameters to be tuned
 rid_reg_gs0.get_params()
 rr_pipeline_gs0.get_params()
-rr_parameters = {rr_model_name + '__alpha': range(0, 10, 1)}
+rr_parameters0 = {rr_model_name + '__alpha': range(0, 10, 1)}
 
-# Use ridge_gs_results() to perform hyperparamter tuning using GridSearchCV. 
-# Returns best hyperparameter, mean cv results of best estimator, and results when best estimator applied to remaining test data
-# best_alpha0, rr_gs_results_df['orig'], rr_gs_test_results_df['orig'] = ridge_gs_results(rr_pipeline_gs0, X_orig, 
-#                                                                                        y_orig, scoring_list, rr_parameters, 
-#                                                                                        'orig data')
+# Perform GridSearch hyperparameter tuning
+gs_obj0, gs_results0 = perform_grid_search(rr_pipeline_gs0, X_train, y_train, list(score_abbv_dict.keys()), rr_parameters0, 'orig data')
 
-ridge_gs_results_dict = ridge_gs_results(rr_pipeline_gs0, X_orig, y_orig, scoring_list, rr_parameters, 'orig data')
-cv_results_df['rr_orig_gs'] = ridge_gs_results_dict['best_estimator_scores']
-test_results_df['rr_orig_gs'] = ridge_gs_results_dict['test_data_model_results']
+# Metrics to be extracted from gs_results and their abbreviations
+# This is specific to ridge regression gs as the only parameter it includes is alpha
+metric_dict =  {'param_RR__alpha':'alpha', 'mean_test_r2':'r2', 'rank_test_r2':'r2_rank',
+                'mean_test_neg_root_mean_squared_error':'rmse', 'mean_test_neg_mean_absolute_error':'mae', 
+                'mean_test_neg_mean_absolute_percentage_error':'mape',
+                'mean_test_neg_median_absolute_error':'med_ae', 'mean_test_max_error':'me'}
 
+# List of metrics that return negative, so will be multiplied by -1
+negative_list = ['rmse', 'mae', 'mape', 'med_ae', 'me']
 
+# Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
+relevant_gs_results_df0 = gs_relevant_results_to_df(gs_results0, metric_dict, negative_list)
+
+# Visualize change in r2 with each hyperparameter
+plt.plot(relevant_gs_results_df0['alpha'], relevant_gs_results_df0['r2'], marker='o', markersize=4)
+plt.ylabel('r2')
+plt.xlabel('alpha')
+plt.title('GS Results-Ridge (orig data)')
+plt.grid()
+plt.show()
 # Looks like I captured the max r2, no need to dive deeper into hyperparameter tuning
 
+
+# Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
+best_estimator_row0 = relevant_gs_results_df0.loc[relevant_gs_results_df0['r2_rank'] == 1]
+
+# Hyperparameter of best estimator 
+best_estimator_alpha0 = best_estimator_row0['alpha'].iloc[0]
+
+# Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
+best_estimator_scores0 = best_estimator_row0.drop(['alpha', 'r2_rank'], axis=1).T.round(decimals=3)
+
+# Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
+best_estimator0 = gs_obj0.best_estimator_
+test_data_model_results0 = test_data_metrics_means([best_estimator0], X_test, y_test)
+
+# Keep track of results
+cv_results_df['rr_orig_gs'] = best_estimator_scores0
+test_results_df['rr_orig_gs'] = test_data_model_results0
+
+
 # =======================================================================================
-# New features with no outliers removed
+# New features
 # =======================================================================================
+# ==========================================================
+# CV results, no hyperparameter tuning
+# ==========================================================
 # Create model and pipeline
 rr_pipeline1 = create_pipeline(rr_model_name, Ridge(alpha=1.0, random_state=15), num_cols_pipeline, cat_cols_pipeline)
 
 # Perform cross-validation and store results in df
-rr_cv_results_df['new_feat'], rr_cv_test_results_df['new_feat'] = cv_results(rr_pipeline1, X, y, scoring_list)
+cv_results_df['rr_new_feat_cv'], test_results_df['rr_new_feat_cv'] = cv_results(rr_pipeline1, X, y, score_abbv_dict, index_neg)
 
 # ==========================================================
 # Hyperparameter tuning
 # ==========================================================
+# GridSearch parameters
+refit = 'r2'
+cv = 10
+verbose=5
+n_jobs=-1
 
 # Create model and pipeline
 rid_reg_gs1 = Ridge(alpha=1.0, random_state=15)
 rr_pipeline_gs1 = create_pipeline(rr_model_name, rid_reg_gs1, num_cols_pipeline, cat_cols_pipeline)
+
+# Test/train split
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
 
 # Determine hyperparameters to be tuned
 rid_reg_gs1.get_params()
 rr_pipeline_gs1.get_params()
 rr_parameters1 = {rr_model_name + '__alpha': range(0, 10, 1)}
 
-# Use ridge_gs_results() to perform hyperparamter tuning using GridSearchCV. 
-best_alpha1, rr_gs_results_df['new_feat'], rr_gs_test_results_df['new_feat'] = ridge_gs_results(rr_pipeline_gs1, X, 
-                                                                                       y, scoring_list, rr_parameters1, 
-                                                                                       'new feat')
+# Perform GridSearch hyperparameter tuning
+gs_obj1, gs_results1 = perform_grid_search(rr_pipeline_gs1, X_train, y_train, list(score_abbv_dict.keys()), rr_parameters1, 'new feats')
 
+# Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
+relevant_gs_results_df1 = gs_relevant_results_to_df(gs_results1, metric_dict, negative_list)
+
+# Visualize change in r2 with each hyperparameter
+plt.plot(relevant_gs_results_df1['alpha'], relevant_gs_results_df1['r2'], marker='o', markersize=4)
+plt.ylabel('r2')
+plt.xlabel('alpha')
+plt.title('GS Results-Ridge (new feats)')
+plt.grid()
+plt.show()
 # Max r2 at alpha=0, decreases from there
 
+# Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
+best_estimator_row1 = relevant_gs_results_df1.loc[relevant_gs_results_df1['r2_rank'] == 1]
+
+# Hyperparameter of best estimator 
+best_estimator_alpha1 = best_estimator_row1['alpha'].iloc[0]
+
+# Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
+best_estimator_scores1 = best_estimator_row1.drop(['alpha', 'r2_rank'], axis=1).T.round(decimals=3)
+
+# Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
+best_estimator1 = gs_obj1.best_estimator_
+test_data_model_results1 = test_data_metrics_means([best_estimator1], X_test, y_test)
+
+# Keep track of results
+cv_results_df['rr_new_feat_gs'] = best_estimator_scores1
+test_results_df['rr_new_feat_gs'] = test_data_model_results1
+
+# ====================================================================================================================
+# Plot everything so far
+# ====================================================================================================================
+rmse_data = test_results_df.loc['rmse']
+plt.plot(rmse_data.index,rmse_data, marker='o', markersize=4)
+plt.xlabel('rmse')
+plt.xticks(rotation = -25)
+plt.ylabel('model')
+plt.title('RMSE Summary')
+plt.grid()
+plt.show()
 
 
-# =======================================================================================
-# Compare Ridge Regression to Linear Regression
-# =======================================================================================
-lr_cv_results_df
-lr_test_results_df
-perc_diff_lr
 
-rr_cv_results_df
-rr_cv_test_results_df
-
-perc_diff_rr_cv = pd.DataFrame()
-for col in rr_cv_results_df.columns:
-    perc_diff_rr_cv[col] = (rr_cv_results_df[col] - rr_cv_test_results_df[col]) / rr_cv_results_df[col]
-
-rr_gs_results_df
-rr_gs_test_results_df
-
-perc_diff_rr_gs = pd.DataFrame()
-for col in rr_gs_results_df.columns:
-    perc_diff_rr_gs[col] = (rr_gs_results_df[col] - rr_gs_test_results_df[col]) / rr_gs_results_df[col]
 
 # ====================================================================================================================
 # Lasso Regression
 # ====================================================================================================================
 
+lsr_model_name = 'LSR'
+
+# =======================================================================================
+# Original features
+# =======================================================================================
+# ==========================================================
+# CV results, no hyperparameter tuning
+# ==========================================================
+
+# Create Ridge Regression model and pipeline
+lsr_pipeline0 = create_pipeline(lsr_model_name, Lasso(alpha=1.0, random_state=15), num_cols_orig, cat_cols_orig)
+
+# Perform cross-validation and store results in df
+cv_results_df['lsr_orig_cv'], test_results_df['lsr_orig_cv'] = cv_results(lsr_pipeline0, X_orig, y_orig, score_abbv_dict, index_neg)
+
+# ==========================================================
+# Hyperparameter tuning
+# ==========================================================
+# GridSearch parameters
+refit = 'r2'
+cv = 10
+verbose=5
+n_jobs=-1
+
+# Create model and pipeline
+las_reg_gs0 = Lasso(alpha=1.0, random_state=15)
+lsr_pipeline_gs0 = create_pipeline(lsr_model_name, las_reg_gs0, num_cols_orig, cat_cols_orig)
+
+# Test/train split
+X_train, X_test, y_train, y_test = train_test_split(X_orig, y_orig, train_size=0.8, test_size=0.2, random_state=15)
+
+# Determine hyperparameters to be tuned
+las_reg_gs0.get_params()
+lsr_pipeline_gs0.get_params()
+lsr_parameters0 = {lsr_model_name + '__alpha': range(0, 10, 1)}
+
+# Perform GridSearch hyperparameter tuning
+lsr_gs_obj0, lsr_gs_results0 = perform_grid_search(lsr_pipeline_gs0, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters0, 'orig data')
+
+# Metrics to be extracted from gs_results and their abbreviations
+# This is specific to lasso regression gs as the only parameter it includes is alpha
+metric_dict_lsr =  {'param_LSR__alpha':'alpha', 'mean_test_r2':'r2', 'rank_test_r2':'r2_rank',
+                'mean_test_neg_root_mean_squared_error':'rmse', 'mean_test_neg_mean_absolute_error':'mae', 
+                'mean_test_neg_mean_absolute_percentage_error':'mape',
+                'mean_test_neg_median_absolute_error':'med_ae', 'mean_test_max_error':'me'}
+
+# List of metrics that return negative, so will be multiplied by -1
+negative_list = ['rmse', 'mae', 'mape', 'med_ae', 'me']
+
+# Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
+lsr_relevant_gs_results_df0 = gs_relevant_results_to_df(lsr_gs_results0, metric_dict_lsr, negative_list)
+
+# Visualize change in r2 with each hyperparameter
+plt.plot(lsr_relevant_gs_results_df0['alpha'], lsr_relevant_gs_results_df0['r2'], marker='o', markersize=4)
+plt.ylabel('r2')
+plt.xlabel('alpha')
+plt.title('GS Results-Lasso (orig data)')
+plt.grid()
+plt.show()
+# R2 increasing as alpha increases, doesn't seem to hit its max yet
+
+
+# New range for hyperparameter alpha
+lsr_parameters0 = {lsr_model_name + '__alpha': np.arange(44.0, 44.2, 0.05)}
+
+# Perform GridSearch hyperparameter tuning
+lsr_gs_obj0, lsr_gs_results0 = perform_grid_search(lsr_pipeline_gs0, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters0, 'orig data')
+
+# Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
+lsr_relevant_gs_results_df0 = gs_relevant_results_to_df(lsr_gs_results0, metric_dict_lsr, negative_list)
+
+# Visualize change in r2 with each hyperparameter
+plt.plot(lsr_relevant_gs_results_df0['alpha'], lsr_relevant_gs_results_df0['r2'], marker='o', markersize=4)
+plt.ylabel('r2')
+#plt.ylim(0.72726, 0.72728)
+plt.xlabel('alpha')
+plt.xticks(rotation = -25)
+plt.title('GS Results-Lasso (orig data)')
+plt.grid()
+plt.show()
+# Kept changing alph range, found two peaks of r2 around alpha of 50 and 110. The first was a higher r2, so continued to fine-tune
+# (Made sure to check way further out to an alpha of 10,000. The r2 just keeps decreasing)
+# Alpha of 44.10 gave the best r2 (0.727273)
+# Alpha of 36.535 gave the best rmse (6231.735661)
+
+# Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
+lsr_best_estimator_row0 = lsr_relevant_gs_results_df0.loc[lsr_relevant_gs_results_df0['r2_rank'] == 1]
+
+# Hyperparameter of best estimator 
+lsr_best_estimator_alpha0 = lsr_best_estimator_row0['alpha'].iloc[0]
+
+# Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
+lsr_best_estimator_scores0 = lsr_best_estimator_row0.drop(['alpha', 'r2_rank'], axis=1).T.round(decimals=3)
+
+# Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
+lsr_best_estimator0 = lsr_gs_obj0.best_estimator_
+lsr_test_data_model_results0 = test_data_metrics_means([lsr_best_estimator0], X_test, y_test)
+
+# Keep track of results
+cv_results_df['lsr_orig_gs'] = lsr_best_estimator_scores0
+test_results_df['lsr_orig_gs'] = lsr_test_data_model_results0
+
+
+# =======================================================================================
+# New features
+# =======================================================================================
+# ==========================================================
+# CV results, no hyperparameter tuning
+# ==========================================================
+# Create model and pipeline
+lsr_pipeline1 = create_pipeline(lsr_model_name, Lasso(alpha=1.0, random_state=15), num_cols_pipeline, cat_cols_pipeline)
+
+# Perform cross-validation and store results in df
+cv_results_df['lsr_new_feat_cv'], test_results_df['lsr_new_feat_cv'] = cv_results(lsr_pipeline1, X, y, score_abbv_dict, index_neg)
+
+# ==========================================================
+# Hyperparameter tuning
+# ==========================================================
+# GridSearch parameters
+refit = 'r2'
+cv = 10
+verbose=5
+n_jobs=-1
+
+# Create model and pipeline
+las_reg_gs1 = Lasso(alpha=1.0, random_state=15)
+lsr_pipeline_gs1 = create_pipeline(lsr_model_name, las_reg_gs1, num_cols_pipeline, cat_cols_pipeline)
+
+# Test/train split
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
+
+# Determine hyperparameters to be tuned
+las_reg_gs1.get_params()
+lsr_pipeline_gs1.get_params()
+lsr_parameters1 = {lsr_model_name + '__alpha': np.arange(26, 26.5, 0.05)}
+
+# Perform GridSearch hyperparameter tuning
+lsr_gs_obj1, lsr_gs_results1 = perform_grid_search(lsr_pipeline_gs1, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters1, 'new feats')
+
+# Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
+lsr_relevant_gs_results_df1 = gs_relevant_results_to_df(lsr_gs_results1, metric_dict_lsr, negative_list)
+
+# Visualize change in r2 with each hyperparameter
+plt.plot(lsr_relevant_gs_results_df1['alpha'], lsr_relevant_gs_results_df1['r2'], marker='o', markersize=4)
+plt.ylabel('r2')
+plt.xlabel('alpha')
+plt.title('GS Results-Lasso (new feats)')
+plt.grid()
+plt.show()
+# Seems that r2 peaks at 7.56 at an alpha of 0 and drops from there (went out to alpha of 10,000 to make sure)
+
+# Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
+lsr_best_estimator_row1 = lsr_relevant_gs_results_df1.loc[lsr_relevant_gs_results_df1['r2_rank'] == 1]
+
+# Hyperparameter of best estimator 
+lsr_best_estimator_alpha1 = lsr_best_estimator_row1['alpha'].iloc[0]
+
+# Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
+lsr_best_estimator_scores1 = lsr_best_estimator_row1.drop(['alpha', 'r2_rank'], axis=1).T.round(decimals=3)
+
+# Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
+lsr_best_estimator1 = lsr_gs_obj1.best_estimator_
+lsr_test_data_model_results1 = test_data_metrics_means([lsr_best_estimator1], X_test, y_test)
+
+# Keep track of results
+cv_results_df['lsr_new_feat_gs'] = lsr_best_estimator_scores1
+test_results_df['lsr_new_feat_gs'] = lsr_test_data_model_results1
+
+# ====================================================================================================================
+# Plot everything so far
+# ====================================================================================================================
+r2_data = test_results_df.loc['r2']
+plt.plot(r2_data.index, r2_data, marker='o', markersize=4)
+plt.xlabel('r2')
+plt.xticks(rotation = -25)
+plt.ylabel('model')
+plt.title('r2 Summary')
+plt.grid()
+plt.show()
 
 # ====================================================================================================================
 # ElasticNet?
@@ -785,6 +1046,6 @@ for col in rr_gs_results_df.columns:
 
 
 # ====================================================================================================================
-# Decision Tree
+# Random Forest
 # ====================================================================================================================
 
