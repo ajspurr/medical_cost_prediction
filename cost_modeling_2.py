@@ -29,22 +29,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import cross_validate
 
-# Make my own colormap
-from matplotlib import cm
-from matplotlib.colors import ListedColormap
-Set1 = cm.get_cmap('Set1', 8)
-tab10  = cm.get_cmap('tab10', 8)
-my_cmap = new_cmap3 = ListedColormap(np.vstack([tab10.colors[0:2],  Set1.colors[0], tab10.colors[2]]))
-
 # Read in data
 project_dir = PureWindowsPath(r"D:\GitHubProjects\medical_cost_prediction\\")
 chdir(project_dir)
 dataset = pd.read_csv('./input/insurance.csv')
 ml_models_output_dir = Path(project_dir, Path('./output/models/ml'))
-
-# Initialize global variables
-categorical_cols = []
-numerical_cols = []
 
 # Import my data science helper functions (relative dir based on project_dir)
 my_module_dir = str(Path.resolve(Path('../my_ds_modules')))
@@ -80,28 +69,6 @@ def create_column_categories(fxn_X):
     print(f"Categorical Columns: {categorical_cols}")
     
     return numerical_cols, categorical_cols
-        
-    
-def add_feature(name, data, feature_type, fxn_dataset):
-    if feature_type == 'c':
-        categorical_cols.append(name)
-    elif feature_type == 'n':
-        numerical_cols.append(name)
-    else:
-        raise Exception("Parameter 'feature_type' must be 'c' for categorical or 'n' for numerical")
-    
-    fxn_dataset[name] = data    
-
-def remove_feature(name, feature_type, fxn_dataset):
-    if feature_type == 'c':
-        categorical_cols.remove(name)
-    elif feature_type == 'n':
-        numerical_cols.remove(name)
-    else:
-        raise Exception("Parameter 'feature_type' must be 'c' for categorical or 'n' for numerical")
-    
-    fxn_dataset.drop(name, axis=1, inplace=True)
-    return    
 
 # ====================================================================================================================
 # Visualization helper functions
@@ -114,40 +81,8 @@ def format_col(col_name):
 # 'obese smokers', 'nonobese smokers', 'obese nonsmokers', 'nonobese nonsmokers'
 # Returns a series of said categories which corresponds to 'X_df' parameter
 # https://datagy.io/pandas-conditional-column/
+
 def create_obese_smoker_category(X_df):
-    conditions = [
-        (X_df['bmi_>=_30_yes'] == 1) & (X_df['smoker_yes'] == 1),
-        (X_df['bmi_>=_30_yes'] == 0) & (X_df['smoker_yes'] == 1),
-        (X_df['bmi_>=_30_yes'] == 1) & (X_df['smoker_yes'] == 0),
-        (X_df['bmi_>=_30_yes'] == 0) & (X_df['smoker_yes'] == 0)
-    ]
-    
-    category_names = ['obese smokers', 'nonobese smokers', 'obese nonsmokers', 'nonobese nonsmokers']
-    return pd.Series(np.select(conditions, category_names), name='grouping') 
-
-def create_obese_smoker_category_2(X_df):
-    conditions = [
-        (X_df['bmi_>=_30'] == 'yes') & (X_df['smoker'] == 'yes'),
-        (X_df['bmi_>=_30'] == 'no') & (X_df['smoker'] == 'yes'),
-        (X_df['bmi_>=_30'] == 'yes') & (X_df['smoker'] == 'no'),
-        (X_df['bmi_>=_30'] == 'no') & (X_df['smoker'] == 'no')
-    ]
-    
-    category_names = ['obese smokers', 'nonobese smokers', 'obese nonsmokers', 'nonobese nonsmokers']
-    return pd.Series(np.select(conditions, category_names), name='grouping') 
-
-def create_obese_smoker_category_3(X_df):
-    conditions = [
-        (X_df['bmi_>=_30'] == True) & (X_df['smoker'] == 'yes'),
-        (X_df['bmi_>=_30'] == False) & (X_df['smoker'] == 'yes'),
-        (X_df['bmi_>=_30'] == True) & (X_df['smoker'] == 'no'),
-        (X_df['bmi_>=_30'] == False) & (X_df['smoker'] == 'no')
-    ]
-    
-    category_names = ['obese smokers', 'nonobese smokers', 'obese nonsmokers', 'nonobese nonsmokers']
-    return pd.Series(np.select(conditions, category_names), name='grouping') 
-
-def create_obese_smoker_category_4(X_df):
     conditions = [
         (X_df['bmi_>=_30'] == 1) & (X_df['smoker'] == 'yes'),
         (X_df['bmi_>=_30'] == 0) & (X_df['smoker'] == 'yes'),
@@ -195,13 +130,10 @@ class MultiplyTransformer(BaseEstimator, TransformerMixin):
     """
     
     def __init__(self):
-        #print('\n>>>>>init() called\n')
         return
 
     
-    def fit(self, X, y=None):
-        #print('\n>>>>>fit() called\n')
-        
+    def fit(self, X, y=None):      
         # Scaling for 'bmi'
         self.ss = StandardScaler()
         self.ss.fit(X[['bmi']])
@@ -211,9 +143,7 @@ class MultiplyTransformer(BaseEstimator, TransformerMixin):
         self.OH_encoder.fit(X[['smoker']])
         return self
     
-    def transform(self, X, y=None):
-        #print('\n>>>>>transform() called\n')
-       
+    def transform(self, X, y=None):       
         # Copy so as not to affect original data
         X_copy = X.copy()
         
@@ -302,12 +232,7 @@ def manual_preprocess(X_train, X_valid, numerical_cols, categorical_cols):
     # =============================
     X_train_num = X_train[numerical_cols]
     X_valid_num = X_valid[numerical_cols]
-    
-    # Imputation (Not relevant in this dataset, but keeping for future application)
-    #num_imputer = SimpleImputer(strategy='mean')
-    #imputed_X_train_num = pd.DataFrame(num_imputer.fit_transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
-    #imputed_X_valid_num = pd.DataFrame(num_imputer.transform(X_valid_num), columns=X_valid_num.columns, index=X_valid_num.index)
-    
+       
     # Scaling
     ss = StandardScaler()
     scaled_X_train_num = pd.DataFrame(ss.fit_transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
@@ -318,11 +243,6 @@ def manual_preprocess(X_train, X_valid, numerical_cols, categorical_cols):
     # =============================
     X_train_cat = X_train[categorical_cols]
     X_valid_cat = X_valid[categorical_cols]
-    
-    # Imputation (Not relevant in this dataset, but keeping for future application)
-    #cat_imputer = SimpleImputer(strategy='most_frequent')
-    #imputed_X_train_cat = pd.DataFrame(cat_imputer.fit_transform(X_train_cat), columns=X_train_cat.columns, index=X_train_cat.index)
-    #imputed_X_valid_cat = pd.DataFrame(cat_imputer.transform(X_valid_cat), columns=X_valid_cat.columns, index=X_valid_cat.index)
     
     # One-hot encoding
     OH_encoder = OneHotEncoder(handle_unknown='ignore', drop='first', sparse=False)
@@ -336,7 +256,6 @@ def manual_preprocess(X_train, X_valid, numerical_cols, categorical_cols):
     return X_train_processed, X_valid_processed
 
 def manual_preprocess_bmi_smoker(X_train, X_valid, numerical_cols, categorical_cols):
-    
     X_train_num = X_train[numerical_cols]
     X_valid_num = X_valid[numerical_cols]
     
@@ -353,27 +272,18 @@ def manual_preprocess_bmi_smoker(X_train, X_valid, numerical_cols, categorical_c
     scaled_X_valid_num = pd.DataFrame(ss.transform(X_valid_num), columns=X_valid_num.columns, index=X_valid_num.index)
     
     # Create ['bmi*smoker'] feature, specifically after scaling so it scales BMI properly first
-    # scaled_X_train_num['bmi*smoker'] = X_train_cat['smoker'] * scaled_X_train_num['bmi']
-    # scaled_X_valid_num['bmi*smoker'] = X_valid_cat['smoker'] * scaled_X_valid_num['bmi']
     bmi_smoker_train = pd.Series(X_train_cat['smoker'] * scaled_X_train_num['bmi'], name='bmi*smoker')
     bmi_smoker_valid = pd.Series(X_valid_cat['smoker'] * scaled_X_valid_num['bmi'], name='bmi*smoker')
     
     # =============================
     # Categorical preprocessing
     # =============================
-    # Imputation (Not relevant in this dataset, but keeping for future application)
-    #cat_imputer = SimpleImputer(strategy='most_frequent')
-    #imputed_X_train_cat = pd.DataFrame(cat_imputer.fit_transform(X_train_cat), columns=X_train_cat.columns, index=X_train_cat.index)
-    #imputed_X_valid_cat = pd.DataFrame(cat_imputer.transform(X_valid_cat), columns=X_valid_cat.columns, index=X_valid_cat.index)
-    
     # One-hot encoding
     OH_encoder = OneHotEncoder(handle_unknown='ignore', drop='first', sparse=False)
     OH_cols_train = pd.DataFrame(OH_encoder.fit_transform(X_train_cat), index=X_train_cat.index, columns=OH_encoder.get_feature_names_out())
     OH_cols_valid = pd.DataFrame(OH_encoder.transform(X_valid_cat), index=X_valid_cat.index, columns=OH_encoder.get_feature_names_out())
     
     # Add preprocessed categorical columns back to preprocessed numerical columns
-    # X_train_processed = pd.concat([scaled_X_train_num, OH_cols_train], axis=1)
-    # X_valid_processed = pd.concat([scaled_X_valid_num, OH_cols_valid], axis=1)
     X_train_processed = pd.concat([scaled_X_train_num, OH_cols_train, bmi_smoker_train], axis=1)
     X_valid_processed = pd.concat([scaled_X_valid_num, OH_cols_valid, bmi_smoker_valid], axis=1)
     
@@ -381,14 +291,8 @@ def manual_preprocess_bmi_smoker(X_train, X_valid, numerical_cols, categorical_c
 
 
 # ====================================================================================================================
-# I originally used three datasets, one with none of Cook's outliers removed, one with the original set removed, and
-# one with both sets removed. However, I've already established that a perfect model can be achieved after removing
-# both sets. So I will instead see how well I can train models on the original dataset, outliers and all.
+# Feature engineering from cost_lin_reg.py
 # ====================================================================================================================
-
-# =======================================================================================
-# Dataset with new features I created in cost_lin_reg.py and with their source features removed
-# =======================================================================================
 # Create formatted columns dictionary in dh module
 dh.create_formatted_cols_dict(dataset.columns)
 dh.update_formatted_cols('bmi', 'BMI')
@@ -411,7 +315,7 @@ X.rename(columns={'age':'age^2'}, inplace=True)
 X['bmi_>=_30'] = X['bmi'] >= 30
 obese_dict = {False:0, True:1}
 X['bmi_>=_30'] = X['bmi_>=_30'].map(obese_dict)
-ob_smoke_series = create_obese_smoker_category_4(X)
+ob_smoke_series = create_obese_smoker_category(X)
 
 # Create ['smoker*obese'] feature
 smoker_dict = {'no':0, 'yes':1}
@@ -435,14 +339,14 @@ X['smoker*obese'] = X['smoker'] * X['bmi_>=_30']
 # =======================================================================================
 
 
-def average_cv_scores(score_dict, score_abbv_dict, index_neg, round=3):  
+def average_cv_scores(cv_results, score_abbv_dict, index_neg, round=3):  
     """
     Function for formatting model performance scores returned from sklearn cross_validate(). Takes the 
     mean of each score.
 
     Parameters
     ----------
-    score_dict : Dict
+    cv_results : Dict
         The dictionary of results that is returned from cross_validate().
     score_abbv_dict : Dict
         Values are the names of the cross_validate() scores, keys are the abbreviated names of the scores.
@@ -464,7 +368,7 @@ def average_cv_scores(score_dict, score_abbv_dict, index_neg, round=3):
        
     avg_cv_scores = {}
     for i, key in enumerate(scores_list):
-        avg_cv_scores[key] = np.round(np.mean(score_dict[key]), round)
+        avg_cv_scores[key] = np.round(np.mean(cv_results[key]), round)
         if i in index_neg:
             avg_cv_scores[key] = avg_cv_scores[key] * -1
     
@@ -473,10 +377,30 @@ def average_cv_scores(score_dict, score_abbv_dict, index_neg, round=3):
     return_df.index = scores_rename_list
     return return_df
 
-# Loops through estimators which have already been fit on training data, uses estimators to predict y and 
-# calculates multiple model performance scores, returning as a dictionary where the key is the score and the
-# value is the value
-def test_data_metrics_means(estimators, X_test, y_test, round=3):
+
+def model_scores_test_data(estimators, X_test, y_test, round=3):
+    """
+    Loops through estimators which have already been fit on training data, uses estimators to predict y and 
+    calculates multiple model performance scores, returns scores as a dataframe
+
+    Parameters
+    ----------
+    estimators : list of sklearn Estimators
+        List of estimators (usually models or pipelines) that have already been fit on training data. Will be used
+        to predict target.
+    X_test : DataFrame
+        The features of the test data.
+    y_test : Series
+        The target of the test data.
+    round : Integer, optional
+        How many decimals places to round results. The default is 3.
+
+    Returns
+    -------
+    return_df : DataFrame
+        DataFrame containing the model performance scores on the test data.
+
+    """
     # Using a defaultdict allows you to create a dictionary where the values are lists, which you can 
     # access directly by their keys and append values to. This doesn't work on a normal dictionary.
     test_results_dict = defaultdict(list)
@@ -533,7 +457,7 @@ def cv_results(fxn_pipeline, X, y, score_abbv_dict, index_neg, cv=10, return_est
     avg_cv_scores_df = average_cv_scores(cv_scores, score_abbv_dict, index_neg)
     
     # Use CV model on test data
-    cv_test_scores_df = test_data_metrics_means(cv_scores['estimator'], X_test, y_test)
+    cv_test_scores_df = model_scores_test_data(cv_scores['estimator'], X_test, y_test)
     
     return avg_cv_scores_df, cv_test_scores_df
 
@@ -602,7 +526,7 @@ def ridge_gs_results(pipeline, X, y, scoring_list, param_grid, plot_title, cv=10
     
     # Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
     best_estimator = grid_search.best_estimator_
-    test_data_model_results = test_data_metrics_means([best_estimator], X_test, y_test)
+    test_data_model_results = model_scores_test_data([best_estimator], X_test, y_test)
     
     return_dict = {}
     return_dict['best_estimator'] = best_estimator
@@ -679,7 +603,7 @@ cv_results_df['lr_orig'], test_results_df['lr_orig'] = cv_results(lr_pipeline0, 
 # return_estimator=True
 # rr_scores = cross_validate(lr_pipeline0, X_train, y_train, scoring=list(score_abbv_dict.keys()), cv=cv, return_estimator=return_estimator)
 # avg_cv_scores_df = average_cv_scores(rr_scores, score_abbv_dict, index_neg)
-# cv_test_scores_df = test_data_metrics_means(rr_scores['estimator'], X_test, y_test)
+# cv_test_scores_df = model_scores_test_data(rr_scores['estimator'], X_test, y_test)
 
 
 
@@ -769,7 +693,7 @@ best_estimator_scores0 = best_estimator_row0.drop(['alpha', 'r2_rank'], axis=1).
 
 # Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
 best_estimator0 = gs_obj0.best_estimator_
-test_data_model_results0 = test_data_metrics_means([best_estimator0], X_test, y_test)
+test_data_model_results0 = model_scores_test_data([best_estimator0], X_test, y_test)
 
 # Keep track of results
 cv_results_df['rr_orig_gs'] = best_estimator_scores0
@@ -835,7 +759,7 @@ best_estimator_scores1 = best_estimator_row1.drop(['alpha', 'r2_rank'], axis=1).
 
 # Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
 best_estimator1 = gs_obj1.best_estimator_
-test_data_model_results1 = test_data_metrics_means([best_estimator1], X_test, y_test)
+test_data_model_results1 = model_scores_test_data([best_estimator1], X_test, y_test)
 
 # Keep track of results
 cv_results_df['rr_new_feat_gs'] = best_estimator_scores1
@@ -956,7 +880,7 @@ lsr_best_estimator_scores0 = lsr_best_estimator_row0.drop(['alpha', 'r2_rank'], 
 
 # Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
 lsr_best_estimator0 = lsr_gs_obj0.best_estimator_
-lsr_test_data_model_results0 = test_data_metrics_means([lsr_best_estimator0], X_test, y_test)
+lsr_test_data_model_results0 = model_scores_test_data([lsr_best_estimator0], X_test, y_test)
 
 # Keep track of results
 cv_results_df['lsr_orig_gs'] = lsr_best_estimator_scores0
@@ -1022,7 +946,7 @@ lsr_best_estimator_scores1 = lsr_best_estimator_row1.drop(['alpha', 'r2_rank'], 
 
 # Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
 lsr_best_estimator1 = lsr_gs_obj1.best_estimator_
-lsr_test_data_model_results1 = test_data_metrics_means([lsr_best_estimator1], X_test, y_test)
+lsr_test_data_model_results1 = model_scores_test_data([lsr_best_estimator1], X_test, y_test)
 
 # Keep track of results
 cv_results_df['lsr_new_feat_gs'] = lsr_best_estimator_scores1
