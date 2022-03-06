@@ -1,11 +1,3 @@
-"""
-This explores multiple regression model performances on both the original data and the feature-engineered data.
-All models performed the same on original data and the same on engineered data. Other than random forest, which
-performed a bit worse on both.
-Hyperparameter tuning did not improve model performance.
-This is all using R2 as the performance metric.
-"""
-
 import sys
 import numpy as np
 import pandas as pd
@@ -1120,47 +1112,25 @@ test_results_df['rf_new_feat_gs'] = rf_test_data_model_results1
 # ====================================================================================================================
 # Plot everything so far
 # ====================================================================================================================
-# Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=2, num_cols=1, figsize=(12, 10))
+# Performance on test data
+r2_data = test_results_df.loc['r2']
+plt.plot(r2_data.index, r2_data, marker='o', markersize=4)
+plt.xlabel('Model')
+plt.xticks(rotation = -25, horizontalalignment='left')
+plt.ylabel('R2')
+plt.title('Models Summary')
+plt.grid()
+plt.show()
 
 # Performance on cross-val
 r2_data = cv_results_df.loc['r2']
-#ax2 = plt.gca()
-ax2 = ax_array_flat[0]
-ax2.plot(r2_data.index, r2_data, marker='o', markersize=4)
-ax2.set_xlabel('Model')
-plt.setp(ax2.get_xticklabels(), rotation=-25, horizontalalignment='left')
-# plt.xticks(rotation = -25, horizontalalignment='left')
-ax2.set_ylabel('R2')
-ax2.set_title('Model Performance on Cross Validation')
-textbox_text = 'LR = Linear Regression \nRR = Ridge Regression \nLSR = Lasso Regression \nEN = Elastic Net \nRF = Random Forest \norig = original data \nnew_feat = engineered data \ncv = cv score \ngs = cv score with hyperparameter tuning' 
-box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
-ax2.text(1.02, 0.99, textbox_text, bbox=box_style, transform=ax2.transAxes, verticalalignment='top', horizontalalignment='left')  
-ax2.grid()
-#dh.save_image('performance_cv', ml_models_output_dir)
-#plt.show()
-
-
-# Performance on test data
-r2_data = test_results_df.loc['r2']
-#ax1 = plt.gca()
-ax1 = ax_array_flat[1]
-ax1.plot(r2_data.index, r2_data, marker='o', markersize=4)
-ax1.set_xlabel('Model')
-plt.setp(ax1.get_xticklabels(), rotation=-25, horizontalalignment='left')
-ax1.set_ylabel('R2')
-ax1.set_title('Model Performance on Test Data')
-#textbox_text = 'LR = Linear Regression \nRR = Ridge Regression \nLSR = Lasso Regression \nEN = Elastic Net \nRF = Random Forest \norig = original data \nnew_feat = engineered data \ncv = cv score \ngs = cv score with hyperparameter tuning' 
-box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.8}
-#ax1.text(1.02, 0.99, textbox_text, bbox=box_style, transform=ax1.transAxes, verticalalignment='top', horizontalalignment='left')  
-ax1.grid()
-#dh.save_image('performance_testdata', ml_models_output_dir)
-#plt.show()
-
-fig.suptitle('Model Performance', fontsize=24)
-fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-dh.save_image('model_performance_1', ml_models_output_dir)
-
+plt.plot(r2_data.index, r2_data, marker='o', markersize=4)
+plt.xlabel('Model')
+plt.xticks(rotation = -25, horizontalalignment='left')
+plt.ylabel('R2')
+plt.title('Models Summary')
+plt.grid()
+plt.show()
 
 # All models perform basically exactly the same on original data and exactly the same on engineered data
 # Until you get to Random Forest. The non-hyperparameter-tuned model didn't do as well as others. The tuned model did a bit better
