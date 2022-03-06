@@ -1061,6 +1061,7 @@ rf_parameters1 = {
 
 # First use RandomizedSearchCV() to explore a random subset of the hyparameters, then use the results to tighten the ranges 
 # for GridSearchCV()
+# https://towardsdatascience.com/automatic-hyperparameter-tuning-with-sklearn-gridsearchcv-and-randomizedsearchcv-e94f53a518ee
 random_cv1= RandomizedSearchCV(rf_pipeline1, rf_parameters1, n_iter=100, cv=5, scoring="r2", n_jobs=-1, verbose=5)
 rs_obj1 = random_cv1.fit(X_train, y_train)
 rs_best_params1 = random_cv1.best_params_
@@ -1134,6 +1135,46 @@ plt.show()
 # All models perform basically exactly the same on original data and exactly the same on engineered data
 # Until you get to Random Forest. The non-hyperparameter-tuned model didn't do as well as others. The tuned model did a bit better
 # than the non-tuned, but still not as good as the other models
+
+
+# ====================================================================================================================
+# Test smoker*bmi
+# ====================================================================================================================
+test_X = X.copy()
+test_X.dtypes
+
+test_X['smoker*bmi'] = test_X['smoker'] * test_X['bmi']
+
+mean_bmi = test_X['bmi'].mean() # 30.7
+mean_smoker_bmi = test_X['smoker*bmi'].mean() # 6
+
+test_X['smoker*bmi'].replace(0, np.nan, inplace=True)
+mean_smoker_bmi = test_X['smoker*bmi'].mean() # 30.7
+
+ss = StandardScaler()
+smoker_bmi_scaled = pd.DataFrame(ss.fit_transform(test_X['smoker*bmi'].values.reshape(-1, 1)))
+ss.mean_
+ss.var_
+
+ss2 = StandardScaler()
+bmi_scaled = pd.DataFrame(ss2.fit_transform(test_X['bmi'].values.reshape(-1, 1)))
+ss2.mean_
+ss2.var_
+
+
+# Test/train split
+X_train, X_test, y_train, y_test = train_test_split(test_X, y, train_size=0.8, test_size=0.2, random_state=10)
+
+ss = StandardScaler()
+smoker_bmi_scaled = pd.DataFrame(ss.fit_transform(X_train['smoker*bmi'].values.reshape(-1, 1)))
+ss.mean_
+ss.var_
+
+ss2 = StandardScaler()
+bmi_scaled = pd.DataFrame(ss2.fit_transform(X_train['bmi'].values.reshape(-1, 1)))
+ss2.mean_
+ss2.var_
+
 
 
 
