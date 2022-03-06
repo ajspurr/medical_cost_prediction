@@ -15,7 +15,9 @@ from sklearn.preprocessing import StandardScaler
 
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
+from sklearn.linear_model import ElasticNet
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 
 from sklearn.metrics import r2_score
 from sklearn.metrics import max_error
@@ -25,6 +27,7 @@ from sklearn.metrics import median_absolute_error
 from sklearn.metrics import mean_absolute_percentage_error
 
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import cross_validate
@@ -196,7 +199,7 @@ def create_pipeline_bmi_smoker(model_name, model, num_cols, cat_cols):
 
 # Original pipeline creation. No feature engineering
 def create_pipeline(model_name, model, num_cols, cat_cols):
-    # Preprocessing for numerical data (SimpleImputer default strategy='mean')
+    # Preprocessing for numerical data
     numerical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer()), 
         ('scale', StandardScaler())
@@ -291,54 +294,8 @@ def manual_preprocess_bmi_smoker(X_train, X_valid, numerical_cols, categorical_c
 
 
 # ====================================================================================================================
-# Feature engineering from cost_lin_reg.py
-# ====================================================================================================================
-# Create formatted columns dictionary in dh module
-dh.create_formatted_cols_dict(dataset.columns)
-dh.update_formatted_cols('bmi', 'BMI')
-
-# Copy dataset to leave original unaffected
-new_features_data = dataset.copy()
-
-# Separate target from predictors
-y = new_features_data['charges']
-X = new_features_data.drop(['charges'], axis=1)
-
-# Create most of the features before preprocessing
-
-# Create ['age^2'] feature
-X['age'] = np.power(X['age'], 2)
-X.rename(columns={'age':'age^2'}, inplace=True)
-
-# Create feature ['bmi_>=_30'] (temporarily) to create the ob_smoke_series using create_obese_smoker_category()
-# and to use for obese*smoker feature later
-X['bmi_>=_30'] = X['bmi'] >= 30
-obese_dict = {False:0, True:1}
-X['bmi_>=_30'] = X['bmi_>=_30'].map(obese_dict)
-ob_smoke_series = create_obese_smoker_category(X)
-
-# Create ['smoker*obese'] feature
-smoker_dict = {'no':0, 'yes':1}
-X['smoker'] = X['smoker'].map(smoker_dict)
-X['smoker*obese'] = X['smoker'] * X['bmi_>=_30']
-
-
-# I originally wanted to preprocess the data before adding the ['bmi*smoker'] feature. If I added the feature first,
-# then tried to scale it, the zeros would be included in the scaling (not sure how to prevent that). 
-# And the way sklearn cross-validation works is that the preprocessing has to be included in the pipeline, since
-# each fold will have a different test/train split. So I created my own custom transformer and pipeline to 
-# create the ['bmi*smoker'] feature.
-
-
-# ====================================================================================================================
-# Model Building
-# ====================================================================================================================
-
-# =======================================================================================
 # Model Building Functions
-# =======================================================================================
-
-
+# ====================================================================================================================
 def average_cv_scores(cv_results, score_abbv_dict, index_neg, round=3):  
     """
     Function for formatting model performance scores returned from sklearn cross_validate(). Takes the 
@@ -429,13 +386,10 @@ def model_scores_test_data(estimators, X_test, y_test, round=3):
 # metric_dict keys are the names of the metrics in GridSearch cv_results_ and 
 # metric_dict values are the updated names of the metrics (usually shorter strings)
 def gs_relevant_results_to_df(gs_results, metric_dict, negative_list):
-    # metric_dict =  {'param_RR__alpha':'alpha', 'mean_test_r2':'r2', 'rank_test_r2':'r2_rank',
-    #                 'mean_test_neg_root_mean_squared_error':'rmse', 'rank_test_neg_root_mean_squared_error':'rmse_rank',
-    #                 'mean_test_neg_mean_absolute_error':'mae', 'rank_test_neg_mean_absolute_error':'mae_rank',
-    #                 'mean_test_neg_median_absolute_error':'med_ae', 'rank_test_neg_median_absolute_error':'med_ae_rank',
-    #                 'mean_test_max_error':'me','rank_test_max_error':'me_rank'}
-    
+    # Convert GridSearchCV results to a dataframe    
     gs_results_df = pd.DataFrame(gs_results)
+    
+    # Pulls only the relevant results from gs_results_df
     relevant_gs_results_df = gs_results_df[metric_dict.keys()]
     relevant_gs_results_df = relevant_gs_results_df.rename(columns=metric_dict)
     
@@ -464,7 +418,7 @@ def cv_results(fxn_pipeline, X, y, score_abbv_dict, index_neg, cv=10, return_est
 
 # Takes parameters and performs hyperparamter tuning using GridSearchCV. 
 # Returns best hyperparameter, mean cv results of best estimator, and results when best estimator applied to remaining test data
-def perform_grid_search(pipeline, X_train, y_train, scoring_list, param_grid, plot_title, cv=10, refit='r2', verbose=5, n_jobs=-1):    
+def perform_grid_search(pipeline, X_train, y_train, scoring_list, param_grid, cv=10, refit='r2', verbose=5, n_jobs=-1):    
     # Create GridSearchCV object
     grid_search = GridSearchCV(estimator=pipeline, param_grid=param_grid, scoring=scoring_list, 
                                refit=refit, n_jobs=n_jobs, cv=cv, verbose=verbose)
@@ -478,63 +432,49 @@ def perform_grid_search(pipeline, X_train, y_train, scoring_list, param_grid, pl
     return grid_search, gs_results
 
 
-# Takes parameters and performs hyperparamter tuning using GridSearchCV. 
-# Returns best hyperparameter, mean cv results of best estimator, and results when best estimator applied to remaining test data
-def ridge_gs_results(pipeline, X, y, scoring_list, param_grid, plot_title, cv=10, refit='r2', verbose=5, n_jobs=-1):    
-    # Create GridSearchCV object
-    grid_search = GridSearchCV(estimator=pipeline, param_grid=param_grid, scoring=scoring_list, 
-                               refit=refit, n_jobs=n_jobs, cv=cv, verbose=verbose)
-    
-    # Test/train split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
-    
-    # Hyperparameter tuning using GridSearchCV
-    grid_search.fit(X_train, y_train)
-    
-    # Access GridSearch results
-    gs_results = grid_search.cv_results_
-    
-    # metric_dict keys are the names of the metrics in GridSearch cv_results_ and 
-    # values are the updated names of the metrics (usually shorter strings)
-    # This is specific to ridge regression gs as the only parameter it includes is alpha
-    metric_dict =  {'param_RR__alpha':'alpha', 'mean_test_r2':'r2', 'rank_test_r2':'r2_rank',
-                    'mean_test_neg_root_mean_squared_error':'rmse', 'mean_test_neg_mean_absolute_error':'mae', 
-                    'mean_test_neg_median_absolute_error':'med_ae', 'mean_test_max_error':'me'}
-    
-    # List of metrics that return negative, so will be multiplied by -1
-    negative_list = ['rmse', 'mae', 'med_ae', 'me']
-    
-    # Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
-    relevant_gs_results_df = gs_relevant_results_to_df(gs_results, metric_dict, negative_list)
-    
-    # Visualize change in r2 with each hyperparameter
-    plt.plot(relevant_gs_results_df['alpha'], relevant_gs_results_df['r2'], marker='o', markersize=4)
-    plt.ylabel('r2')
-    plt.xlabel('alpha')
-    plt.title(f'GS Results ({plot_title})')
-    plt.grid()
-    plt.show()
-    
-    # Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
-    best_estimator_row = relevant_gs_results_df.loc[relevant_gs_results_df['r2_rank'] == 1]
-    
-    # Hyperparameter of best estimator 
-    best_estimator_alpha = best_estimator_row['alpha'].iloc[0]
-    
-    # Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
-    best_estimator_scores = best_estimator_row.drop(['alpha', 'r2_rank'], axis=1).T.round(decimals=3)
-    
-    # Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
-    best_estimator = grid_search.best_estimator_
-    test_data_model_results = model_scores_test_data([best_estimator], X_test, y_test)
-    
-    return_dict = {}
-    return_dict['best_estimator'] = best_estimator
-    return_dict['best_estimator_alpha'] = best_estimator_alpha
-    return_dict['best_estimator_scores'] = best_estimator_scores
-    return_dict['test_data_model_results'] = test_data_model_results
-    
-    return return_dict
+# ====================================================================================================================
+# Feature engineering from cost_lin_reg.py
+# ====================================================================================================================
+# Create formatted columns dictionary in dh module
+dh.create_formatted_cols_dict(dataset.columns)
+dh.update_formatted_cols('bmi', 'BMI')
+
+# Copy dataset to leave original unaffected
+new_features_data = dataset.copy()
+
+# Separate target from predictors
+y = new_features_data['charges']
+X = new_features_data.drop(['charges'], axis=1)
+
+# Create most of the features before preprocessing
+
+# Create ['age^2'] feature
+X['age'] = np.power(X['age'], 2)
+X.rename(columns={'age':'age^2'}, inplace=True)
+
+# Create feature ['bmi_>=_30'] (temporarily) to create the ob_smoke_series using create_obese_smoker_category()
+# and to use for obese*smoker feature later
+X['bmi_>=_30'] = X['bmi'] >= 30
+obese_dict = {False:0, True:1}
+X['bmi_>=_30'] = X['bmi_>=_30'].map(obese_dict)
+ob_smoke_series = create_obese_smoker_category(X)
+
+# Create ['smoker*obese'] feature
+smoker_dict = {'no':0, 'yes':1}
+X['smoker'] = X['smoker'].map(smoker_dict)
+X['smoker*obese'] = X['smoker'] * X['bmi_>=_30']
+
+
+# I originally wanted to preprocess the data before adding the ['bmi*smoker'] feature. If I added the feature first,
+# then tried to scale it, the zeros would be included in the scaling (not sure how to prevent that). 
+# And the way sklearn cross-validation works is that the preprocessing has to be included in the pipeline, since
+# each fold will have a different test/train split. So I created my own custom transformer and pipeline to 
+# create the ['bmi*smoker'] feature.
+
+
+# ====================================================================================================================
+# Model Building
+# ====================================================================================================================
 
 # =======================================================================================
 # Model Building Variables
@@ -545,8 +485,6 @@ cat_cols_orig = ['sex', 'smoker', 'region']
 
 # Remove bmi and smoker from numerical and categorical columns lists for custom pipeline 
 # preprocessing after new features added (already done)
-#num_cols_pipeline = [col for col in num_cols_orig if col!='bmi']
-#cat_cols_pipeline = [col for col in cat_cols_orig if col != 'smoker']
 num_cols_pipeline = ['age^2', 'children']
 cat_cols_pipeline = ['sex', 'region', 'bmi_>=_30', 'smoker*obese']
 
@@ -564,10 +502,12 @@ y
 X
 
 # =============================
-# Variables for cross_validate
+# Variables for cross_validate()
 # =============================
 # List of scores for cross_validate() function to return
-scoring_list = ['r2', 'neg_root_mean_squared_error', 'neg_mean_absolute_error', 'neg_mean_absolute_percentage_error', 
+scoring_list = ['r2', 'neg_root_mean_squared_error', 
+                'neg_mean_absolute_error', 
+                'neg_mean_absolute_percentage_error', 
                 'neg_median_absolute_error', 'max_error']
 
 # Abbreviation for output of each score
@@ -577,44 +517,41 @@ score_abbv_dict = dict(zip(scoring_list, score_abbvs))
 # Indeces of scores to be multiplied by -1
 index_neg = [1, 2, 3, 4, 5]
 
+# =============================
+# Keep track of model performance
+# =============================
+
+# DataFrame of model performances scores in CV
+cv_results_df = pd.DataFrame()
+
+# DataFrame of model performance scores when applied to test data
+test_results_df = pd.DataFrame()
+
+
 # ====================================================================================================================
 # Linear Regression
 # ====================================================================================================================
-
-# Keep track of performance
-cv_results_df = pd.DataFrame()
-test_results_df = pd.DataFrame()
 
 lr_model_name = 'LR'
 
 # =============================
 # Original features
 # =============================
-# Create Linear Regression model and pipeline
-lr_pipeline0 = create_pipeline(lr_model_name, LinearRegression(), num_cols_orig, cat_cols_orig)
+# Create Linear Regression pipeline
+lr_pipeline = create_pipeline(lr_model_name, LinearRegression(), num_cols_orig, cat_cols_orig)
 
 # Perform cross-validation and store results in df
-
-cv_results_df['lr_orig'], test_results_df['lr_orig'] = cv_results(lr_pipeline0, X_orig, y_orig, score_abbv_dict, index_neg)
-
-
-# X_train, X_test, y_train, y_test = train_test_split(X_orig, y_orig, train_size=0.8, test_size=0.2, random_state=15)
-# cv=10
-# return_estimator=True
-# rr_scores = cross_validate(lr_pipeline0, X_train, y_train, scoring=list(score_abbv_dict.keys()), cv=cv, return_estimator=return_estimator)
-# avg_cv_scores_df = average_cv_scores(rr_scores, score_abbv_dict, index_neg)
-# cv_test_scores_df = model_scores_test_data(rr_scores['estimator'], X_test, y_test)
-
+cv_results_df['lr_orig_cv'], test_results_df['lr_orig_cv'] = cv_results(lr_pipeline, X_orig, y_orig, score_abbv_dict, index_neg)
 
 
 # =============================
 # New features
 # =============================
-# Create Linear Regression model and pipeline
-lr_pipeline1 = create_pipeline_bmi_smoker(lr_model_name, LinearRegression(), num_cols_pipeline, cat_cols_pipeline)
+# Create Linear Regression pipeline
+lr_pipeline = create_pipeline_bmi_smoker(lr_model_name, LinearRegression(), num_cols_pipeline, cat_cols_pipeline)
 
 # Perform cross-validation and store results in df
-cv_results_df['lr_new_feat'], test_results_df['lr_new_feat'] = cv_results(lr_pipeline1, X, y, score_abbv_dict, index_neg)
+cv_results_df['lr_new_feat_cv'], test_results_df['lr_new_feat_cv'] = cv_results(lr_pipeline, X, y, score_abbv_dict, index_neg)
 
 # ====================================================================================================================
 # Ridge Regression
@@ -628,41 +565,35 @@ rr_model_name = 'RR'
 # ==========================================================
 # CV results, no hyperparameter tuning
 # ==========================================================
-
-# Create Ridge Regression model and pipeline
-rr_pipeline0 = create_pipeline(rr_model_name, Ridge(alpha=1.0, random_state=15), num_cols_orig, cat_cols_orig)
+# Create Ridge Regression pipeline
+rr_pipeline = create_pipeline(rr_model_name, Ridge(alpha=1.0, random_state=15), num_cols_orig, cat_cols_orig)
 
 # Perform cross-validation and store results in df
-cv_results_df['rr_orig_cv'], test_results_df['rr_orig_cv'] = cv_results(rr_pipeline0, X_orig, y_orig, score_abbv_dict, index_neg)
+cv_results_df['rr_orig_cv'], test_results_df['rr_orig_cv'] = cv_results(rr_pipeline, X_orig, y_orig, score_abbv_dict, index_neg)
 
 # ==========================================================
 # Hyperparameter tuning
 # ==========================================================
-# GridSearch parameters
-refit = 'r2'
-cv = 10
-verbose=5
-n_jobs=-1
-
 # Create model and pipeline
-rid_reg_gs0 = Ridge(alpha=1.0, random_state=15)
-rr_pipeline_gs0 = create_pipeline(rr_model_name, rid_reg_gs0, num_cols_orig, cat_cols_orig)
+rr_gs0 = Ridge(alpha=1.0, random_state=15)
+rr_pipeline_gs0 = create_pipeline(rr_model_name, rr_gs0, num_cols_orig, cat_cols_orig)
 
 # Test/train split
 X_train, X_test, y_train, y_test = train_test_split(X_orig, y_orig, train_size=0.8, test_size=0.2, random_state=15)
 
 # Determine hyperparameters to be tuned
-rid_reg_gs0.get_params()
+rr_gs0.get_params()
 rr_pipeline_gs0.get_params()
 rr_parameters0 = {rr_model_name + '__alpha': range(0, 10, 1)}
 
 # Perform GridSearch hyperparameter tuning
-gs_obj0, gs_results0 = perform_grid_search(rr_pipeline_gs0, X_train, y_train, list(score_abbv_dict.keys()), rr_parameters0, 'orig data')
+gs_obj0, gs_results0 = perform_grid_search(rr_pipeline_gs0, X_train, y_train, list(score_abbv_dict.keys()), rr_parameters0)
 
 # Metrics to be extracted from gs_results and their abbreviations
 # This is specific to ridge regression gs as the only parameter it includes is alpha
-metric_dict =  {'param_RR__alpha':'alpha', 'mean_test_r2':'r2', 'rank_test_r2':'r2_rank',
-                'mean_test_neg_root_mean_squared_error':'rmse', 'mean_test_neg_mean_absolute_error':'mae', 
+metric_dict =  {'param_RR__alpha':'alpha', 'mean_test_r2':'r2', 
+                'rank_test_r2':'r2_rank', 'mean_test_neg_root_mean_squared_error':'rmse', 
+                'mean_test_neg_mean_absolute_error':'mae', 
                 'mean_test_neg_mean_absolute_percentage_error':'mape',
                 'mean_test_neg_median_absolute_error':'med_ae', 'mean_test_max_error':'me'}
 
@@ -679,21 +610,20 @@ plt.xlabel('alpha')
 plt.title('GS Results-Ridge (orig data)')
 plt.grid()
 plt.show()
-# Looks like I captured the max r2, no need to dive deeper into hyperparameter tuning
+# Looks like I captured the max r2 (~0.7268) at alpha=2, no need to dive deeper into hyperparameter tuning
 
 
-# Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
+# Access scores of best estimator which is based on 'refit' parameter which defaults to 'r2'
 best_estimator_row0 = relevant_gs_results_df0.loc[relevant_gs_results_df0['r2_rank'] == 1]
 
 # Hyperparameter of best estimator 
-best_estimator_alpha0 = best_estimator_row0['alpha'].iloc[0]
+best_estimator_alpha0 = gs_obj0.best_params_
 
 # Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
 best_estimator_scores0 = best_estimator_row0.drop(['alpha', 'r2_rank'], axis=1).T.round(decimals=3)
 
-# Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
-best_estimator0 = gs_obj0.best_estimator_
-test_data_model_results0 = model_scores_test_data([best_estimator0], X_test, y_test)
+# Using optimal model (best_estimator_) from GridSearch results, get performance scores on test data 
+test_data_model_results0 = model_scores_test_data([gs_obj0.best_estimator_], X_test, y_test)
 
 # Keep track of results
 cv_results_df['rr_orig_gs'] = best_estimator_scores0
@@ -707,34 +637,28 @@ test_results_df['rr_orig_gs'] = test_data_model_results0
 # CV results, no hyperparameter tuning
 # ==========================================================
 # Create model and pipeline
-rr_pipeline1 = create_pipeline(rr_model_name, Ridge(alpha=1.0, random_state=15), num_cols_pipeline, cat_cols_pipeline)
+rr_pipeline = create_pipeline_bmi_smoker(rr_model_name, Ridge(alpha=1.0, random_state=15), num_cols_pipeline, cat_cols_pipeline)
 
 # Perform cross-validation and store results in df
-cv_results_df['rr_new_feat_cv'], test_results_df['rr_new_feat_cv'] = cv_results(rr_pipeline1, X, y, score_abbv_dict, index_neg)
+cv_results_df['rr_new_feat_cv'], test_results_df['rr_new_feat_cv'] = cv_results(rr_pipeline, X, y, score_abbv_dict, index_neg)
 
 # ==========================================================
 # Hyperparameter tuning
 # ==========================================================
-# GridSearch parameters
-refit = 'r2'
-cv = 10
-verbose=5
-n_jobs=-1
-
 # Create model and pipeline
-rid_reg_gs1 = Ridge(alpha=1.0, random_state=15)
-rr_pipeline_gs1 = create_pipeline(rr_model_name, rid_reg_gs1, num_cols_pipeline, cat_cols_pipeline)
+rr_gs1 = Ridge(alpha=1.0, random_state=15)
+rr_pipeline_gs1 = create_pipeline_bmi_smoker(rr_model_name, rr_gs1, num_cols_pipeline, cat_cols_pipeline)
 
 # Test/train split
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
 
 # Determine hyperparameters to be tuned
-rid_reg_gs1.get_params()
+rr_gs1.get_params()
 rr_pipeline_gs1.get_params()
 rr_parameters1 = {rr_model_name + '__alpha': range(0, 10, 1)}
 
 # Perform GridSearch hyperparameter tuning
-gs_obj1, gs_results1 = perform_grid_search(rr_pipeline_gs1, X_train, y_train, list(score_abbv_dict.keys()), rr_parameters1, 'new feats')
+gs_obj1, gs_results1 = perform_grid_search(rr_pipeline_gs1, X_train, y_train, list(score_abbv_dict.keys()), rr_parameters1)
 
 # Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
 relevant_gs_results_df1 = gs_relevant_results_to_df(gs_results1, metric_dict, negative_list)
@@ -752,14 +676,13 @@ plt.show()
 best_estimator_row1 = relevant_gs_results_df1.loc[relevant_gs_results_df1['r2_rank'] == 1]
 
 # Hyperparameter of best estimator 
-best_estimator_alpha1 = best_estimator_row1['alpha'].iloc[0]
+rr_best_params1 = gs_obj1.best_params_
 
 # Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
 best_estimator_scores1 = best_estimator_row1.drop(['alpha', 'r2_rank'], axis=1).T.round(decimals=3)
 
 # Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
-best_estimator1 = gs_obj1.best_estimator_
-test_data_model_results1 = model_scores_test_data([best_estimator1], X_test, y_test)
+test_data_model_results1 = model_scores_test_data([gs_obj1.best_estimator_], X_test, y_test)
 
 # Keep track of results
 cv_results_df['rr_new_feat_gs'] = best_estimator_scores1
@@ -768,12 +691,12 @@ test_results_df['rr_new_feat_gs'] = test_data_model_results1
 # ====================================================================================================================
 # Plot everything so far
 # ====================================================================================================================
-rmse_data = test_results_df.loc['rmse']
-plt.plot(rmse_data.index,rmse_data, marker='o', markersize=4)
-plt.xlabel('rmse')
+r2_data = test_results_df.loc['r2']
+plt.plot(r2_data.index,r2_data, marker='o', markersize=4)
+plt.xlabel('R2')
 plt.xticks(rotation = -25)
 plt.ylabel('model')
-plt.title('RMSE Summary')
+plt.title('R2 Summary')
 plt.grid()
 plt.show()
 
@@ -802,26 +725,20 @@ cv_results_df['lsr_orig_cv'], test_results_df['lsr_orig_cv'] = cv_results(lsr_pi
 # ==========================================================
 # Hyperparameter tuning
 # ==========================================================
-# GridSearch parameters
-refit = 'r2'
-cv = 10
-verbose=5
-n_jobs=-1
-
 # Create model and pipeline
-las_reg_gs0 = Lasso(alpha=1.0, random_state=15)
-lsr_pipeline_gs0 = create_pipeline(lsr_model_name, las_reg_gs0, num_cols_orig, cat_cols_orig)
+lsr_gs0 = Lasso(alpha=1.0, random_state=15)
+lsr_pipeline_gs0 = create_pipeline(lsr_model_name, lsr_gs0, num_cols_orig, cat_cols_orig)
 
 # Test/train split
 X_train, X_test, y_train, y_test = train_test_split(X_orig, y_orig, train_size=0.8, test_size=0.2, random_state=15)
 
 # Determine hyperparameters to be tuned
-las_reg_gs0.get_params()
+lsr_gs0.get_params()
 lsr_pipeline_gs0.get_params()
 lsr_parameters0 = {lsr_model_name + '__alpha': range(0, 10, 1)}
 
 # Perform GridSearch hyperparameter tuning
-lsr_gs_obj0, lsr_gs_results0 = perform_grid_search(lsr_pipeline_gs0, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters0, 'orig data')
+lsr_gs_obj0, lsr_gs_results0 = perform_grid_search(lsr_pipeline_gs0, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters0)
 
 # Metrics to be extracted from gs_results and their abbreviations
 # This is specific to lasso regression gs as the only parameter it includes is alpha
@@ -847,10 +764,10 @@ plt.show()
 
 
 # New range for hyperparameter alpha
-lsr_parameters0 = {lsr_model_name + '__alpha': np.arange(44.0, 44.2, 0.05)}
+lsr_parameters0 = {lsr_model_name + '__alpha': np.arange(43.8, 44.8, 0.1)}
 
 # Perform GridSearch hyperparameter tuning
-lsr_gs_obj0, lsr_gs_results0 = perform_grid_search(lsr_pipeline_gs0, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters0, 'orig data')
+lsr_gs_obj0, lsr_gs_results0 = perform_grid_search(lsr_pipeline_gs0, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters0)
 
 # Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
 lsr_relevant_gs_results_df0 = gs_relevant_results_to_df(lsr_gs_results0, metric_dict_lsr, negative_list)
@@ -864,7 +781,7 @@ plt.xticks(rotation = -25)
 plt.title('GS Results-Lasso (orig data)')
 plt.grid()
 plt.show()
-# Kept changing alph range, found two peaks of r2 around alpha of 50 and 110. The first was a higher r2, so continued to fine-tune
+# Kept changing alpha range, found two peaks of r2 around alpha of 50 and 110. The first was a higher r2, so continued to fine-tune
 # (Made sure to check way further out to an alpha of 10,000. The r2 just keeps decreasing)
 # Alpha of 44.10 gave the best r2 (0.727273)
 # Alpha of 36.535 gave the best rmse (6231.735661)
@@ -873,14 +790,13 @@ plt.show()
 lsr_best_estimator_row0 = lsr_relevant_gs_results_df0.loc[lsr_relevant_gs_results_df0['r2_rank'] == 1]
 
 # Hyperparameter of best estimator 
-lsr_best_estimator_alpha0 = lsr_best_estimator_row0['alpha'].iloc[0]
+lsr_best_params0 = lsr_gs_obj0.best_params_
 
 # Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
 lsr_best_estimator_scores0 = lsr_best_estimator_row0.drop(['alpha', 'r2_rank'], axis=1).T.round(decimals=3)
 
 # Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
-lsr_best_estimator0 = lsr_gs_obj0.best_estimator_
-lsr_test_data_model_results0 = model_scores_test_data([lsr_best_estimator0], X_test, y_test)
+lsr_test_data_model_results0 = model_scores_test_data([lsr_gs_obj0.best_estimator_], X_test, y_test)
 
 # Keep track of results
 cv_results_df['lsr_orig_gs'] = lsr_best_estimator_scores0
@@ -894,7 +810,7 @@ test_results_df['lsr_orig_gs'] = lsr_test_data_model_results0
 # CV results, no hyperparameter tuning
 # ==========================================================
 # Create model and pipeline
-lsr_pipeline1 = create_pipeline(lsr_model_name, Lasso(alpha=1.0, random_state=15), num_cols_pipeline, cat_cols_pipeline)
+lsr_pipeline1 = create_pipeline_bmi_smoker(lsr_model_name, Lasso(alpha=1.0, random_state=15), num_cols_pipeline, cat_cols_pipeline)
 
 # Perform cross-validation and store results in df
 cv_results_df['lsr_new_feat_cv'], test_results_df['lsr_new_feat_cv'] = cv_results(lsr_pipeline1, X, y, score_abbv_dict, index_neg)
@@ -902,26 +818,20 @@ cv_results_df['lsr_new_feat_cv'], test_results_df['lsr_new_feat_cv'] = cv_result
 # ==========================================================
 # Hyperparameter tuning
 # ==========================================================
-# GridSearch parameters
-refit = 'r2'
-cv = 10
-verbose=5
-n_jobs=-1
-
 # Create model and pipeline
-las_reg_gs1 = Lasso(alpha=1.0, random_state=15)
-lsr_pipeline_gs1 = create_pipeline(lsr_model_name, las_reg_gs1, num_cols_pipeline, cat_cols_pipeline)
+lsr_gs1 = Lasso(alpha=1.0, random_state=15)
+lsr_pipeline_gs1 = create_pipeline_bmi_smoker(lsr_model_name, lsr_gs1, num_cols_pipeline, cat_cols_pipeline)
 
 # Test/train split
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
 
 # Determine hyperparameters to be tuned
-las_reg_gs1.get_params()
+lsr_gs1.get_params()
 lsr_pipeline_gs1.get_params()
-lsr_parameters1 = {lsr_model_name + '__alpha': np.arange(26, 26.5, 0.05)}
+lsr_parameters1 = {lsr_model_name + '__alpha': np.arange(0, 30, 1)}
 
 # Perform GridSearch hyperparameter tuning
-lsr_gs_obj1, lsr_gs_results1 = perform_grid_search(lsr_pipeline_gs1, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters1, 'new feats')
+lsr_gs_obj1, lsr_gs_results1 = perform_grid_search(lsr_pipeline_gs1, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters1)
 
 # Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
 lsr_relevant_gs_results_df1 = gs_relevant_results_to_df(lsr_gs_results1, metric_dict_lsr, negative_list)
@@ -933,20 +843,28 @@ plt.xlabel('alpha')
 plt.title('GS Results-Lasso (new feats)')
 plt.grid()
 plt.show()
-# Seems that r2 peaks at 7.56 at an alpha of 0 and drops from there (went out to alpha of 10,000 to make sure)
+# R2 has two peaks, the higher is ~0.85284 at alpha=~11 (went out to alpha of 1,000 to make sure)
+
+# Visualize change in rmse with each hyperparameter
+plt.plot(lsr_relevant_gs_results_df1['alpha'], lsr_relevant_gs_results_df1['rmse'], marker='o', markersize=4)
+plt.ylabel('rmse')
+plt.xlabel('alpha')
+plt.title('GS Results-Lasso (new feats)')
+plt.grid()
+plt.show()
+
 
 # Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
 lsr_best_estimator_row1 = lsr_relevant_gs_results_df1.loc[lsr_relevant_gs_results_df1['r2_rank'] == 1]
 
 # Hyperparameter of best estimator 
-lsr_best_estimator_alpha1 = lsr_best_estimator_row1['alpha'].iloc[0]
+lsr_best_params1 = lsr_gs_obj1.best_params_
 
 # Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
 lsr_best_estimator_scores1 = lsr_best_estimator_row1.drop(['alpha', 'r2_rank'], axis=1).T.round(decimals=3)
 
 # Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
-lsr_best_estimator1 = lsr_gs_obj1.best_estimator_
-lsr_test_data_model_results1 = model_scores_test_data([lsr_best_estimator1], X_test, y_test)
+lsr_test_data_model_results1 = model_scores_test_data([lsr_gs_obj1.best_estimator_], X_test, y_test)
 
 # Keep track of results
 cv_results_df['lsr_new_feat_gs'] = lsr_best_estimator_scores1
@@ -955,21 +873,267 @@ test_results_df['lsr_new_feat_gs'] = lsr_test_data_model_results1
 # ====================================================================================================================
 # Plot everything so far
 # ====================================================================================================================
+# Performance on test data
 r2_data = test_results_df.loc['r2']
 plt.plot(r2_data.index, r2_data, marker='o', markersize=4)
-plt.xlabel('r2')
-plt.xticks(rotation = -25)
-plt.ylabel('model')
-plt.title('r2 Summary')
+plt.xlabel('Model')
+plt.xticks(rotation = -25, horizontalalignment='left')
+plt.ylabel('R2')
+plt.title('Models Summary')
 plt.grid()
 plt.show()
 
+# Performance on cross-val
+r2_data = cv_results_df.loc['r2']
+plt.plot(r2_data.index, r2_data, marker='o', markersize=4)
+plt.xlabel('Model')
+plt.xticks(rotation = -25, horizontalalignment='left')
+plt.ylabel('R2')
+plt.title('Models Summary')
+plt.grid()
+plt.show()
+
+# All models perform basically exactly the same on original data and exactly the same on engineered data
+
 # ====================================================================================================================
-# ElasticNet?
+# ElasticNet
 # ====================================================================================================================
+
+en_model_name = 'EN'
+
+metric_dict_en = {'param_EN__alpha':'alpha', 'param_EN__l1_ratio':'l1_ratio', 
+                  'mean_test_r2':'r2', 'rank_test_r2':'r2_rank',
+                  'mean_test_neg_root_mean_squared_error':'rmse', 
+                  'mean_test_neg_mean_absolute_error':'mae', 
+                  'mean_test_neg_mean_absolute_percentage_error':'mape',
+                  'mean_test_neg_median_absolute_error':'med_ae', 
+                  'mean_test_max_error':'me'}
+
+# =======================================================================================
+# New features, hyperparameter tuning
+# =======================================================================================
+
+# Create model and pipeline
+en_model0 = ElasticNet(random_state=15)
+en_pipeline0 = create_pipeline_bmi_smoker(en_model_name, en_model0, num_cols_pipeline, cat_cols_pipeline)
+
+# Test/train split
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
+
+# Determine hyperparameters to be tuned
+en_model0.get_params()
+en_pipeline0.get_params()
+en_parameters0 = {en_model_name + '__alpha': np.arange(0, 10, 1),
+                  en_model_name + '__l1_ratio': np.arange(0, 1, 0.1)}
+
+# Perform GridSearch hyperparameter tuning
+en_gs_obj0, en_gs_results0 = perform_grid_search(en_pipeline0, X_train, y_train, list(score_abbv_dict.keys()), en_parameters0)
+
+# Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
+en_relevant_gs_results0 = gs_relevant_results_to_df(en_gs_results0, metric_dict_en, negative_list)
+
+# Visualize change in r2 with each hyperparameter
+unique_l1_ratios0 = en_relevant_gs_results0['l1_ratio'].unique()
+
+for l1_ratio in unique_l1_ratios0:
+    line_data = en_relevant_gs_results0[en_relevant_gs_results0['l1_ratio']==l1_ratio]
+    plt.plot(line_data['alpha'], line_data['r2'], marker='o', markersize=4, label=np.round(l1_ratio, 2))
+plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', title='l1 ratio')
+plt.ylabel('r2')
+plt.xlabel('alpha')
+plt.title('GS Results - Elastic Net (new feats)')
+plt.grid()
+plt.show()
+
+# Peak R2 (~0.85) at alpha=0. Same for all l1 ratios. But l1 ratio of 0.9 does the best for the rest of the alphas
+
+# Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
+en_best_estimator_row0 = en_relevant_gs_results0.loc[en_relevant_gs_results0['r2_rank'] == 1]
+# Multiple rows have an r2_rank of 1 because the best alpha was 0, and for that alpha, l1 ratios don't change results
+# So will just pick the first row
+en_best_estimator_row0 = en_best_estimator_row0.iloc[0].to_frame().T
+
+# Hyperparameter of best estimator 
+en_best_params0 = en_gs_obj0.best_params_
+
+# Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
+en_best_estimator_scores0 = en_best_estimator_row0.drop(['alpha', 'l1_ratio', 'r2_rank'], axis=1).T.round(decimals=3)
+
+# Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
+en_test_data_model_results0 = model_scores_test_data([en_gs_obj0.best_estimator_], X_test, y_test)
+
+# Keep track of results
+cv_results_df['en_new_feat_gs'] = en_best_estimator_scores0
+test_results_df['en_new_feat_gs'] = en_test_data_model_results0
+
+# ====================================================================================================================
+# Plot everything so far
+# ====================================================================================================================
+# Performance on test data
+r2_data = test_results_df.loc['r2']
+plt.plot(r2_data.index, r2_data, marker='o', markersize=4)
+plt.xlabel('Model')
+plt.xticks(rotation = -25, horizontalalignment='left')
+plt.ylabel('R2')
+plt.title('Models Summary')
+plt.grid()
+plt.show()
+
+# Performance on cross-val
+r2_data = cv_results_df.loc['r2']
+plt.plot(r2_data.index, r2_data, marker='o', markersize=4)
+plt.xlabel('Model')
+plt.xticks(rotation = -25, horizontalalignment='left')
+plt.ylabel('R2')
+plt.title('Models Summary')
+plt.grid()
+plt.show()
+
+# All models perform basically exactly the same on original data and exactly the same on engineered data
 
 
 # ====================================================================================================================
 # Random Forest
 # ====================================================================================================================
+
+rf_model_name = 'RF'
+
+
+base_metric_dict = {'mean_test_r2':'r2', 'rank_test_r2':'r2_rank',
+                  'mean_test_neg_root_mean_squared_error':'rmse', 
+                  'mean_test_neg_mean_absolute_error':'mae', 
+                  'mean_test_neg_mean_absolute_percentage_error':'mape',
+                  'mean_test_neg_median_absolute_error':'med_ae', 
+                  'mean_test_max_error':'me'}
+
+rf_param_dict = {'param_RF__n_estimators':'n_estimators', 
+                  'param_RF__max_features':'max_features',
+                  'param_RF__max_depth':'max_depth', 
+                  'param_RF__min_samples_split':'min_samples_split', 
+                  'param_RF__min_samples_leaf':'min_samples_leaf', 
+                  'param_RF__bootstrap':'bootstrap'}
+
+# Combine above two dictionaries
+metric_dict_rf = rf_param_dict.copy()
+metric_dict_rf.update(base_metric_dict)
+
+# =======================================================================================
+# New features, no hyperparameter tuning
+# =======================================================================================
+
+# Create model and pipeline
+rf_pipeline0 = create_pipeline_bmi_smoker(rf_model_name, RandomForestRegressor(random_state=15), num_cols_pipeline, cat_cols_pipeline)
+
+# Perform cross-validation and store results in df
+cv_results_df['rf_new_feat_cv'], test_results_df['rf_new_feat_cv'] = cv_results(rf_pipeline0, X, y, score_abbv_dict, index_neg)
+
+# =======================================================================================
+# New features, hyperparameter tuning
+# =======================================================================================
+
+# Create model and pipeline
+rf_model1 = RandomForestRegressor(random_state=15)
+rf_pipeline1 = create_pipeline_bmi_smoker(rf_model_name, rf_model1, num_cols_pipeline, cat_cols_pipeline)
+
+# Test/train split
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
+
+# Determine hyperparameters to be tuned
+rf_model1.get_params()
+rf_pipeline1.get_params()
+
+# Set hyperparameter ranges for RandomizedSearchCV
+n_estimators = np.arange(100, 2000, step=100)
+max_features = ['auto', 'sqrt', 'log2']
+max_depth = list(np.arange(10, 100, step=10)) + [None]
+min_samples_split = np.arange(2, 10, step=2)
+min_samples_leaf = [1, 2, 4]
+bootstrap = [True, False]
+
+rf_parameters1 = {
+    rf_model_name + '__n_estimators': n_estimators,
+    rf_model_name + '__max_features': max_features,
+    rf_model_name + '__max_depth': max_depth,
+    rf_model_name + '__min_samples_split': min_samples_split,
+    rf_model_name + '__min_samples_leaf': min_samples_leaf,
+    rf_model_name + '__bootstrap': bootstrap}
+
+
+# First use RandomizedSearchCV() to explore a random subset of the hyparameters, then use the results to tighten the ranges 
+# for GridSearchCV()
+random_cv1= RandomizedSearchCV(rf_pipeline1, rf_parameters1, n_iter=100, cv=5, scoring="r2", n_jobs=-1, verbose=5)
+rs_obj1 = random_cv1.fit(X_train, y_train)
+rs_best_params1 = random_cv1.best_params_
+# {'RF__n_estimators': 200,
+#  'RF__min_samples_split': 6,
+#  'RF__min_samples_leaf': 4,
+#  'RF__max_features': 'log2',
+#  'RF__max_depth': 90,
+#  'RF__bootstrap': True}
+rs_best_score1 = random_cv1.best_score_
+
+# Use RandomizedSearchCV results to tighten ranges of hyperparameters for GridSearchCV()
+rf_parameters2 = {
+    rf_model_name + '__n_estimators': [100, 200, 300, 400],
+    rf_model_name + '__max_features': ['log2'],
+    rf_model_name + '__max_depth': [70, 80, 90, None],
+    rf_model_name + '__min_samples_split': [4, 6, 8],
+    rf_model_name + '__min_samples_leaf': [2, 4],
+    rf_model_name + '__bootstrap': [True]}
+
+
+# Perform GridSearch hyperparameter tuning
+rf_gs_obj1, rf_gs_results1 = perform_grid_search(rf_pipeline1, X_train, y_train, list(score_abbv_dict.keys()), rf_parameters2)
+
+# Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
+rf_relevant_gs_results1 = gs_relevant_results_to_df(rf_gs_results1, metric_dict_rf, negative_list)
+
+# Can't easily visualize this many combinations of hyperparameters
+
+# Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
+rf_best_estimator_row1 = rf_relevant_gs_results1.loc[rf_relevant_gs_results1['r2_rank'] == 1]
+# Multiple rows have an r2_rank of 1, so will just pick the first row
+rf_best_estimator_row1 = rf_best_estimator_row1.iloc[0].to_frame().T
+
+# Hyperparameter of best estimator 
+en_best_params1 = rf_gs_obj1.best_params_
+
+# Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
+rf_best_estimator_scores1 = rf_best_estimator_row1.drop(list(rf_param_dict.values()) + ['r2_rank'], axis=1).T.round(decimals=3)
+
+# Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
+rf_test_data_model_results1 = model_scores_test_data([rf_gs_obj1.best_estimator_], X_test, y_test)
+
+# Keep track of results
+cv_results_df['rf_new_feat_gs'] = rf_best_estimator_scores1
+test_results_df['rf_new_feat_gs'] = rf_test_data_model_results1
+
+# ====================================================================================================================
+# Plot everything so far
+# ====================================================================================================================
+# Performance on test data
+r2_data = test_results_df.loc['r2']
+plt.plot(r2_data.index, r2_data, marker='o', markersize=4)
+plt.xlabel('Model')
+plt.xticks(rotation = -25, horizontalalignment='left')
+plt.ylabel('R2')
+plt.title('Models Summary')
+plt.grid()
+plt.show()
+
+# Performance on cross-val
+r2_data = cv_results_df.loc['r2']
+plt.plot(r2_data.index, r2_data, marker='o', markersize=4)
+plt.xlabel('Model')
+plt.xticks(rotation = -25, horizontalalignment='left')
+plt.ylabel('R2')
+plt.title('Models Summary')
+plt.grid()
+plt.show()
+
+# All models perform basically exactly the same on original data and exactly the same on engineered data
+# Until you get to Random Forest. The non-hyperparameter-tuned model didn't do as well as others. The tuned model did a bit better
+# than the non-tuned, but still not as good as the other models
+
+
 
