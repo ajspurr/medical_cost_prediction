@@ -1159,7 +1159,7 @@ ax1.grid()
 
 fig.suptitle('Model Performance', fontsize=24)
 fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-dh.save_image('model_performance_1', ml_models_output_dir)
+#dh.save_image('model_performance_1', ml_models_output_dir)
 
 
 # All models perform basically exactly the same on original data and exactly the same on engineered data
