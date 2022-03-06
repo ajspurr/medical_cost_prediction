@@ -136,3 +136,11 @@ The Scale-Location plot (residuals vs. predicted target values) on the left is t
 ### Assumption #5: Observations are independent, i.e. no autocorrelation 
 - Not relevant as this is not time series data.
 
+# Compare Regression Models
+At this point I improved multiple linear regression performance by engineering new features based on relationship between features and target. I also established that there are visual outliers in the Age vs. Charges plot, which correspond perfectly to the Cook's outliers in the linear regression model. If I remove the outliers (8.9% of the data), I can achieve a perfect model. This is interesting and probably built into the data on purpose as it is meant for learning. But it is not realistic.
+</br>
+For the rest of the analysis, I will compare performance of other regression models on the entire dataset to see how they handle the outliers. 
+</br>
+First, I compared performance (with R2) of 5 regression models: Linear Regression, Ridge Regression, Lasso Regression, Elastic Net, and Random Forest. For many of them I also kept track of their performance on the original data AND feature engineered data, with and without hyperparameter tuning. Their performances are plotted below. The top plot represents the performance on the cross-validation, the lower plot represents the model performance when it is applied to the remaining test data. 
+</br>
+To summarize, almost all models performed exactly the same when applied to original data and the same when applied to the feature engineered data. The only exception was Random Forest, which did not perform as well as the others on the feature-engineered data. Hyperparameter tuning did not improve performance other than Random Forest, which still performed worse than other models. 
