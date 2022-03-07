@@ -674,25 +674,25 @@ rr_pipeline.get_params()
 rr_parameters = {rr_model_name + '__alpha': range(0, 10, 1)}
 
 # Perform GridSearch hyperparameter tuning. **** Will tune to minimize MSE as that is most sensitive to outliers **** 
-rr_gs_obj, rr_gs_results = perform_grid_search(rr_pipeline, X_train, y_train, list(score_abbv_dict.keys()), rr_parameters, refit='neg_mean_squared_error')
+rr_gs_obj, rr_gs_results = perform_grid_search(rr_pipeline, X_train, y_train, list(score_abbv_dict.keys()), rr_parameters, refit='neg_mean_absolute_error')
 
 # Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
 rr_gs_results_df = gs_relevant_results_to_df(rr_gs_results, rr_gs_results_dict, gs_negative_list)
 
 # Visualize change in mse with each hyperparameter
-plot_metric = 'mse'
+plot_metric = 'mae'
 plt.plot(rr_gs_results_df['alpha'], rr_gs_results_df[plot_metric], marker='o', markersize=4)
 plt.ylabel(plot_metric)
 plt.xlabel('alpha')
 plt.title('GS Results - Ridge')
 plt.grid()
 plt.show()
-# Min mse as alpha = 1
+# Min mae as alpha = 0 when optimized to mae and 1 when optmized to mse
 
 # Hyperparameter of best estimator 
 rr_best_params = rr_gs_obj.best_params_
 
-# Access metrics of best estimator, this is based on 'refit' parameter which I set to 'mse'
+# Access metrics of best estimator, this is based on 'refit' parameter which I set to 'mae'
 rr_best_estimator_row = rr_gs_results_df.loc[rr_gs_results_df['mse_rank'] == 1]
 
 # Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
@@ -747,13 +747,13 @@ lsr_pipeline.get_params()
 lsr_parameters = {lsr_model_name + '__alpha': np.arange(0, 300, 10)}
 
 # Perform GridSearch hyperparameter tuning. **** Will tune to minimize MSE as that is most sensitive to outliers **** 
-lsr_gs_obj, lsr_gs_results = perform_grid_search(lsr_pipeline, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters, refit='neg_mean_squared_error')
+lsr_gs_obj, lsr_gs_results = perform_grid_search(lsr_pipeline, X_train, y_train, list(score_abbv_dict.keys()), lsr_parameters, refit='neg_mean_absolute_error')
 
 # Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
 lsr_gs_results_df = gs_relevant_results_to_df(lsr_gs_results, lsr_gs_results_dict, gs_negative_list)
 
 # Visualize change in scores with each hyperparameter
-plot_metric = 'rmse'
+plot_metric = 'mae'
 plt.plot(lsr_gs_results_df['alpha'], lsr_gs_results_df[plot_metric], marker='o', markersize=4)
 plt.ylabel(plot_metric)
 plt.xlabel('alpha')
@@ -765,7 +765,7 @@ plt.show()
 # Hyperparameter of best estimator 
 lsr_best_params1 = lsr_gs_obj.best_params_
 
-# Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
+# Access metrics of best estimator, this is based on 'refit' parameter which I set as 'mae'
 lsr_best_estimator_row = lsr_gs_results_df.loc[lsr_gs_results_df['mse_rank'] == 1]
 
 # Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
@@ -802,14 +802,6 @@ en_param_dict =  {'param_'+en_model_name+'__'+param:param for param in en_params
 en_gs_results_dict = en_param_dict.copy()
 en_gs_results_dict.update(gs_metric_dict)
 
-# metric_dict_en = {'param_EN__alpha':'alpha', 'param_EN__l1_ratio':'l1_ratio', 
-#                   'mean_test_r2':'r2', 'rank_test_r2':'r2_rank',
-#                   'mean_test_neg_root_mean_squared_error':'rmse', 
-#                   'mean_test_neg_mean_absolute_error':'mae', 
-#                   'mean_test_neg_mean_absolute_percentage_error':'mape',
-#                   'mean_test_neg_median_absolute_error':'med_ae', 
-#                   'mean_test_max_error':'me'}
-
 # ==========================================================
 # Hyperparameter tuning
 # ==========================================================
@@ -828,7 +820,7 @@ en_parameters = {en_model_name + '__alpha': np.arange(0, 10, 1),
                  en_model_name + '__l1_ratio': np.arange(0, 1.1, 0.1)}
 
 # Perform GridSearch hyperparameter tuning
-en_gs_obj, en_gs_results = perform_grid_search(en_pipeline, X_train, y_train, list(score_abbv_dict.keys()), en_parameters, refit='neg_mean_squared_error')
+en_gs_obj, en_gs_results = perform_grid_search(en_pipeline, X_train, y_train, list(score_abbv_dict.keys()), en_parameters, refit='neg_mean_absolute_error')
 
 # Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
 en_gs_results_df = gs_relevant_results_to_df(en_gs_results, en_gs_results_dict, gs_negative_list)
@@ -847,14 +839,14 @@ plt.title('GS Results - Elastic Net')
 plt.grid()
 plt.show()
 
-# Peak R2 (~0.85) at alpha=0. Same for all l1 ratios. But l1 ratio of 0.9 does the best for the rest of the alphas
+# Peak R2 (~0.85) at alpha=0. Same for all l1 ratios. But l1 ratio of 0.9 does the best for the rest of the alphas as well
 # MAE ~2500 at that alpha=0
 
 # Hyperparameter of best estimator 
 en_best_params = en_gs_obj.best_params_
 # {'EN__alpha': 0, 'EN__l1_ratio': 0.0}
 
-# Access metrics of best estimator, this is based on 'refit' parameter which defaults to 'r2'
+# Access metrics of best estimator, this is based on 'refit' parameter I set to 'mae'
 en_best_estimator_row = en_gs_results_df.loc[(en_gs_results_df['alpha'] == 0) & (en_gs_results_df['l1_ratio'] == 0)]
 
 # Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
@@ -891,24 +883,6 @@ rf_param_dict =  {'param_'+rf_model_name+'__'+param:param for param in rf_params
 rf_gs_results_dict = rf_param_dict.copy()
 rf_gs_results_dict.update(gs_metric_dict)
 
-# base_metric_dict = {'mean_test_r2':'r2', 'rank_test_r2':'r2_rank',
-#                   'mean_test_neg_root_mean_squared_error':'rmse', 
-#                   'mean_test_neg_mean_absolute_error':'mae', 
-#                   'mean_test_neg_mean_absolute_percentage_error':'mape',
-#                   'mean_test_neg_median_absolute_error':'med_ae', 
-#                   'mean_test_max_error':'me'}
-
-# rf_param_dict = {'param_RF__n_estimators':'n_estimators', 
-#                   'param_RF__max_features':'max_features',
-#                   'param_RF__max_depth':'max_depth', 
-#                   'param_RF__min_samples_split':'min_samples_split', 
-#                   'param_RF__min_samples_leaf':'min_samples_leaf', 
-#                   'param_RF__bootstrap':'bootstrap'}
-
-# # Combine above two dictionaries
-# metric_dict_rf = rf_param_dict.copy()
-# metric_dict_rf.update(base_metric_dict)
-
 # ==========================================================
 # Hyperparameter tuning
 # ==========================================================
@@ -942,9 +916,18 @@ rf_parameters = {rf_model_name + '__n_estimators': n_estimators,
 # First use RandomizedSearchCV() to explore a random subset of the hyperparameters, then use the results 
 # to narrow the ranges for GridSearchCV()
 # https://towardsdatascience.com/automatic-hyperparameter-tuning-with-sklearn-gridsearchcv-and-randomizedsearchcv-e94f53a518ee
-rf_random_cv = RandomizedSearchCV(rf_pipeline, rf_parameters, n_iter=100, cv=5, scoring='neg_mean_squared_error', n_jobs=-1, verbose=10)
+rf_random_cv = RandomizedSearchCV(rf_pipeline, rf_parameters, n_iter=100, cv=5, scoring='neg_mean_absolute_error', n_jobs=-1, verbose=10)
 rf_rs_obj = rf_random_cv.fit(X_train, y_train)
 rf_rs_best_params = rf_random_cv.best_params_
+
+# NEWEST results (mae optimized)
+# {'RF__n_estimators': 1900,
+#  'RF__min_samples_split': 2,
+#  'RF__min_samples_leaf': 2,
+#  'RF__max_features': 'log2',
+#  'RF__max_depth': 30,
+#  'RF__bootstrap': False}
+
 # NEW results (mse optimized)
 # {'RF__n_estimators': 1700,
 #  'RF__min_samples_split': 6,
@@ -963,17 +946,16 @@ rf_rs_best_params = rf_random_cv.best_params_
 rs_best_score = rf_random_cv.best_score_
 
 # Use RandomizedSearchCV results to narrow ranges of hyperparameters for GridSearchCV()
-rf_parameters2 = {
-    rf_model_name + '__n_estimators': [1500, 1600, 1700, 1800, 1900],
-    rf_model_name + '__max_features': ['log2'],
-    rf_model_name + '__max_depth': [None, 10, 20, 30],
-    rf_model_name + '__min_samples_split': [4, 6, 8],
-    rf_model_name + '__min_samples_leaf': [2, 4, 6],
-    rf_model_name + '__bootstrap': [True]}
+rf_parameters2 = {rf_model_name + '__n_estimators': [1700, 1800, 1900, 2000, 2100],
+                  rf_model_name + '__max_features': ['log2'],
+                  rf_model_name + '__max_depth': [None, 20, 30, 40],
+                  rf_model_name + '__min_samples_split': [2, 4, 6],
+                  rf_model_name + '__min_samples_leaf': [2, 4, 6],
+                  rf_model_name + '__bootstrap': [False]}
 
 
 # Perform GridSearch hyperparameter tuning
-rf_gs_obj, rf_gs_results = perform_grid_search(rf_pipeline, X_train, y_train, list(score_abbv_dict.keys()), rf_parameters2, refit='neg_mean_squared_error')
+rf_gs_obj, rf_gs_results = perform_grid_search(rf_pipeline, X_train, y_train, list(score_abbv_dict.keys()), rf_parameters2, refit='neg_mean_absolute_error')
 
 # Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
 rf_gs_results_df = gs_relevant_results_to_df(rf_gs_results, rf_gs_results_dict, gs_negative_list)
@@ -982,6 +964,16 @@ rf_gs_results_df = gs_relevant_results_to_df(rf_gs_results, rf_gs_results_dict, 
 
 # Hyperparameter of best estimator 
 rf_best_params = rf_gs_obj.best_params_
+
+# NEW: MAE optimized
+# {'RF__bootstrap': False,
+#  'RF__max_depth': 20,
+#  'RF__max_features': 'log2',
+#  'RF__min_samples_leaf': 2,
+#  'RF__min_samples_split': 2,
+#  'RF__n_estimators': 1700}
+
+# MSE optimized
 # {'RF__bootstrap': True,
 #  'RF__max_depth': 10,
 #  'RF__max_features': 'log2',
@@ -989,9 +981,9 @@ rf_best_params = rf_gs_obj.best_params_
 #  'RF__min_samples_split': 4,
 #  'RF__n_estimators': 1900}
 
-# Access metrics of best estimator, this is based on 'refit' parameter which I set to 'mse'
+# Access metrics of best estimator, this is based on 'refit' parameter which I set to 'mae'
 # There are multiple rows with mse rank is 1, so I have to narrow it down
-rf_best_estimator_row = rf_gs_results_df.loc[(rf_gs_results_df['mse_rank'] == 1) & (rf_gs_results_df['min_samples_split'] == 4)]
+rf_best_estimator_row = rf_gs_results_df.loc[(rf_gs_results_df['mse_rank'] == 1) & (rf_gs_results_df['min_samples_split'] == 2) & (rf_gs_results_df['max_depth'] == 20)]
 
 # Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
 rf_best_estimator_scores = rf_best_estimator_row.drop(list(rf_param_dict.values()) + ['r2_rank', 'mse_rank', 'rmse_rank', 'mae_rank'], axis=1).T.round(decimals=3)
@@ -1047,7 +1039,7 @@ hr_parameters = {hr_model_name + '__alpha': [0.0001],
                  hr_model_name + '__epsilon': np.arange(2, 5, step=0.1)}
 
 # Perform GridSearch hyperparameter tuning
-hr_gs_obj, hr_gs_results = perform_grid_search(hr_pipeline, X_train, y_train, list(score_abbv_dict.keys()), hr_parameters, refit='neg_mean_squared_error')
+hr_gs_obj, hr_gs_results = perform_grid_search(hr_pipeline, X_train, y_train, list(score_abbv_dict.keys()), hr_parameters, refit='neg_mean_absolute_error')
 
 # Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
 hr_gs_results_df = gs_relevant_results_to_df(hr_gs_results, hr_gs_results_dict, gs_negative_list)
@@ -1066,13 +1058,13 @@ plt.title('GS Results - Huber Regression')
 plt.grid()
 plt.show()
 
-# Alpha of 0 always best. Best MAE at epsilon of 3. Best MSE at epsilon of 4.2
+# Alpha of 0 always best. Best MAE at epsilon of 2. Best MSE at epsilon of 4.2
 
 # Hyperparameter of best estimator 
 hr_best_params = hr_gs_obj.best_params_
-#{'HR__alpha': 0.0001, 'HR__epsilon': 4.200000000000003}
+#{'HR__alpha': 0.0001, 'HR__epsilon': 2}
 
-# Access metrics of best estimator, this is based on 'refit' parameter which I set to 'mse'
+# Access metrics of best estimator, this is based on 'refit' parameter which I set to 'mae'
 # There are multiple rows with mse rank is 1, so I have to narrow it down
 hr_best_estimator_row = hr_gs_results_df.loc[hr_gs_results_df['mse_rank'] == 1]
 
@@ -1124,7 +1116,7 @@ gs_obj = rr_gs_obj
 cv_mae_str = 'MAE: ' + str(round(cv_results_df['rr_scores'].loc['mae'], digits))
 test_mae_str = 'MAE: ' + str(round(test_results_df['rr_scores'].loc['mae'], digits))
 filename = 'performance_' + model_abbrev
-outer_text = 'Hyperparameters:\n\nAlpha: 1.0'
+outer_text = 'Hyperparameters:\n\nAlpha: 0.0'
 plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
                                          model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text,
                                          save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
@@ -1154,49 +1146,42 @@ gs_obj = rf_gs_obj
 cv_mae_str = 'MAE: ' + str(round(cv_results_df['rf_scores'].loc['mae'], digits))
 test_mae_str = 'MAE: ' + str(round(test_results_df['rf_scores'].loc['mae'], digits))
 filename = 'performance_' + model_abbrev
-outer_text = 'Hyperparameters:\n\nBootstrap: True\nMax Depth: 10\nMax Features: log2\nMin Samples Leaf: 6\nMin Samples Split: 4\nN Estimators: 1900'
+outer_text = 'Hyperparameters:\n\nBootstrap: False\nMax Depth: 20\nMax Features: log2\nMin Samples Leaf: 2\nMin Samples Split: 2\nN Estimators: 1700'
 plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
                                          model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text, 
                                          save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
 
-# Optimized to MSE
 model_abbrev = 'HR'
 gs_obj = hr_gs_obj
 cv_mae_str = 'MAE: ' + str(round(cv_results_df['hr_scores'].loc['mae'], digits))
 test_mae_str = 'MAE: ' + str(round(test_results_df['hr_scores'].loc['mae'], digits))
 filename = 'performance_' + model_abbrev
-outer_text = 'Hyperparameters:\n\nAlpha: 0.0001\nEpsilon: 4.2'
+outer_text = 'Hyperparameters:\n\nAlpha: 0.0001\nEpsilon: 2.0'
 plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
                                          model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text, 
                                          save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
 
 
-# Optimized to MAE
-model_abbrev = 'HR2'
-hr_model2 = HuberRegressor(epsilon=3)
-hr_pipeline2 = create_pipeline_bmi_smoker(hr_model_name, hr_model2, num_cols, cat_cols)
-hr_pipeline2.fit(X_train, y_train)
+# # Optimized to MAE
+# model_abbrev = 'HR2'
+# hr_model2 = HuberRegressor(epsilon=3)
+# hr_pipeline2 = create_pipeline_bmi_smoker(hr_model_name, hr_model2, num_cols, cat_cols)
+# hr_pipeline2.fit(X_train, y_train)
 
-y_pred_cv = hr_pipeline2.predict(X_train)
-y_pred_test = hr_pipeline2.predict(X_test)
+# y_pred_cv = hr_pipeline2.predict(X_train)
+# y_pred_test = hr_pipeline2.predict(X_test)
 
-mae_cv = mean_absolute_error(y_train, y_pred_cv)
-mae_test = mean_absolute_error(y_test, y_pred_test)
-cv_mae_str = 'MAE: ' + str(round(mae_cv, digits)) + '\nR2: ' + str(round(r2_score(y_train, y_pred_cv), digits))
-test_mae_str = 'MAE: ' + str(round(mae_test, digits)) + '\nR2: ' + str(round(r2_score(y_test, y_pred_test), digits))
-filename = 'performance_' + model_abbrev
-outer_text = 'Hyperparameters:\n\nAlpha: 0.0001\nEpsilon: 3.0'
-plot_y_true_vs_pred_for_cv_and_test_data(hr_pipeline2, X_train, X_test, y_train, y_test, 
-                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text, 
-                                         save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
-
-
+# mae_cv = mean_absolute_error(y_train, y_pred_cv)
+# mae_test = mean_absolute_error(y_test, y_pred_test)
+# cv_mae_str = 'MAE: ' + str(round(mae_cv, digits)) + '\nR2: ' + str(round(r2_score(y_train, y_pred_cv), digits))
+# test_mae_str = 'MAE: ' + str(round(mae_test, digits)) + '\nR2: ' + str(round(r2_score(y_test, y_pred_test), digits))
+# filename = 'performance_' + model_abbrev
+# outer_text = 'Hyperparameters:\n\nAlpha: 0.0001\nEpsilon: 3.0'
+# plot_y_true_vs_pred_for_cv_and_test_data(hr_pipeline2, X_train, X_test, y_train, y_test, 
+#                                          model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text, 
+#                                          save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
 
 
-cv_results_df['hr_scores_mae'] = np.nan
-test_results_df['hr_scores_mae'] = np.nan
-cv_results_df['hr_scores_mae'].loc['mae'] = mae_cv
-test_results_df['hr_scores_mae'].loc['mae'] = mae_test
 
-plot_metric = 'mae'
-plot_regression_model_score_df(cv_results_df, test_results_df, plot_metric, save_img=False, img_filename='model_performance_mae', save_dir=ml_models_output_dir)
+
+
