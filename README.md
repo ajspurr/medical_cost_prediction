@@ -148,7 +148,7 @@ First, I compared performance (with R2) of 5 regression models: Linear Regressio
 </br>
 To summarize, almost all models performed exactly the same when applied to the original data. They also all performed the same when applied to the feature engineered data. The only exception was Random Forest, which did not perform as well as the others on the feature-engineered data. Hyperparameter tuning did not improve performance other than Random Forest, which still performed worse than other models. Most models had an equal improvement in performance on test data vs. cv scores. In other worse, regularized regression models like Ridge, Lasso, and Elastic Net didn't exhibit lower variance, as you would expect.
 
-<p align="center"><img src="/output/models/ml/model_performance_1.png" width="900"/></p>
+<p align="center"><img src="/output/models/ml/optimized_r2/model_performance_1.png" width="900"/></p>
 
 Moving forward, I focused only on feature-engineered data and always performed hyperparameter tuning, optimized to MSE (as opposed to R2 above). As seen below, again most models resulted in the same MAE. Random Forest performed worse. When I added Huber Regression I was able to achieve a new MAE record: 2088 (vs. 2110).  
 
