@@ -22,6 +22,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import ElasticNet
+from sklearn.linear_model import HuberRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 
@@ -426,6 +427,105 @@ def perform_grid_search(pipeline, X_train, y_train, scoring_list, param_grid, re
     
     return grid_search, gs_results
 
+# ====================================================================================================================
+# Plot functions
+# ====================================================================================================================
+# cv_results_df, test_results_df are both DataFrames that contain model performance scores for each model
+# This function plots the score according to 'plot_metric'
+def plot_regression_model_score_df(cv_results_df, test_results_df, plot_metric, save_img=False, img_filename=None, save_dir=None):
+    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=2, num_cols=1, figsize=(7, 8))
+
+    # Performance on cross-val
+    plot_data = cv_results_df.loc[plot_metric]
+    ax1 = ax_array_flat[0]
+    ax1.plot(plot_data.index, plot_data, marker='o', markersize=4)
+    ax1.set_xlabel('Model')
+    plt.setp(ax1.get_xticklabels(), rotation=-25, horizontalalignment='left')
+    ax1.set_ylabel(plot_metric)
+    ax1.set_title('Model Performance During Cross-Validation')
+    ax1.grid()
+
+    # Performance on test data
+    plot_data = test_results_df.loc[plot_metric]
+    ax2 = ax_array_flat[1]
+    ax2.plot(plot_data.index, plot_data, marker='o', markersize=4)
+    ax2.set_xlabel('Model')
+    plt.setp(ax2.get_xticklabels(), rotation=-25, horizontalalignment='left')
+    ax2.set_ylabel(plot_metric)
+    ax2.set_title('Model Performance on Test Data')
+    ax2.grid()
+
+    fig.suptitle('Model Performance', fontsize=22)
+    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+    
+    if save_img:
+        dh.save_image(img_filename, save_dir)
+
+        
+def plot_y_true_vs_pred(y, y_pred, title=None, ax=None, textbox_str=None, outer_text=None, save_img=False, img_filename=None, save_dir=None):   
+    largest_num = max(max(y), max(y_pred))
+    smallest_num = min(min(y), min(y_pred))
+    
+    show_plot = False
+    if not ax: 
+        ax = plt.gca()
+        show_plot = True
+    
+    plot_limits = [smallest_num - (0.02*largest_num), largest_num + (0.02*largest_num)]
+    ax.set_xlim(plot_limits)
+    ax.set_ylim(plot_limits)
+    
+    ax.scatter(y, y_pred, s=10, alpha=0.7)    
+
+    ax.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
+    
+    if title:
+        ax.set_title(title)
+    else:
+        ax.set_title('True Values vs. Predicted Values')
+    
+    ax.set_ylabel('Predicted Values')
+    ax.set_xlabel('True Values')
+    
+    if textbox_str:
+        box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
+        ax.text(0.95, 0.95, textbox_str, bbox=box_style, transform=ax.transAxes, verticalalignment='top', horizontalalignment='right') 
+    
+    if outer_text:
+        box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
+        ax.text(1.05, 0.99, outer_text, bbox=box_style, transform=ax.transAxes, verticalalignment='top', horizontalalignment='left') 
+    
+    if save_img:
+        dh.save_image(img_filename, save_dir)
+        
+    if show_plot: plt.show()
+    
+def plot_y_true_vs_pred_for_cv_and_test_data(estimator, X_train, X_test, y_train, y_test, model_abbrev, title_fontsize=24, 
+                                             cv_plot_text=None, test_plot_text=None, fig_title=None, outer_text=None,
+                                             ax=None, save_img=False, img_filename=None, save_dir=None):
+    
+    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(9, 4))
+    
+    # Plot on left is model performance on CV data
+    plot_y_true_vs_pred(y_train, estimator.predict(X_train), title='CV Data', ax=ax_array_flat[0], textbox_str=cv_plot_text)
+    
+    # Plot on right is model performance on Test data
+    plot_y_true_vs_pred(y_test, estimator.predict(X_test), title='Test Data', ax=ax_array_flat[1], textbox_str=test_plot_text, outer_text=outer_text)
+    
+    # Figure title
+    if fig_title:
+        fig.suptitle(fig_title)
+    else:
+        fig.suptitle(f'{model_abbrev} Model Performance: CV Data vs. Test Data', fontsize=title_fontsize)
+    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+    
+    if save_img:
+        dh.save_image(img_filename, save_dir)
+    plt.show()
+
+
 
 # ====================================================================================================================
 # Feature engineering from cost_lin_reg.py
@@ -605,19 +705,6 @@ rr_model_scores_test_data = model_scores_test_data([rr_gs_obj.best_estimator_], 
 cv_results_df['rr_scores'] = rr_best_estimator_scores
 test_results_df['rr_scores'] = rr_model_scores_test_data
 
-# ====================================================================================================================
-# Plot everything so far
-# ====================================================================================================================
-plot_metric = 'mse'
-plot_data = test_results_df.loc[plot_metric]
-plt.plot(plot_data.index, plot_data, marker='o', markersize=4)
-plt.xlabel('Model')
-plt.xticks(rotation = -25)
-plt.ylabel(plot_metric)
-plt.title('Model Performance on Test Data')
-plt.grid()
-plt.show()
-
 
 # ====================================================================================================================
 # Lasso Regression
@@ -691,33 +778,6 @@ lsr_model_scores_test_data = model_scores_test_data([lsr_gs_obj.best_estimator_]
 cv_results_df['lsr_scores'] = lsr_best_estimator_scores
 test_results_df['lsr_scores'] = lsr_model_scores_test_data
 
-# ====================================================================================================================
-# Plot everything so far
-# ====================================================================================================================
-
-plot_metric = 'mae'
-
-# Performance on cross-val
-plot_data = cv_results_df.loc[plot_metric]
-plt.plot(plot_data.index, plot_data, marker='o', markersize=4)
-plt.xlabel('Model')
-plt.xticks(rotation = -25, horizontalalignment='left')
-plt.ylabel(plot_metric)
-plt.title('Model Performance During Cross-Validation')
-plt.grid()
-plt.show()
-
-# Performance on test data
-plot_data = test_results_df.loc[plot_metric]
-plt.plot(plot_data.index, plot_data, marker='o', markersize=4)
-plt.xlabel('Model')
-plt.xticks(rotation = -25, horizontalalignment='left')
-plt.ylabel(plot_metric)
-plt.title('Model Performance on Test Data')
-plt.grid()
-plt.show()
-
-# Similar MAEs, within $5
 
 # ====================================================================================================================
 # ElasticNet
@@ -750,9 +810,9 @@ en_gs_results_dict.update(gs_metric_dict)
 #                   'mean_test_neg_median_absolute_error':'med_ae', 
 #                   'mean_test_max_error':'me'}
 
-# =======================================================================================
+# ==========================================================
 # Hyperparameter tuning
-# =======================================================================================
+# ==========================================================
 
 # Create model and pipeline
 en_model = ElasticNet(random_state=15)
@@ -807,30 +867,6 @@ en_model_scores_test_data = model_scores_test_data([en_gs_obj.best_estimator_], 
 cv_results_df['en_scores'] = en_best_estimator_scores
 test_results_df['en_scores'] = en_model_scores_test_data
 
-# ====================================================================================================================
-# Plot everything so far
-# ====================================================================================================================
-plot_metric = 'mae'
-
-# Performance on cross-val
-plot_data = cv_results_df.loc[plot_metric]
-plt.plot(plot_data.index, plot_data, marker='o', markersize=4)
-plt.xlabel('Model')
-plt.xticks(rotation = -25, horizontalalignment='left')
-plt.ylabel(plot_metric)
-plt.title('Model Performance During Cross-Validation')
-plt.grid()
-plt.show()
-
-# Performance on test data
-plot_data = test_results_df.loc[plot_metric]
-plt.plot(plot_data.index, plot_data, marker='o', markersize=4)
-plt.xlabel('Model')
-plt.xticks(rotation = -25, horizontalalignment='left')
-plt.ylabel(plot_metric)
-plt.title('Model Performance on Test Data')
-plt.grid()
-plt.show()
 
 # ====================================================================================================================
 # Random Forest Regression
@@ -873,9 +909,9 @@ rf_gs_results_dict.update(gs_metric_dict)
 # metric_dict_rf = rf_param_dict.copy()
 # metric_dict_rf.update(base_metric_dict)
 
-# =======================================================================================
+# ==========================================================
 # Hyperparameter tuning
-# =======================================================================================
+# ==========================================================
 
 # Create model and pipeline
 rf_model = RandomForestRegressor(random_state=15)
@@ -967,175 +1003,190 @@ rf_test_data_model_results = model_scores_test_data([rf_gs_obj.best_estimator_],
 cv_results_df['rf_scores'] = rf_best_estimator_scores
 test_results_df['rf_scores'] = rf_test_data_model_results
 
+
+# ====================================================================================================================
+# Huber Regression
+# ====================================================================================================================
+
+# ==========================================================
+# Define variables
+# ==========================================================
+
+# Model name to be used in pipeline, which also means it will be used to name pipeline hyperparameters
+hr_model_name = 'HR'
+
+# Model hyperparameter names
+hr_params = ['alpha', 'epsilon']
+
+# Dictionary of Random Forest hyperparameter names (as returned by GridSearchCV()) and an associated
+# string names
+hr_param_dict =  {'param_'+hr_model_name+'__'+param:param for param in hr_params}
+
+# Metrics to be extracted from gs_results and their abbreviations
+# Combines gs_metric_dict and rr_param_dict
+hr_gs_results_dict = hr_param_dict.copy()
+hr_gs_results_dict.update(gs_metric_dict)
+
+# ==========================================================
+# Hyperparameter tuning
+# ==========================================================
+
+# Create model and pipeline
+hr_model = HuberRegressor()
+hr_pipeline = create_pipeline_bmi_smoker(hr_model_name, hr_model, num_cols, cat_cols)
+
+# Test/train split
+X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, test_size=0.2, random_state=15)
+
+# Determine hyperparameters to be tuned
+hr_model.get_params()
+hr_pipeline.get_params()
+
+# Set hyperparameter ranges for RandomizedSearchCV
+hr_parameters = {hr_model_name + '__alpha': [0.0001],
+                 hr_model_name + '__epsilon': np.arange(2, 5, step=0.1)}
+
+# Perform GridSearch hyperparameter tuning
+hr_gs_obj, hr_gs_results = perform_grid_search(hr_pipeline, X_train, y_train, list(score_abbv_dict.keys()), hr_parameters, refit='neg_mean_squared_error')
+
+# Extract revelant performance metrics from gs_results (based on metric_dict) and convert to df
+hr_gs_results_df = gs_relevant_results_to_df(hr_gs_results, hr_gs_results_dict, gs_negative_list)
+
+# Visualize change in scores with each hyperparameter
+unique_alphas = hr_gs_results_df['alpha'].unique()
+
+plot_score = 'mae'
+for alpha in unique_alphas:
+    line_data = hr_gs_results_df[hr_gs_results_df['alpha']==alpha]
+    plt.plot(line_data['epsilon'], line_data[plot_score], marker='o', markersize=4, label=np.round(alpha, 2))
+plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', title='alpha')
+plt.ylabel(plot_score)
+plt.xlabel('epsilon')
+plt.title('GS Results - Huber Regression')
+plt.grid()
+plt.show()
+
+# Alpha of 0 always best. Best MAE at epsilon of 3. Best MSE at epsilon of 4.2
+
+# Hyperparameter of best estimator 
+hr_best_params = hr_gs_obj.best_params_
+#{'HR__alpha': 0.0001, 'HR__epsilon': 4.200000000000003}
+
+# Access metrics of best estimator, this is based on 'refit' parameter which I set to 'mse'
+# There are multiple rows with mse rank is 1, so I have to narrow it down
+hr_best_estimator_row = hr_gs_results_df.loc[hr_gs_results_df['mse_rank'] == 1]
+
+# Format all performance metrics of best estimator, these are technically means of the cv results for that estimator
+hr_best_estimator_scores = hr_best_estimator_row.drop(list(hr_param_dict.values()) + ['r2_rank', 'mse_rank', 'rmse_rank', 'mae_rank'], axis=1).T.round(decimals=3)
+
+# Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
+hr_test_data_model_results = model_scores_test_data([hr_gs_obj.best_estimator_], X_test, y_test, scoring=list(score_abbv_dict.values()))
+
+# Keep track of results
+cv_results_df['hr_scores'] = hr_best_estimator_scores
+test_results_df['hr_scores'] = hr_test_data_model_results
+
+
 # ====================================================================================================================
 # Plot everything so far
 # ====================================================================================================================
 
 # =======================================================================================
-# Performance metrics
+# Plot y vs. y_pred
 # =======================================================================================
-# Create figure, gridspec, list of axes/subplots mapped to gridspec location
-fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=2, num_cols=1, figsize=(8, 10))
 
 plot_metric = 'mae'
-
-# Performance on cross-val
-plot_data = cv_results_df.loc[plot_metric]
-ax1 = ax_array_flat[0]
-ax1.plot(plot_data.index, plot_data, marker='o', markersize=4)
-ax1.set_xlabel('Model')
-#plt.xticks(rotation = -25, horizontalalignment='left')
-plt.setp(ax1.get_xticklabels(), rotation=-25, horizontalalignment='left')
-ax1.set_ylabel(plot_metric)
-ax1.set_title('Model Performance During Cross-Validation')
-ax1.grid()
-#plt.show()
-
-# Performance on test data
-plot_data = test_results_df.loc[plot_metric]
-ax2 = ax_array_flat[1]
-ax2.plot(plot_data.index, plot_data, marker='o', markersize=4)
-ax2.set_xlabel('Model')
-#plt.xticks(rotation = -25, horizontalalignment='left')
-plt.setp(ax2.get_xticklabels(), rotation=-25, horizontalalignment='left')
-ax2.set_ylabel(plot_metric)
-ax2.set_title('Model Performance on Test Data')
-ax2.grid()
-#plt.show()
-
-fig.suptitle('Model Performance', fontsize=24)
-fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-dh.save_image('model_performance_2', ml_models_output_dir)
-
+plot_regression_model_score_df(cv_results_df, test_results_df, plot_metric, save_img=False, img_filename='model_performance_mae', save_dir=ml_models_output_dir)
 
 # LR, RR, LSR, and EN all perform exactly the same because the regularization model parameters ended up being tuned 
-# to function like linear regression. Random Forest didn't perform as well, MAE was increased by ~$180
+# to the point where the model functions like linear regression. Random Forest didn't perform as well, MAE was increased by ~$180
 # For reference, MAE was ~4000 before feature engineering, now it's ~2100 on the test data
+# Huber Regression was the first model to achieve an MAE below 2100 (2088), next lowest was Lasso with 2110
 
 # =======================================================================================
 # Model Fit to during CV and when applied to Test Data
 # =======================================================================================
 
-import ds_helper as dh
-
-
-def plot_y_true_vs_pred(y, y_pred, title=None, ax=None, textbox_str=None, save_img=False, img_filename=None, save_dir=None):   
-    largest_num = max(max(y), max(y_pred))
-    smallest_num = min(min(y), min(y_pred))
-    
-    show_plot = False
-    if not ax: 
-        ax = plt.gca()
-        show_plot = True
-    
-    plot_limits = [smallest_num - (0.02*largest_num), largest_num + (0.02*largest_num)]
-    ax.set_xlim(plot_limits)
-    ax.set_ylim(plot_limits)
-    
-    ax.scatter(y, y_pred, s=10, alpha=0.7)    
-
-    ax.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
-    
-    if title:
-        ax.set_title(title)
-    else:
-        ax.set_title('True Values vs. Predicted Values')
-    
-    ax.set_ylabel('Predicted Values')
-    ax.set_xlabel('True Values')
-    
-    if textbox_str:
-        box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
-        ax.text(0.95, 0.95, textbox_str, bbox=box_style, transform=ax.transAxes, verticalalignment='top', horizontalalignment='right') 
-    
-    if save_img:
-        dh.save_image(img_filename, save_dir)
-        
-    if show_plot: plt.show()
-    
-def plot_y_true_vs_pred_for_cv_and_test_data(estimator, X_train, X_test, y_train, y_test, model_abbrev, title_fontsize=24, cv_plot_text=None,
-                                             test_plot_text=None, fig_title=None, ax=None, save_img=False, img_filename=None, save_dir=None):
-    
-    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(9, 4))
-    
-    # Plot on left is model performance on CV data
-    plot_y_true_vs_pred(y_train, estimator.predict(X_train), title='CV Data', ax=ax_array_flat[0], textbox_str=cv_plot_text)
-    
-    # Plot on right is model performance on Test data
-    plot_y_true_vs_pred(y_test, estimator.predict(X_test), title='Test Data', ax=ax_array_flat[1], textbox_str=test_plot_text)
-    
-    # Figure title
-    if fig_title:
-        fig.suptitle(fig_title)
-    else:
-        fig.suptitle(f'{model_abbrev} Model Performance: CV Data vs. Test Data', fontsize=title_fontsize)
-    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
-    
-    if save_img:
-        dh.save_image(img_filename, save_dir)
-    plt.show()
-    
-    
-    
-
-
 digits=2
-
 
 model_abbrev = 'LR'
 lr_pipeline.fit(X_train, y_train)
 cv_mae_str = 'MAE: ' + str(round(cv_results_df['lr_scores'].loc['mae'], digits))
 test_mae_str = 'MAE: ' + str(round(test_results_df['lr_scores'].loc['mae'], digits))
 filename = 'performance_' + model_abbrev
+outer_text = 'Hyperparameters:\n\nNone'
 plot_y_true_vs_pred_for_cv_and_test_data(lr_pipeline, X_train, X_test, y_train, y_test, 
-                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
-                                         save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text,
+                                         save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
 
 model_abbrev = 'RR'
 gs_obj = rr_gs_obj
 cv_mae_str = 'MAE: ' + str(round(cv_results_df['rr_scores'].loc['mae'], digits))
 test_mae_str = 'MAE: ' + str(round(test_results_df['rr_scores'].loc['mae'], digits))
 filename = 'performance_' + model_abbrev
+outer_text = 'Hyperparameters:\n\nAlpha: 1.0'
 plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
-                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
-                                         save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text,
+                                         save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
 
 model_abbrev = 'LSR'
-gs_obj = rf_gs_obj
+gs_obj = lsr_gs_obj
 cv_mae_str = 'MAE: ' + str(round(cv_results_df['lsr_scores'].loc['mae'], digits))
 test_mae_str = 'MAE: ' + str(round(test_results_df['lsr_scores'].loc['mae'], digits))
 filename = 'performance_' + model_abbrev
+outer_text = 'Hyperparameters:\n\nAlpha: 0.0'
 plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
-                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
-                                         save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text,
+                                         save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
+
+model_abbrev = 'EN'
+gs_obj = en_gs_obj
+cv_mae_str = 'MAE: ' + str(round(cv_results_df['en_scores'].loc['mae'], digits))
+test_mae_str = 'MAE: ' + str(round(test_results_df['en_scores'].loc['mae'], digits))
+filename = 'performance_' + model_abbrev
+outer_text = 'Hyperparameters:\n\nAlpha: 0.0\nL1 Ratio: 0.0'
+plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text,
+                                         save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
 
 model_abbrev = 'RF'
 gs_obj = rf_gs_obj
-
 cv_mae_str = 'MAE: ' + str(round(cv_results_df['rf_scores'].loc['mae'], digits))
 test_mae_str = 'MAE: ' + str(round(test_results_df['rf_scores'].loc['mae'], digits))
-
 filename = 'performance_' + model_abbrev
+outer_text = 'Hyperparameters:\n\nBootstrap: True\nMax Depth: 10\nMax Features: log2\nMin Samples Leaf: 6\nMin Samples Split: 4\nN Estimators: 1900'
 plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
-                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
-                                         save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text, 
+                                         save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
 
-model_abbrev = 'RF'
-gs_obj = rf_gs_obj
-
-cv_mae_str = 'MAE: ' + str(round(cv_results_df['rf_scores'].loc['mae'], digits))
-test_mae_str = 'MAE: ' + str(round(test_results_df['rf_scores'].loc['mae'], digits))
-
+# Optimized to MSE
+model_abbrev = 'HR'
+gs_obj = hr_gs_obj
+cv_mae_str = 'MAE: ' + str(round(cv_results_df['hr_scores'].loc['mae'], digits))
+test_mae_str = 'MAE: ' + str(round(test_results_df['hr_scores'].loc['mae'], digits))
 filename = 'performance_' + model_abbrev
+outer_text = 'Hyperparameters:\n\nAlpha: 0.0001\nEpsilon: 4.2'
 plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
-                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
-                                         save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text, 
+                                         save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
 
 
+# Optimized to MAE
+model_abbrev = 'HR2'
+hr_model2 = HuberRegressor(epsilon=3)
+hr_pipeline2 = create_pipeline_bmi_smoker(hr_model_name, hr_model2, num_cols, cat_cols)
+hr_pipeline2.fit(X_train, y_train)
 
+y_pred_cv = hr_pipeline2.predict(X_train)
+y_pred_test = hr_pipeline2.predict(X_test)
 
-
+cv_mae_str = 'MAE: ' + str(round(mean_absolute_error(y_train, y_pred_cv), digits)) + '\nR2: ' + str(round(r2_score(y_train, y_pred_cv), digits))
+test_mae_str = 'MAE: ' + str(round(mean_absolute_error(y_test, y_pred_test), digits)) + '\nR2: ' + str(round(r2_score(y_test, y_pred_test), digits))
+filename = 'performance_' + model_abbrev
+outer_text = 'Hyperparameters:\n\nAlpha: 0.0001\nEpsilon: 3.0'
+plot_y_true_vs_pred_for_cv_and_test_data(hr_pipeline2, X_train, X_test, y_train, y_test, 
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str, outer_text=outer_text, 
+                                         save_img=False, img_filename=filename, save_dir=ml_models_output_dir)
 
 
 
