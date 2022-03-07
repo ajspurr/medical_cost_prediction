@@ -1180,8 +1180,10 @@ hr_pipeline2.fit(X_train, y_train)
 y_pred_cv = hr_pipeline2.predict(X_train)
 y_pred_test = hr_pipeline2.predict(X_test)
 
-cv_mae_str = 'MAE: ' + str(round(mean_absolute_error(y_train, y_pred_cv), digits)) + '\nR2: ' + str(round(r2_score(y_train, y_pred_cv), digits))
-test_mae_str = 'MAE: ' + str(round(mean_absolute_error(y_test, y_pred_test), digits)) + '\nR2: ' + str(round(r2_score(y_test, y_pred_test), digits))
+mae_cv = mean_absolute_error(y_train, y_pred_cv)
+mae_test = mean_absolute_error(y_test, y_pred_test)
+cv_mae_str = 'MAE: ' + str(round(mae_cv, digits)) + '\nR2: ' + str(round(r2_score(y_train, y_pred_cv), digits))
+test_mae_str = 'MAE: ' + str(round(mae_test, digits)) + '\nR2: ' + str(round(r2_score(y_test, y_pred_test), digits))
 filename = 'performance_' + model_abbrev
 outer_text = 'Hyperparameters:\n\nAlpha: 0.0001\nEpsilon: 3.0'
 plot_y_true_vs_pred_for_cv_and_test_data(hr_pipeline2, X_train, X_test, y_train, y_test, 
@@ -1190,3 +1192,11 @@ plot_y_true_vs_pred_for_cv_and_test_data(hr_pipeline2, X_train, X_test, y_train,
 
 
 
+
+cv_results_df['hr_scores_mae'] = np.nan
+test_results_df['hr_scores_mae'] = np.nan
+cv_results_df['hr_scores_mae'].loc['mae'] = mae_cv
+test_results_df['hr_scores_mae'].loc['mae'] = mae_test
+
+plot_metric = 'mae'
+plot_regression_model_score_df(cv_results_df, test_results_df, plot_metric, save_img=False, img_filename='model_performance_mae', save_dir=ml_models_output_dir)
