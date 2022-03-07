@@ -150,7 +150,7 @@ To summarize, almost all models performed exactly the same when applied to the o
 
 <p align="center"><img src="/output/models/ml/optimized_r2/model_performance_1.png" width="900"/></p>
 
-Moving forward, I focused only on feature-engineered data and always performed hyperparameter tuning, optimized to MSE (as opposed to R2 above). As seen below, again most models resulted in the same MAE. Random Forest performed worse. When I added Huber Regression I was able to achieve a new MAE record: 2088 (vs. 2110).  
+Moving forward, I focused only on feature-engineered data and always performed hyperparameter tuning, optimized to MSE (as opposed to R2 above). As seen below, again most models resulted in the same MAE. Random Forest performed worse. Huber Regression, when optimized to MSE (like the other models) had a similar MAE to the other models. But when optimized to MAE, its MAE improved dramatically from 2088 to 944. I attempted to go back and optimize all models to MAE rather than MSE to see if it made as big a difference. It did not.
 
 <p align="center"><img src="/output/models/ml/optimized_mse/model_performance_mae_2.png" width="900"/></p>
 
