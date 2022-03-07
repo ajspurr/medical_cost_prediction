@@ -971,6 +971,9 @@ test_results_df['rf_scores'] = rf_test_data_model_results
 # Plot everything so far
 # ====================================================================================================================
 
+# =======================================================================================
+# Performance metrics
+# =======================================================================================
 # Create figure, gridspec, list of axes/subplots mapped to gridspec location
 fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=2, num_cols=1, figsize=(8, 10))
 
@@ -1008,6 +1011,100 @@ dh.save_image('model_performance_2', ml_models_output_dir)
 # LR, RR, LSR, and EN all perform exactly the same because the regularization model parameters ended up being tuned 
 # to function like linear regression. Random Forest didn't perform as well, MAE was increased by ~$180
 # For reference, MAE was ~4000 before feature engineering, now it's ~2100 on the test data
+
+# =======================================================================================
+# Model Fit to during CV and when applied to Test Data
+# =======================================================================================
+
+import ds_helper as dh
+
+
+def plot_y_true_vs_pred(y, y_pred, title=None, ax=None, textbox_str=None, save_img=False, img_filename=None, save_dir=None):   
+    largest_num = max(max(y), max(y_pred))
+    smallest_num = min(min(y), min(y_pred))
+    
+    show_plot = False
+    if not ax: 
+        ax = plt.gca()
+        show_plot = True
+    
+    plot_limits = [smallest_num - (0.02*largest_num), largest_num + (0.02*largest_num)]
+    ax.set_xlim(plot_limits)
+    ax.set_ylim(plot_limits)
+    
+    ax.scatter(y, y_pred, s=10, alpha=0.7)    
+
+    ax.plot([0, 1], [0, 1], color='darkblue', linestyle='--', transform=ax.transAxes)
+    
+    if title:
+        ax.set_title(title)
+    else:
+        ax.set_title('True Values vs. Predicted Values')
+    
+    ax.set_title(plot_title)
+    ax.set_ylabel('Predicted Values')
+    ax.set_xlabel('True Values')
+    
+    if textbox_str:
+        box_style = {'facecolor':'white', 'boxstyle':'round', 'alpha':0.9}
+        ax.text(0.95, 0.95, textbox_str, bbox=box_style, transform=ax.transAxes, verticalalignment='top', horizontalalignment='right') 
+    
+    if save_img:
+        dh.save_image(img_filename, save_dir)
+        
+    if show_plot: plt.show()
+    
+def plot_y_true_vs_pred_for_cv_and_test_data(estimator, X_train, X_test, y_train, y_test, model_abbrev, title_fontsize=24, cv_plot_text=None,
+                                             test_plot_text=None, fig_title=None, ax=None, save_img=False, img_filename=None, save_dir=None):
+    
+    # Create figure, gridspec, list of axes/subplots mapped to gridspec location
+    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 4))
+    
+    # Plot on left is model performance on CV data
+    plot_y_true_vs_pred(y_train, estimator.predict(X_train), title='CV Data', ax=ax_array_flat[0], textbox_str=cv_plot_text)
+    
+    # Plot on right is model performance on Test data
+    plot_y_true_vs_pred(y_test, estimator.predict(X_test), title='Test Data', ax=ax_array_flat[1], textbox_str=test_plot_text)
+    
+    # Figure title
+    if fig_title:
+        fig.suptitle(fig_title)
+    else:
+        fig.suptitle(f'{model_abbrev} Model Performance: CV Data vs. Test Data', fontsize=title_fontsize)
+    fig.tight_layout(h_pad=2) # Increase spacing between plots to minimize text overlap
+    
+    if save_img:
+        dh.save_image(img_filename, save_dir)
+    plt.show()
+    
+    
+    
+
+y_pred = rf_gs_obj.best_estimator_.predict(X_test)
+    
+plot_title = 'True Values vs. Predicted Values (Test Data)'
+plot_y_true_vs_pred(y_test, y_pred, title=plot_title)
+
+
+digits=2
+cv_mae_str = 'MAE ' + str(round(cv_results_df['rf_scores'].loc['mae'], digits))
+test_mae_str = 'MAE ' + str(round(test_results_df['rf_scores'].loc['mae'], digits))
+
+model_abbrev = 'RF'
+filename = 'performance_' + model_abbrev
+plot_y_true_vs_pred_for_cv_and_test_data(rf_gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
+                                         save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
+
+
+
+
+
+
+
+
+
+
 
 
 
