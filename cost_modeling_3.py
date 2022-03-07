@@ -1041,7 +1041,6 @@ def plot_y_true_vs_pred(y, y_pred, title=None, ax=None, textbox_str=None, save_i
     else:
         ax.set_title('True Values vs. Predicted Values')
     
-    ax.set_title(plot_title)
     ax.set_ylabel('Predicted Values')
     ax.set_xlabel('True Values')
     
@@ -1058,7 +1057,7 @@ def plot_y_true_vs_pred_for_cv_and_test_data(estimator, X_train, X_test, y_train
                                              test_plot_text=None, fig_title=None, ax=None, save_img=False, img_filename=None, save_dir=None):
     
     # Create figure, gridspec, list of axes/subplots mapped to gridspec location
-    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(10, 4))
+    fig, gs, ax_array_flat = dh.initialize_fig_gs_ax(num_rows=1, num_cols=2, figsize=(9, 4))
     
     # Plot on left is model performance on CV data
     plot_y_true_vs_pred(y_train, estimator.predict(X_train), title='CV Data', ax=ax_array_flat[0], textbox_str=cv_plot_text)
@@ -1080,29 +1079,58 @@ def plot_y_true_vs_pred_for_cv_and_test_data(estimator, X_train, X_test, y_train
     
     
 
-y_pred = rf_gs_obj.best_estimator_.predict(X_test)
-    
-plot_title = 'True Values vs. Predicted Values (Test Data)'
-plot_y_true_vs_pred(y_test, y_pred, title=plot_title)
-
 
 digits=2
-cv_mae_str = 'MAE ' + str(round(cv_results_df['rf_scores'].loc['mae'], digits))
-test_mae_str = 'MAE ' + str(round(test_results_df['rf_scores'].loc['mae'], digits))
 
-model_abbrev = 'RF'
+
+model_abbrev = 'LR'
+lr_pipeline.fit(X_train, y_train)
+cv_mae_str = 'MAE: ' + str(round(cv_results_df['lr_scores'].loc['mae'], digits))
+test_mae_str = 'MAE: ' + str(round(test_results_df['lr_scores'].loc['mae'], digits))
 filename = 'performance_' + model_abbrev
-plot_y_true_vs_pred_for_cv_and_test_data(rf_gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
+plot_y_true_vs_pred_for_cv_and_test_data(lr_pipeline, X_train, X_test, y_train, y_test, 
                                          model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
                                          save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
 
+model_abbrev = 'RR'
+gs_obj = rr_gs_obj
+cv_mae_str = 'MAE: ' + str(round(cv_results_df['rr_scores'].loc['mae'], digits))
+test_mae_str = 'MAE: ' + str(round(test_results_df['rr_scores'].loc['mae'], digits))
+filename = 'performance_' + model_abbrev
+plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
+                                         save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
 
+model_abbrev = 'LSR'
+gs_obj = rf_gs_obj
+cv_mae_str = 'MAE: ' + str(round(cv_results_df['lsr_scores'].loc['mae'], digits))
+test_mae_str = 'MAE: ' + str(round(test_results_df['lsr_scores'].loc['mae'], digits))
+filename = 'performance_' + model_abbrev
+plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
+                                         save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
 
+model_abbrev = 'RF'
+gs_obj = rf_gs_obj
 
+cv_mae_str = 'MAE: ' + str(round(cv_results_df['rf_scores'].loc['mae'], digits))
+test_mae_str = 'MAE: ' + str(round(test_results_df['rf_scores'].loc['mae'], digits))
 
+filename = 'performance_' + model_abbrev
+plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
+                                         save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
 
+model_abbrev = 'RF'
+gs_obj = rf_gs_obj
 
+cv_mae_str = 'MAE: ' + str(round(cv_results_df['rf_scores'].loc['mae'], digits))
+test_mae_str = 'MAE: ' + str(round(test_results_df['rf_scores'].loc['mae'], digits))
 
+filename = 'performance_' + model_abbrev
+plot_y_true_vs_pred_for_cv_and_test_data(gs_obj.best_estimator_, X_train, X_test, y_train, y_test, 
+                                         model_abbrev, cv_plot_text=cv_mae_str, test_plot_text=test_mae_str,
+                                         save_img=True, img_filename=filename, save_dir=ml_models_output_dir)
 
 
 
