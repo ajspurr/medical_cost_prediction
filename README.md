@@ -154,7 +154,7 @@ Moving forward, I focused only on feature-engineered data and always performed h
 
 <p align="center"><img src="/output/models/ml/optimized_mse/model_performance_mae_2.png" width="900"/></p>
 
-I plotted the details of each model (optimized to MSE) below as well. In summary, all three regularization functions (Ridge, Lasso, and Elastic Net) performed similarly to Linear Regression because their hyperparameters were optimized such that they were basically reduced to a linear model anyway. Huber Regression, when optimized to MSE (like the other models) had a similar MAE to the other models. But when optimized to MAE showed a huge improvement in MAE (not surprisingly) from 2088 to 944. 
+I plotted the details of each model (optimized to MSE) below as well. In summary, all three regularization functions (Ridge, Lasso, and Elastic Net) performed similarly to Linear Regression because their hyperparameters were optimized such that they were basically reduced to a linear model anyway. Huber Regression, when optimized to MSE (like the other models) had a similar MAE to the other models. But when optimized to MAE showed a huge improvement in MAE (not surprisingly) from 2088 to 941. 
 
 <p align="center"><img src="/output/models/ml/optimized_mse/performance_LR.png" width="700"/></p>
 <p align="center"><img src="/output/models/ml/optimized_mse/performance_RR.png" width="700"/></p>
