@@ -1,8 +1,22 @@
-# Medical Cost Prediction (in progress)
+# Medical Cost Prediction
 
 In this analysis, I explore the Kaggle [Medical Cost Dataset](https://www.kaggle.com/mirichoi0218/insurance). I'll go through the major steps in Machine Learning to build and evaluate regression models to predict total cost of medical care based on demographic data.
 
 Theoretically, a model like this could be used by insurance companies to predict the total medical cost of an individual, which they could base their premiums on. According to the Kaggle poster, it comes from the book 'Machine Learning with R' by Brett Lantz and is in the public domain. I could not find more information on the origin of the dataset, but based on my EDA and its behavior in a linear model, it is almost certainly artificial data. Nevertheless, the process I go through can be applied to real-world data. 
+
+## Analysis Highlights
+- Exploratory Data Analysis:
+  - Dataset of 1338 individuals with features such as age, sex, BMI, region, and their medical charges
+  - Target (charges) is positively skewed: mean of $13270, median of $9382
+  - No correlation between pairs of features, no multicollinearity
+  - "Age" has linear relationship with "charges", especially when subgrouped by smoking status and presence of obesity
+  - "BMI" has linear relationship with "charges" when subgrouped by smoking status
+- Feature engineering
+  - Based on relationships found between features and target, created features: "age^2", "bmi >= 30", "smoker\*bmi", and "smoker\*obese" which improved Linear Regression MAE from ~4100 to ~2200 (in initial statistical analysis)
+- Evaluated performance of Multiple Linear Regression, Ridge Regression, Lasso Regression, Elastic Net, Random Forest Regression, and Huber Regression
+  - Regularization models (Ridge, Lasso, Elastic Net) performed the same as Multiple Linear Regression as their hyperparameter tuning demonstrated optimal performance when their regularization terms were zero or close to zero
+  - Random Forest performed the worst (MAE ~2300 compared to ~2100 with Linear Regression)
+  - Huber Regression performed the best on the test data with an MAE of 941 (mean absolute percentage error of 4.6%)
 
 ## Programming Language and Resource Details
 **Python Version:** 3.8.12
