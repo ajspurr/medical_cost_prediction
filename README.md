@@ -7,12 +7,17 @@ Theoretically, a model like this could be used by insurance companies to predict
 ## Analysis Highlights
 - Exploratory Data Analysis:
   - Dataset of 1338 individuals with features such as age, sex, BMI, region, and their medical charges
-  - Target (charges) is positively skewed: mean of $13270, median of $9382
+  - Target (charges) is positively skewed with a mean of $13,270, median of $9,382
   - No correlation between pairs of features, no multicollinearity
   - "Age" has linear relationship with "charges", especially when subgrouped by smoking status and presence of obesity
   - "BMI" has linear relationship with "charges" when subgrouped by smoking status
 - Feature engineering
-  - Based on relationships found between features and target, created features: "age^2", "bmi >= 30", "smoker\*bmi", and "smoker\*obese" which improved Linear Regression MAE from ~4100 to ~2200 (in initial statistical analysis)
+  - Based on relationships found between features and target, I created features: 
+    - "age^2"
+    - "bmi >= 30"
+    - "smoker\*bmi"
+    - "smoker\*obese" 
+    - These new features improved Linear Regression MAE from ~4100 to ~2200 (in initial statistical analysis)
 - Evaluated performance of Multiple Linear Regression, Ridge Regression, Lasso Regression, Elastic Net, Random Forest Regression, and Huber Regression
   - Regularization models (Ridge, Lasso, Elastic Net) performed the same as Multiple Linear Regression as their hyperparameter tuning demonstrated optimal performance when their regularization terms were zero or close to zero
   - Random Forest performed the worst (MAE ~2300 compared to ~2100 with Linear Regression)
