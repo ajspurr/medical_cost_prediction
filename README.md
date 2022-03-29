@@ -21,7 +21,7 @@ Theoretically, a model like this could be used by insurance companies to predict
 - Evaluated performance of Multiple Linear Regression, Ridge Regression, Lasso Regression, Elastic Net, Random Forest Regression, and Huber Regression
   - Regularization models (Ridge, Lasso, Elastic Net) performed the same as Multiple Linear Regression as their hyperparameter tuning demonstrated optimal performance when their regularization terms were zero or close to zero
   - Random Forest performed the worst (MAE ~2300 compared to ~2100 with Linear Regression)
-  - Huber Regression performed the best on the test data with an MAE of 941 (mean absolute percentage error of 4.6%)
+  - Huber Regression performed the best on the test data with an MAE of $941 (mean absolute percentage error of 4.6%)
 
 ## Programming Language and Resource Details
 **Python Version:** 3.8.12
