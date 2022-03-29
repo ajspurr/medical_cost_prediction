@@ -17,7 +17,7 @@ Theoretically, a model like this could be used by insurance companies to predict
     - "bmi >= 30"
     - "smoker\*bmi"
     - "smoker\*obese" 
-    - These new features improved Linear Regression MAE from ~4100 to ~2200 (in initial statistical analysis)
+  - These new features improved Linear Regression MAE from ~4100 to ~2200 (in initial statistical analysis)
 - Evaluated performance of Multiple Linear Regression, Ridge Regression, Lasso Regression, Elastic Net, Random Forest Regression, and Huber Regression
   - Regularization models (Ridge, Lasso, Elastic Net) performed the same as Multiple Linear Regression as their hyperparameter tuning demonstrated optimal performance when their regularization terms were zero or close to zero
   - Random Forest performed the worst (MAE ~2300 compared to ~2100 with Linear Regression)
