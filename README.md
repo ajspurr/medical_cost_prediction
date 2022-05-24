@@ -154,7 +154,7 @@ You can see that the outliers in this plot also represent Cook's outliers.
 
 ### Assumption #4: Homoscedasticity
   - I used the Breusch-Pagan Test and White Test for Heteroscedasticity throughout the process, visualizing it in Scale-Location plots (predicted values vs. studentized residuals)
-  - Heteroscedasticity was present in the initial model, but homoscedasticity was achieved after the second new feature was created. 
+  - Heteroscedasticity was present in the initial model, but homoscedasticity was achieved and maintained after the second new feature was created. 
 ### Assumption #5: Observations are independent, i.e. no autocorrelation 
 - Not relevant as this is not time series data.
 
@@ -168,7 +168,7 @@ For the rest of the analysis, I will compare performance of other regression mod
 First, I compared performance (with R2) of 5 regression models: Linear Regression, Ridge Regression, Lasso Regression, Elastic Net, and Random Forest. For many of them I also kept track of their performance on the original data AND feature engineered data, with and without hyperparameter tuning. Their performances are plotted below. The top plot represents the performance during cross-validation, the lower plot represents the model performance when it is applied to the remaining test data. 
 </br>
 </br>
-To summarize, almost all models performed exactly the same when applied to the original data. They also all performed the same when applied to the feature engineered data. The only exception was Random Forest, which did not perform as well as the others on the feature-engineered data. Hyperparameter tuning did not improve performance other than Random Forest, which still performed worse than other models. Most models had an equal improvement in performance on test data vs. cv scores. In other worse, regularized regression models like Ridge, Lasso, and Elastic Net didn't exhibit lower variance, as you would expect.
+To summarize, almost all models performed exactly the same when applied to the original data. They also all performed the same when applied to the feature engineered data. The only exception was Random Forest, which did not perform as well as the others on the feature-engineered data. Hyperparameter tuning did not improve performance other than Random Forest, which still performed worse than other models. Most models had an equal improvement in performance on test data vs. cv scores. In other worse, **regularized regression models like Ridge, Lasso, and Elastic Net didn't exhibit lower variance, as you would expect.**
 
 <p align="center"><img src="/output/models/ml/optimized_r2/model_performance_1.png" width="900"/></p>
 
