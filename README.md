@@ -142,6 +142,7 @@ The Scale-Location plot (residuals vs. predicted target values) on the left is t
 <p align="center"><img src="/output/models/qqhist1_orig.png" width="600"/></p>
 
 **One of the visualizations of Cook's outliers in the relationship between Age and Charges (this plot represents smokers only):**
+<br>
 You can see that the outliers in this plot also represent Cook's outliers.
 <p align="center"><img src="/output/models/outliers_age_v_charges_nonob_smoker.png" width="350"/></p>
 
