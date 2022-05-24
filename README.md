@@ -39,8 +39,8 @@ All figures: [medical_cost_prediction/output/eda](/output/eda)
 <p align="center"><img src="/output/eda/data_overview.png" width="600"/></p>
 <p align="center"><img src="/output/eda/feature_summary.png" width="900"/></p>
 
-Most of the features are self-explanatory, and the categories of each categorical variable can be seen below. But I will clarify a few here (per the Kaggle poster):
-- children: number of children covered by health insurance / number of dependents
+Most of the features are self-explanatory, and the categories in each categorical variable can be seen below. But I will clarify a few here (per the original Kaggle poster):
+- children: number of children covered by health insurance or number of dependents
 - charges: individual medical costs billed by health insurance
 
 ### Explore Target (charges)
@@ -64,7 +64,8 @@ Violin plots to visualize relationship of all categorical variables to dichotomo
 <p align="center"><img src="/output/eda/violin_cat_var.png" width="900"/></p>
 
 <br><br>
-Origin story of feature 'BMI >= 30'. I had noticed a bimodal distribution of charges in smokers. So I attempted to subgroup by other categorical variables to no avail. After noticing that there was a clear clustering of datapoints around BMI=30 in scatterplot (further down), I found that BMI explained the bimodal distribution  very well. I will further explore the relationships between the numerical variables and target variable in the 'Assumptions of Multiple Linear Regression' section below. 
+#### Origin story of feature 'BMI >= 30'
+I had noticed a bimodal distribution of charges in smokers. So I attempted to subgroup by other categorical variables to no avail. After noticing that there was a clear clustering of datapoints around BMI=30 in scatterplot (further down), I found that BMI explained the bimodal distribution  very well. I will further explore the relationships between the numerical variables and target variable in the 'Assumptions of Multiple Linear Regression' section below. 
 <br><br>
 <p align="center"><img src="/output/eda/smoker_dist_by_bmi.png" width="700"/></p>
 
