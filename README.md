@@ -102,7 +102,7 @@ I'm including ordinal variable 'children' in this analysis. After researching ho
 </p>
 
 ## Relationship Between Numerical and Categorical Variables
-I used Correlation Ratio to measure the association between numerical and categorical variables (again, credit to Shaked Zychlinski). The only noteworthy correlation is between smoking status and charges, which we already discussed above. The correlation between the new variable 'BMI >= 30' and the BMI variable makes sense, and increases my confidence that Correlatio Ratio works!
+I used Correlation Ratio to measure the association between numerical and categorical variables (again, credit to Shaked Zychlinski). The only noteworthy correlation is between smoking status and charges, which we already discussed above. The correlation between the new variable 'BMI >= 30' and the BMI variable makes sense, and increases my confidence that Correlation Ratio works!
 
 <p align="center"><img src="/output/eda/corr_ratio_cat_num_variables.png" width="600"/></p>
 
@@ -141,7 +141,8 @@ The Scale-Location plot (residuals vs. predicted target values) on the left is t
 **Residual distribution in model with all new features added:**
 <p align="center"><img src="/output/models/qqhist1_orig.png" width="600"/></p>
 
-**One of the visualizations of Cook's outliers in the relationship between Age and Charges (this plot is in smokers only):**
+**One of the visualizations of Cook's outliers in the relationship between Age and Charges (this plot represents smokers only):**
+You can see that the outliers in this plot also represent Cook's outliers.
 <p align="center"><img src="/output/models/outliers_age_v_charges_nonob_smoker.png" width="350"/></p>
 
 **Residual distribution after all of Cook's outliers were removed:**
