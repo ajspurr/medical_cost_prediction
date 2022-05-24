@@ -63,8 +63,8 @@ Summary of categorical variables. 'BMI >= 30' was added retroactively after find
 Violin plots to visualize relationship of all categorical variables to dichotomous categorical variables.
 <p align="center"><img src="/output/eda/violin_cat_var.png" width="900"/></p>
 
-<br><br>
-#### Origin story of feature 'BMI >= 30'
+<br>
+#### Origin story of feature 'BMI >= 30' feature
 I had noticed a bimodal distribution of charges in smokers. So I attempted to subgroup by other categorical variables to no avail. After noticing that there was a clear clustering of datapoints around BMI=30 in scatterplot (further down), I found that BMI explained the bimodal distribution  very well. I will further explore the relationships between the numerical variables and target variable in the 'Assumptions of Multiple Linear Regression' section below. 
 <br><br>
 <p align="center"><img src="/output/eda/smoker_dist_by_bmi.png" width="700"/></p>
