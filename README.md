@@ -1,8 +1,27 @@
-# Medical Cost Prediction (in progress)
+# Medical Cost Prediction
 
 In this analysis, I explore the Kaggle [Medical Cost Dataset](https://www.kaggle.com/mirichoi0218/insurance). I'll go through the major steps in Machine Learning to build and evaluate regression models to predict total cost of medical care based on demographic data.
 
 Theoretically, a model like this could be used by insurance companies to predict the total medical cost of an individual, which they could base their premiums on. According to the Kaggle poster, it comes from the book 'Machine Learning with R' by Brett Lantz and is in the public domain. I could not find more information on the origin of the dataset, but based on my EDA and its behavior in a linear model, it is almost certainly artificial data. Nevertheless, the process I go through can be applied to real-world data. 
+
+## Analysis Highlights
+- Exploratory Data Analysis:
+  - Dataset of 1338 individuals with features such as age, sex, BMI, region, and their medical charges
+  - Target (charges) is positively skewed with a mean of $13,270, median of $9,382
+  - No correlation between pairs of features, no multicollinearity
+  - "Age" has linear relationship with "charges", especially when subgrouped by smoking status and presence of obesity
+  - "BMI" has linear relationship with "charges" when subgrouped by smoking status
+- Feature engineering
+  - Based on relationships found between features and target, I created features: 
+    - "age^2"
+    - "bmi >= 30"
+    - "smoker\*bmi"
+    - "smoker\*obese" 
+  - These new features improved Linear Regression MAE from ~4100 to ~2200 (in initial statistical analysis)
+- Evaluated performance of Multiple Linear Regression, Ridge Regression, Lasso Regression, Elastic Net, Random Forest Regression, and Huber Regression
+  - Regularization models (Ridge, Lasso, Elastic Net) performed the same as Multiple Linear Regression as their hyperparameter tuning demonstrated optimal performance when their regularization terms were zero or close to zero
+  - Random Forest performed the worst (MAE ~2300 compared to ~2100 with Linear Regression)
+  - Huber Regression performed the best on the test data with an MAE of $941 (mean absolute percentage error of 4.6%)
 
 ## Programming Language and Resource Details
 **Python Version:** 3.8.12
@@ -20,8 +39,8 @@ All figures: [medical_cost_prediction/output/eda](/output/eda)
 <p align="center"><img src="/output/eda/data_overview.png" width="600"/></p>
 <p align="center"><img src="/output/eda/feature_summary.png" width="900"/></p>
 
-Most of the features are self-explanatory, and the categories of each categorical variable can be seen below. But I will clarify a few here (per the Kaggle poster):
-- children: number of children covered by health insurance / number of dependents
+Most of the features are self-explanatory, and the categories in each categorical variable can be seen below. But I will clarify a few here (per the original Kaggle poster):
+- children: number of children covered by health insurance or number of dependents
 - charges: individual medical costs billed by health insurance
 
 ### Explore Target (charges)
@@ -44,8 +63,9 @@ Summary of categorical variables. 'BMI >= 30' was added retroactively after find
 Violin plots to visualize relationship of all categorical variables to dichotomous categorical variables.
 <p align="center"><img src="/output/eda/violin_cat_var.png" width="900"/></p>
 
-<br><br>
-Origin story of feature 'BMI >= 30'. I had noticed a bimodal distribution of charges in smokers. So I attempted to subgroup by other categorical variables to no avail. After noticing that there was a clear clustering of datapoints around BMI=30 in scatterplot (further down), I found that BMI explained the bimodal distribution  very well. I will further explore the relationships between the numerical variables and target variable in the 'Assumptions of Multiple Linear Regression' section below. 
+#### Origin story of feature 'BMI >= 30'
+
+I had noticed a bimodal distribution of charges in smokers. So I attempted to subgroup by other categorical variables to no avail. After noticing that there was a clear clustering of datapoints around BMI=30 in scatterplot (further down), I found that BMI explained the bimodal distribution  very well. I will further explore the relationships between the numerical variables and target variable in the 'Assumptions of Multiple Linear Regression' section below. 
 <br><br>
 <p align="center"><img src="/output/eda/smoker_dist_by_bmi.png" width="700"/></p>
 
@@ -82,7 +102,7 @@ I'm including ordinal variable 'children' in this analysis. After researching ho
 </p>
 
 ## Relationship Between Numerical and Categorical Variables
-I used Correlation Ratio to measure the association betwee numerical and categorical variables (again, credit to Shaked Zychlinski). The only noteworthy correlation is between smoking status and charges, which we already discussed above. The correlation between the new variable 'BMI >= 30' and the BMI variable makes sense, and increases my confidence that Correlatio Ratio works!
+I used Correlation Ratio to measure the association between numerical and categorical variables (again, credit to Shaked Zychlinski). The only noteworthy correlation is between smoking status and charges, which we already discussed above. The correlation between the new variable 'BMI >= 30' and the BMI variable makes sense, and increases my confidence that Correlation Ratio works!
 
 <p align="center"><img src="/output/eda/corr_ratio_cat_num_variables.png" width="600"/></p>
 
@@ -121,7 +141,9 @@ The Scale-Location plot (residuals vs. predicted target values) on the left is t
 **Residual distribution in model with all new features added:**
 <p align="center"><img src="/output/models/qqhist1_orig.png" width="600"/></p>
 
-**One of the visualizations of Cook's outliers in the relationship between Age and Charges (this plot is in smokers only):**
+**One of the visualizations of Cook's outliers in the relationship between Age and Charges (this plot represents smokers only):**
+<br>
+You can see that the outliers in this plot also represent Cook's outliers.
 <p align="center"><img src="/output/models/outliers_age_v_charges_nonob_smoker.png" width="350"/></p>
 
 **Residual distribution after all of Cook's outliers were removed:**
@@ -132,7 +154,7 @@ The Scale-Location plot (residuals vs. predicted target values) on the left is t
 
 ### Assumption #4: Homoscedasticity
   - I used the Breusch-Pagan Test and White Test for Heteroscedasticity throughout the process, visualizing it in Scale-Location plots (predicted values vs. studentized residuals)
-  - Heteroscedasticity was present in the initial model, but homoscedasticity was achieved after the second new feature was created. 
+  - Heteroscedasticity was present in the initial model, but homoscedasticity was achieved and maintained after the second new feature was created. 
 ### Assumption #5: Observations are independent, i.e. no autocorrelation 
 - Not relevant as this is not time series data.
 
@@ -146,15 +168,15 @@ For the rest of the analysis, I will compare performance of other regression mod
 First, I compared performance (with R2) of 5 regression models: Linear Regression, Ridge Regression, Lasso Regression, Elastic Net, and Random Forest. For many of them I also kept track of their performance on the original data AND feature engineered data, with and without hyperparameter tuning. Their performances are plotted below. The top plot represents the performance during cross-validation, the lower plot represents the model performance when it is applied to the remaining test data. 
 </br>
 </br>
-To summarize, almost all models performed exactly the same when applied to the original data. They also all performed the same when applied to the feature engineered data. The only exception was Random Forest, which did not perform as well as the others on the feature-engineered data. Hyperparameter tuning did not improve performance other than Random Forest, which still performed worse than other models. Most models had an equal improvement in performance on test data vs. cv scores. In other worse, regularized regression models like Ridge, Lasso, and Elastic Net didn't exhibit lower variance, as you would expect.
+To summarize, almost all models performed exactly the same when applied to the original data. They also all performed the same when applied to the feature engineered data. The only exception was Random Forest, which did not perform as well as the others on the feature-engineered data. Hyperparameter tuning did not improve performance other than Random Forest, which still performed worse than other models. Most models had an equal improvement in performance on test data vs. cv scores. In other worse, **regularized regression models like Ridge, Lasso, and Elastic Net didn't exhibit lower variance, as you would expect.**
 
 <p align="center"><img src="/output/models/ml/optimized_r2/model_performance_1.png" width="900"/></p>
 
-Moving forward, I focused only on feature-engineered data and always performed hyperparameter tuning, optimized to MSE (as opposed to R2 above). As seen below, again most models resulted in the same MAE. Random Forest performed worse. When I added Huber Regression I was able to achieve a new MAE record: 2088 (vs. 2110).  
+Moving forward, I focused only on feature-engineered data and always performed hyperparameter tuning, optimized to MSE (as opposed to R2 above). As seen below, again most models resulted in the same MAE. Random Forest performed worse. Huber Regression, when optimized to MSE (like the other models) had a similar MAE to the other models. But when optimized to MAE, its MAE improved dramatically from 2088 to 944. I attempted to go back and optimize all models to MAE rather than MSE to see if it made as big a difference. It did not.
 
 <p align="center"><img src="/output/models/ml/optimized_mse/model_performance_mae_2.png" width="900"/></p>
 
-I plotted the details of each model below as well. In summary, all three regularization functions (Ridge, Lasso, and Elastic Net) performed similarly to Linear Regression because their hyperparameters were optimized such that they were basically reduced to a linear model anyway. Huber Regression, when optimized to MSE (like the other models) had a similar MAE to the other models. But when optimized to MAE showed a huge improvement in MAE (not surprisingly) from 2088 to 944. 
+I plotted the details of each model (optimized to MSE) below as well. In summary, all three regularization functions (Ridge, Lasso, and Elastic Net) performed similarly to Linear Regression because their hyperparameters were optimized such that they were basically reduced to a linear model anyway. Huber Regression, when optimized to MSE (like the other models) had slightly improved MAE (about 1% better) compared to the other models. But when optimized to MAE showed a huge improvement in MAE (not surprisingly) from 2088 to 941. 
 
 <p align="center"><img src="/output/models/ml/optimized_mse/performance_LR.png" width="700"/></p>
 <p align="center"><img src="/output/models/ml/optimized_mse/performance_RR.png" width="700"/></p>
@@ -162,4 +184,6 @@ I plotted the details of each model below as well. In summary, all three regular
 <p align="center"><img src="/output/models/ml/optimized_mse/performance_EN.png" width="700"/></p>
 <p align="center"><img src="/output/models/ml/optimized_mse/performance_RF.png" width="700"/></p>
 <p align="center"><img src="/output/models/ml/optimized_mse/performance_HR.png" width="700"/></p>
-<p align="center"><img src="/output/models/ml/optimized_mse/performance_HR2.png" width="700"/></p>
+
+Huber optimized to MAE rather than MSE:
+<p align="center"><img src="/output/models/ml/optimized_mae/performance_HR.png" width="700"/></p>
