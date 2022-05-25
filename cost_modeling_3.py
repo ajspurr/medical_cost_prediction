@@ -52,40 +52,6 @@ import ds_helper as dh
 
 
 # ====================================================================================================================
-# Visualization helper functions
-# ====================================================================================================================
-
-
-
-def create_obese_smoker_category(X_df):
-    """
-    Takes dataframe of X values (X_df), uses them to create Series with categories:
-    'obese smokers', 'nonobese smokers', 'obese nonsmokers', 'nonobese nonsmokers'
-    Returns a series of said categories which corresponds to 'X_df' parameter
-    https://datagy.io/pandas-conditional-column/
-
-    Parameters
-    ----------
-    X_df : DataFrame
-        Contains X values to be used to create categories.
-
-    Returns
-    -------
-    Series
-        Series of said categories (specified above) which corresponds to 'X_df' parameter.
-
-    """
-    conditions = [
-        (X_df['bmi_>=_30'] == 1) & (X_df['smoker'] == 'yes'),
-        (X_df['bmi_>=_30'] == 0) & (X_df['smoker'] == 'yes'),
-        (X_df['bmi_>=_30'] == 1) & (X_df['smoker'] == 'no'),
-        (X_df['bmi_>=_30'] == 0) & (X_df['smoker'] == 'no')
-    ]
-    
-    category_names = ['obese smokers', 'nonobese smokers', 'obese nonsmokers', 'nonobese nonsmokers']
-    return pd.Series(np.select(conditions, category_names), name='grouping') 
-
-# ====================================================================================================================
 # Data preprocessing function via pipeline
 # ====================================================================================================================
 
@@ -544,12 +510,10 @@ X = dataset.drop(['charges'], axis=1)
 X['age'] = np.power(X['age'], 2)
 X.rename(columns={'age':'age^2'}, inplace=True)
 
-# Create feature ['bmi_>=_30'] (temporarily) to create the ob_smoke_series using create_obese_smoker_category()
-# and to use for obese*smoker feature later
+# Create feature ['bmi_>=_30'] (temporarily) to use for obese*smoker feature later
 X['bmi_>=_30'] = X['bmi'] >= 30
 obese_dict = {False:0, True:1}
 X['bmi_>=_30'] = X['bmi_>=_30'].map(obese_dict)
-ob_smoke_series = create_obese_smoker_category(X)
 
 # Create ['smoker*obese'] feature
 smoker_dict = {'no':0, 'yes':1}
@@ -1073,6 +1037,12 @@ hr_best_estimator_scores = hr_best_estimator_row.drop(list(hr_param_dict.values(
 
 # Using optimal model (best_estimator_) from GridSearch results, run model on test data to compare difference in metrics 
 hr_test_data_model_results = model_scores_test_data([hr_gs_obj.best_estimator_], X_test, y_test, scoring=list(score_abbv_dict.values()))
+#hr_test_data_model_results2 = model_scores_test_data([hr_gs_obj.best_estimator_], X_test, y_test, scoring=['r2', 'mse', 'rmse', 'mae', 'mape'])
+# r2    8.910000e-01
+# mse   1.419502e+07
+# rmse  3.767628e+03
+# mae   9.409950e+02
+# mape  4.600000e-02
 
 # Keep track of results
 cv_results_df['hr_scores'] = hr_best_estimator_scores
